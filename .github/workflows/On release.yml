@@ -18,7 +18,7 @@ jobs:
           uses: test-room-7/action-update-file@v1
           with:
               file-path: |
-                php/_module_menu.php
+                php/__module_menu.php
                 CHANGELOG.md
               commit-msg: Update module version
               github-token: ${{ secrets.GITHUB_TOKEN }}
