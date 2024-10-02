@@ -8,7 +8,7 @@ print('testing print')
 
 print(sys.path)
 
-dirPath = pathlib.Path(__file__).parent.parent.parent
+dirPath = str(pathlib.Path(__file__).parent.parent.parent)
 
 name    = dirPath+'/php/_module_menu.php'
 
