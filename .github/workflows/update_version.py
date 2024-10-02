@@ -12,7 +12,7 @@ for x in p.iterdir():
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
 
 print(dirPath)
-for x in Path(__file__+'/../../../php').iterdir():
+for x in Path(dirPath + '/php').iterdir():
     print(x)
 
 name    = dirPath+'/php/_module_menu.php'
