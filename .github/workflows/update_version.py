@@ -9,11 +9,11 @@ print('testing print')
 print(sys.path)
 
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
-
 name    = dirPath+'/php/_module_menu.php'
+path    = Path(name)
 
 # load plugin file
-txt = name.read_text()
+txt = path.read_text()
 newVersion  = sys.argv[1]
 
 # get old version
