@@ -14,7 +14,6 @@
 - apply_filters('sim-formresult-cell-opening-tag', $cellOpeningTag, $this, $columnSetting, $values);
 - apply_filters('sim_form_actions_html', $buttonsHtml, $values, $subId, $this);
 - apply_filters('sim-formstable-should-show', true, $this, $type);
-- apply_filters('sim_form_actions', $actions);
 - apply_filters('sim-forms-elements', $this->formElements, $this, true);
 - apply_filters('sim-special-form-elements', $options);
 - apply_filters('sim-forms-before-saving-settings', $newSettings, $this, $formId);
