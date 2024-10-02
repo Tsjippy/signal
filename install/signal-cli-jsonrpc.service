@@ -1,0 +1,19 @@
+[Unit]
+Description=Send secure messages to Signal clients
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/rm /home/simnige1/sockets/signal
+ExecStart=/home/simnige1/web/simnigeria.org/public_html/wp-content/signal-cli/program/signal-cli --config /home/simnige1/.local/share/signal-cli/ --trust-new-identities=always daemon --socket=/home/simnige1/sockets/signal
+
+User=simnige1
+Restart = on-failure 
+RestartSec = 5
+
+# JVM always exits with 143 in reaction to SIGTERM signal
+SuccessExitStatus=143
+
+[Install]
+WantedBy = multi-user.target 

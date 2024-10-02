@@ -1,0 +1,21 @@
+{
+    "name": "sim/signal",
+    "description": "signal module dependicies",
+    "type": "library",
+    "require": {
+        "mikehaertl/php-shellcommand": "dev-master",
+        "bacon/bacon-qr-code": "dev-main",
+        "guzzlehttp/guzzle": "8.0.x-dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sim\\Signal\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Tsjippy"
+        }
+    ],
+    "minimum-stability": "dev"
+}

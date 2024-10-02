@@ -1,0 +1,18 @@
+[Unit]
+Description=Send secure messages to Signal clients
+Wants=network-online.target
+After=signal-cli-jsonrpc.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/php "/home/simnige1/web/simnigeria.org/public_html/wp-content/plugins/sim-plugin/includes/modules/signal/daemon/signal-jsonrpc-daemon.php"
+
+User=signal-cli
+Restart = on-failure 
+RestartSec = 5
+
+# JVM always exits with 143 in reaction to SIGTERM signal
+SuccessExitStatus=143
+
+[Install]
+WantedBy = multi-user.target 

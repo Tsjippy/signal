@@ -20,3 +20,8 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+
+includes/modules/signal/php/classes/installing.signal
+node_modules/
+**/package-lock.json
