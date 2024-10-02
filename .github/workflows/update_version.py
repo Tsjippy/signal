@@ -3,17 +3,17 @@ import sys
 import pathlib
 from pathlib import Path
 import datetime
-
-print('testing print')
-
-print(sys.path)
-
-print(pathlib.Path(__file__))
-print(pathlib.Path(__file__).parent)
 print(pathlib.Path(__file__).parent.parent)
-print(pathlib.Path(__file__).parent.parent.parent)
+
+p = Path('.')
+[x for x in p.iterdir() if x.is_dir()]:
+    print(x)
 
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
+
+print(dirPath)
+[x for x in pathlib.Path(__file__).parent.parent.parent.iterdir() if x.is_dir()]:
+    print(x)
 name    = dirPath+'/php/_module_menu.php'
 path    = Path(name)
 
