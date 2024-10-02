@@ -6,8 +6,7 @@ import datetime
 print(pathlib.Path(__file__).parent.parent)
 
 p = Path('.')
-x for x in p.iterdir() if x.is_dir():
-    print(x)
+[x for x in p.iterdir() if x.is_dir()]
 
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
 
