@@ -8,20 +8,12 @@ print('testing print')
 
 print(sys.path)
 
-dir_path = pathlib.Path(__file__).parent.parent.parent
+dirPath = pathlib.Path(__file__).parent.parent.parent
 
-try:
-    print(dir_path)
-    print(Path('_module_menu.php'))
-    txt = Path(name).read_text()
-except:
-    print(Path('/php/_module_menu.php'))
-    txt = Path('/php/_module_menu.php').read_text()
-
-name    = '/php/_module_menu.php'
+name    = dirPath+'/php/_module_menu.php'
 
 # load plugin file
-txt = Path(name).read_text()
+txt = name.read_text()
 newVersion  = sys.argv[1]
 
 # get old version
