@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 import datetime
 
-name    = '_module_menu.php'
+name    = 'php/_module_menu.php'
 # load plugin file
 txt = Path(name).read_text()
 newVersion  = sys.argv[1]
