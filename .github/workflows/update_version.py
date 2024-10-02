@@ -6,12 +6,14 @@ import datetime
 print(pathlib.Path(__file__).parent.parent)
 
 p = Path('.')
-[x for x in p.iterdir() if x.is_dir()]
+for x in p.iterdir():
+    print(x)
 
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
 
 print(dirPath)
-[x for x in pathlib.Path(__file__).parent.parent.parent.iterdir() if x.is_dir()]
+for x in pathlib.Path(__file__).parent.parent.parent.iterdir():
+    print(x)
 
 name    = dirPath+'/php/_module_menu.php'
 path    = Path(name)
