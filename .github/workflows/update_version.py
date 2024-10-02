@@ -15,7 +15,7 @@ print(dirPath)
 for x in Path(dirPath + '/php').iterdir():
     print(x)
 
-name    = dirPath+'/php/_module_menu.php'
+name    = dirPath+'/php/__module_menu.php'
 path    = Path(name)
 
 # load plugin file
