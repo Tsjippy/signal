@@ -12,7 +12,7 @@ jobs:
         - uses: actions/setup-node@v4
 
         - name: Update version
-          run: python ./.github/workflows/update_version.py ${{ github.event.release.name }}
+          run: python -u ./.github/workflows/update_version.py ${{ github.event.release.name }}
 
         - name: Update module version
           uses: test-room-7/action-update-file@v1
@@ -23,7 +23,7 @@ jobs:
               commit-msg: Update module version
               github-token: ${{ secrets.GITHUB_TOKEN }}
         - name: Zip Folder
-          run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" "signalbot.db" "SignalBot.py" "CHANGELOG.md" "README.md" "*.code-workspace" "*.cmd" "test.php"
+          run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" "CHANGELOG.md" "README.md" "*.code-workspace" "*.cmd"
 
         - name: Release
           uses: softprops/action-gh-release@v2
