@@ -11,8 +11,8 @@ p = Path('.')
 dirPath = str(pathlib.Path(__file__).parent.parent.parent)
 
 print(dirPath)
-x for x in pathlib.Path(__file__).parent.parent.parent.iterdir() if x.is_dir():
-    print(x)
+[x for x in pathlib.Path(__file__).parent.parent.parent.iterdir() if x.is_dir()]
+
 name    = dirPath+'/php/_module_menu.php'
 path    = Path(name)
 
