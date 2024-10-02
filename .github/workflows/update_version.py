@@ -11,7 +11,7 @@ print(Path('_module_menu.php'))
 
 print(Path('/php/_module_menu.php'))
 
-name    = 'php/_module_menu.php'
+name    = '/php/_module_menu.php'
 
 # load plugin file
 txt = Path(name).read_text()
