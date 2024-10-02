@@ -7,18 +7,18 @@ jobs:
     name: Update module version
     runs-on: ubuntu-latest
     steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout
 
-        - uses: actions/setup-node@v1
+        - uses: actions/setup-node
 
         - name: Update version
           run: python ./.github/workflows/update_version.py ${{ github.event.release.name }}
 
         - name: Update module version
-          uses: test-room-7/action-update-file@v1
+          uses: test-room-7/action-update-file
           with:
               file-path: |
-                /php/_module_menu.php
+                _module_menu.php
                 CHANGELOG.md
               commit-msg: Update module version
               github-token: ${{ secrets.GITHUB_TOKEN }}
