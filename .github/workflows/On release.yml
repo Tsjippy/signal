@@ -7,18 +7,18 @@ jobs:
     name: Update module version
     runs-on: ubuntu-latest
     steps:
-        - uses: actions/checkout
+        - uses: actions/checkout@v4
 
-        - uses: actions/setup-node
+        - uses: actions/setup-node@v4
 
         - name: Update version
           run: python ./.github/workflows/update_version.py ${{ github.event.release.name }}
 
         - name: Update module version
-          uses: test-room-7/action-update-file
+          uses: test-room-7/action-update-file@v1
           with:
               file-path: |
-                _module_menu.php
+                php/_module_menu.php
                 CHANGELOG.md
               commit-msg: Update module version
               github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -26,7 +26,7 @@ jobs:
           run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" "signalbot.db" "SignalBot.py" "CHANGELOG.md" "README.md" "*.code-workspace" "*.cmd" "test.php"
 
         - name: Release
-          uses: softprops/action-gh-release@v1
+          uses: softprops/action-gh-release@v2
           if: startsWith(github.ref, 'refs/tags/')
           with:
             files: ${{ github.event.repository.name }}.zip
