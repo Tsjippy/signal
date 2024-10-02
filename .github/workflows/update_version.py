@@ -1,5 +1,6 @@
 import re
 import sys
+import pathlib
 from pathlib import Path
 import datetime
 
@@ -7,9 +8,15 @@ print('testing print')
 
 print(sys.path)
 
-print(Path('_module_menu.php'))
+dir_path = pathlib.Path(__file__).parent.parent.parent
 
-print(Path('/php/_module_menu.php'))
+try:
+    print(dir_path)
+    print(Path('_module_menu.php'))
+    txt = Path(name).read_text()
+except:
+    print(Path('/php/_module_menu.php'))
+    txt = Path('/php/_module_menu.php').read_text()
 
 name    = '/php/_module_menu.php'
 
