@@ -3,18 +3,14 @@ import sys
 from pathlib import Path
 import datetime
 
-print('testing print')
-
-print(sys.path)
-
-name    = './php/_module_menu.php'
+name    = './php/__module_menu.php'
 # load plugin file
 txt = Path(name).read_text()
 newVersion  = sys.argv[1]
 
 # get old version
 try:
-    oldVersion = re.search(r'\* const MODULE_VERSION		= [ \t]*\'([\d.]+)\'', txt).group(1)
+    oldVersion = re.search(r'const MODULE_VERSION		= [ \t]*\'([\d.]+)\'', txt).group(1)
 except Exception as e:
     exit()
 
