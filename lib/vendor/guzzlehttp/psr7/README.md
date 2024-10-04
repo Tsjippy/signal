@@ -24,8 +24,8 @@ composer require guzzlehttp/psr7
 
 | Version | Status              | PHP Version  |
 |---------|---------------------|--------------|
-| 1.x     | Security fixes only | >=5.4,<8.1   |
-| 2.x     | Latest              | >=7.2.5,<8.4 |
+| 1.x     | EOL (2024-06-30)    | >=5.4,<8.2   |
+| 2.x     | Latest              | >=7.2.5,<8.5 |
 
 
 ## AppendStream
@@ -436,7 +436,7 @@ will be parsed into `['foo[a]' => '1', 'foo[b]' => '2'])`.
 
 ## `GuzzleHttp\Psr7\Query::build`
 
-`public static function build(array $params, int|false $encoding = PHP_QUERY_RFC3986): string`
+`public static function build(array $params, int|false $encoding = PHP_QUERY_RFC3986, bool $treatBoolsAsInts = true): string`
 
 Build a query string from an array of key value pairs.
 
@@ -501,6 +501,13 @@ a message.
 `public static function readLine(StreamInterface $stream, ?int $maxLength = null): string`
 
 Read a line from the stream up to the maximum allowed buffer length.
+
+
+## `GuzzleHttp\Psr7\Utils::redactUserInfo`
+
+`public static function redactUserInfo(UriInterface $uri): UriInterface`
+
+Redact the password in the user info part of a URI.
 
 
 ## `GuzzleHttp\Psr7\Utils::streamFor`

@@ -1,2 +1,2 @@
 # signal
-A module for the sim-plugin to add signal messaging
+This module adds the possibility to send Signal messages to users or groups.<br>

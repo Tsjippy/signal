@@ -1,33 +1,7 @@
 # FILTERS
-- apply_filters("sim_{$type}_elements_filter", $elements, $userId);
-- apply_filters("sim_{$type}_html_filter", $html, $userId);
-- apply_filters('sim-forms-submission-updated', $message, $formTable, $elementName, $oldValue, $newValue);
-- apply_filters('sim-forms-before-showing-form', '', $this);
-- apply_filters('sim_before_form', '', $this->formName);
-- apply_filters('sim_formdata_retrieval_query', $query, $userId, $this);
-- apply_filters('sim_retrieved_formdata', $results, $userId, $this);
-- apply_filters('sim_formdata_retrieval_query', $query, $userId, $this);
-- apply_filters('sim_retrieved_formdata', $result, $userId, $this);
-- apply_filters('sim_remove_formdata', true, $userId, $submission);
-- apply_filters('sim_transform_formtable_data', $output, $elementName);
-- apply_filters('sim_form_actions', $actions);
-- apply_filters('sim-formresult-cell-opening-tag', $cellOpeningTag, $this, $columnSetting, $values);
-- apply_filters('sim_form_actions_html', $buttonsHtml, $values, $subId, $this);
-- apply_filters('sim-formstable-should-show', true, $this, $type);
-- apply_filters('sim-forms-elements', $this->formElements, $this, true);
-- apply_filters('sim-special-form-elements', $options);
-- apply_filters('sim-forms-before-saving-settings', $newSettings, $this, $formId);
-- apply_filters('sim-forms-elements', $wpdb->get_results($query), $this, false);
-- apply_filters('sim-forms-transform-empty', $replaceValue, $this, $match);
-- apply_filters('sim-forms-transform-array', implode(',', $replaceValue), $replaceValue, $this, $match);
-- apply_filters('sim_before_saving_formdata', $this->submission->formresults, $this);
-- apply_filters('sim_after_saving_formdata', $message, $this);
-- apply_filters('sim_form_extra_js', '', $this->formName, false);
-- apply_filters('sim_form_extra_js', '', $this->formName, true);
-- apply_filters('sim_add_form_defaults', $this->defaultValues, $this->userId, $this->formName);
-- apply_filters('sim_add_form_multi_defaults', $this->defaultArrayValues, $this->userId, $this->formName);
-- apply_filters('sim_forms_load_userdata', $this->usermeta, $this->userId);
-- apply_filters('sim-forms-element-html', $html, $element, $this);
-- apply_filters('sim-form-element-html', $html, $element, $this);
+- apply_filters('sim_signal_post_notification_message', $excerpt, $post);
+- apply_filters('sim_personal_signal_settings', '', $user, $prefs);
+- apply_filters( 'password_reset_expiration', DAY_IN_SECONDS );
+
 
 # Actions

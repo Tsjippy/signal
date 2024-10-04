@@ -17,7 +17,6 @@ add_filter('sim_submenu_description', function($description, $moduleSlug){
 	ob_start();
 	?>
 	<p>
-		This module adds the possibility to send Signal messages to users or groups.<br>
 		<?php
 		if(empty(shell_exec('javac -version'))){
 			?>
