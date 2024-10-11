@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- redering of asset urls
 
 ### Fixed
 
