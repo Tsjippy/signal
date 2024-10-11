@@ -763,7 +763,7 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 							$sender	= $message['sender'];
 						}else{
 							$sender	= $sender[0];
-							$sender	= SIM\USERPAGE\getUserPageLink($sender->ID);
+							$sender	= SIM\USERPAGES\getUserPageLink($sender->ID);
 						}
 
 						// in case of private message replace the phonenumber in the chat for the name as well
