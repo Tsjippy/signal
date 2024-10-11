@@ -5,7 +5,7 @@ namespace SIM;
 add_action( 'enqueue_block_editor_assets', function() {
     wp_enqueue_script(
         'sim-signal-block',
-        plugins_url('blocks/signal_options/build/index.js', __DIR__),
+        pathToUrl(MODULE_PATH.'blocks/signal_options/build/index.js'),
         [ 'wp-blocks', 'wp-dom', 'wp-dom-ready', 'wp-edit-post' ],
         STYLE_VERSION
     );
