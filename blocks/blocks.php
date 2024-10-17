@@ -1,11 +1,12 @@
 <?php
-namespace SIM;
+namespace SIM\SIGNAL;
+use SIM;
 
 // Load the js file to filter all blocks
 add_action( 'enqueue_block_editor_assets', function() {
     wp_enqueue_script(
         'sim-signal-block',
-        pathToUrl(MODULE_PATH.'blocks/signal_options/build/index.js'),
+        SIM\pathToUrl(MODULE_PATH.'blocks/signal_options/build/index.js'),
         [ 'wp-blocks', 'wp-dom', 'wp-dom-ready', 'wp-edit-post' ],
         STYLE_VERSION
     );
