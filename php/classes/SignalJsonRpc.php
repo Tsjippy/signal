@@ -543,6 +543,7 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  array|bool              If more than one recipient returns an array of results, if only one returns a boolean true or false
      */
     public function isRegistered($recipient){
+        // this commands needs a higher timeout than usual
         stream_set_timeout($this->socket, 1);
         
         if(!is_array($recipient)){
