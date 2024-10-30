@@ -7,6 +7,7 @@
 
 ### Fixed
 - style constant problem
+- isRegistered command
 
 ### Updated
 
