@@ -6,10 +6,15 @@
 ### Changed
 
 ### Fixed
-- style constant problem
-- isRegistered command
 
 ### Updated
+
+## [8.1.4] - 2024-10-30
+
+
+### Fixed
+- style constant problem
+- isRegistered command
 
 ## [8.1.3] - 2024-10-17
 
