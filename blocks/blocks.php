@@ -8,7 +8,7 @@ add_action( 'enqueue_block_editor_assets', function() {
         'sim-signal-block',
         SIM\pathToUrl(MODULE_PATH.'blocks/signal_options/build/index.js'),
         [ 'wp-blocks', 'wp-dom', 'wp-dom-ready', 'wp-edit-post' ],
-        STYLE_VERSION
+        MODULE_VERSION
     );
 });
 

@@ -141,6 +141,11 @@ class SignalJsonRpc extends AbstractSignal{
         }
         flush();
 
+        $streamMetaData         = stream_get_meta_data($this->socket);
+        if ($streamMetaData['timed_out']) {
+            SIM\printArray("Signal Socket Timed Out");
+        }
+
         $this->lastResponse     = trim($response);
         $this->invalidNumber    = false;
 
@@ -538,7 +543,7 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  array|bool              If more than one recipient returns an array of results, if only one returns a boolean true or false
      */
     public function isRegistered($recipient){
-        return true; // until this is fixed
+        stream_set_timeout($this->socket, 1);
         
         if(!is_array($recipient)){
             $recipient  = [$recipient];
