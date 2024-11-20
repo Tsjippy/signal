@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_action( 'rest_api_init', function () {
+add_action( 'rest_api_init', __NAMESPACE__.'\restApiInit');
+function restApiInit() {
 	//Route for notification messages
 	register_rest_route( RESTAPIPREFIX, '/notifications', array(
 		'methods' => 'GET',
@@ -37,7 +38,7 @@ add_action( 'rest_api_init', function () {
 			)
 		)
 	);
-} );
+}
 
 function botMessages( $delete = true) {
 	if (is_user_logged_in()) {

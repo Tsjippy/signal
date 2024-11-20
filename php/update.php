@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_action('sim_plugin_update', function($oldVersion){
+add_action('sim_plugin_update', __NAMESPACE__.'\pluginUpdate');
+function pluginUpdate($oldVersion){
     global $wpdb;
     require_once ABSPATH . 'wp-admin/install-helper.php';
 
@@ -29,4 +30,4 @@ add_action('sim_plugin_update', function($oldVersion){
     if($oldVersion < '2.36.4'){
         maybe_add_column($signal->receivedTableName, 'attachments', "ALTER TABLE $signal->receivedTableName ADD COLUMN `attachments` longtext");
     }
-});
+}

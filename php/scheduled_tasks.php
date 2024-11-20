@@ -3,7 +3,8 @@ namespace SIM\SIGNAL;
 use SIM;
 
 
-add_action('init', function(){
+add_action('init', __NAMESPACE__.'\taskInit');
+function taskInit(){
 	//add action for use in scheduled task
 	add_action( 'check_signal_action', function(){
         $signal = new SignalCommandLine();
@@ -20,7 +21,7 @@ add_action('init', function(){
     add_action( 'retry_failed_signal_messages_action', __NAMESPACE__.'\retryFailedMessages');
 
     add_action( 'signal_number_reminder_action', __NAMESPACE__.'\signalNumberReminder');
-});
+}
 
 
 function scheduleTasks(){

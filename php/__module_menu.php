@@ -8,7 +8,8 @@ DEFINE(__NAMESPACE__.'\MODULE_SLUG', strtolower(basename(dirname(__DIR__))));
 
 DEFINE(__NAMESPACE__.'\MODULE_PATH', str_replace('\\', '/', plugin_dir_path(__DIR__)));
 
-add_filter('sim_submenu_description', function($description, $moduleSlug){
+add_filter('sim_submenu_description', __NAMESPACE__.'\moduleDescription', 10, 2);
+function moduleDescription($description, $moduleSlug){
 	//module slug should be the same as the constant
 	if($moduleSlug != MODULE_SLUG)	{
 		return $description;
@@ -35,7 +36,7 @@ add_filter('sim_submenu_description', function($description, $moduleSlug){
 	</p>
 	<?php
 	return $description.ob_get_clean();
-}, 10, 2);
+}
 
 function registerForm(){
 	?>
@@ -66,7 +67,8 @@ function registerForm(){
 	<?php
 }
 
-add_action('sim-admin-settings-post', function(){
+add_action('sim-admin-settings-post', __NAMESPACE__.'\settingsPost' );
+function settingsPost(){
 
 	$local	= SIM\getModuleOption(MODULE_SLUG, 'local');
 
@@ -113,7 +115,7 @@ add_action('sim-admin-settings-post', function(){
 	}elseif(isset($_GET['link'])){
 		echo $signal->link();
 	}
-});
+}
 
  /**
  * Shows the options when connected to Signal
@@ -274,7 +276,8 @@ function notLocalOptions($settings){
 	<?php
 }
 
-add_filter('sim_submenu_options', function($optionsHtml, $moduleSlug, $settings){
+add_filter('sim_submenu_options', __NAMESPACE__.'\moduleOptions', 10, 3);
+function moduleOptions($optionsHtml, $moduleSlug, $settings){
 	//module slug should be the same as grandparent folder name
 	if($moduleSlug != MODULE_SLUG || isset($_GET['register']) || isset($_POST['captcha']) || isset($_POST['verification-code'])){
 		return $optionsHtml;
@@ -340,7 +343,7 @@ add_filter('sim_submenu_options', function($optionsHtml, $moduleSlug, $settings)
 	}
 
 	return ob_get_clean();
-}, 10, 3);
+}
 
 function processActions($settings){
 	if(!isset($_REQUEST['action'])){
@@ -847,7 +850,8 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 	return ob_get_clean();
 }
 
-add_filter('sim_module_data', function($dataHtml, $moduleSlug, $settings){
+add_filter('sim_module_data', __NAMESPACE__.'\moduleData', 10, 3);
+function moduleData($dataHtml, $moduleSlug, $settings){
 	//module slug should be the same as grandparent folder name
 	if($moduleSlug != MODULE_SLUG){
 		return $dataHtml;
@@ -908,9 +912,10 @@ add_filter('sim_module_data', function($dataHtml, $moduleSlug, $settings){
 	$html	.= $receivedTable;
 
 	return $html;
-}, 10, 3);
+}
 
-add_filter('sim_module_functions', function($dataHtml, $moduleSlug, $settings){
+add_filter('sim_module_functions', __NAMESPACE__.'\moduleFunctions', 10, 3);
+function moduleFunctions($dataHtml, $moduleSlug, $settings){
 	//module slug should be the same as grandparent folder name
 	if($moduleSlug != MODULE_SLUG){
 		return $dataHtml;
@@ -1074,9 +1079,10 @@ add_filter('sim_module_functions', function($dataHtml, $moduleSlug, $settings){
 	<?php
 
 	return ob_get_clean();
-}, 10, 3);
+}
 
-add_filter('sim_email_settings', function($optionsHtml, $moduleSlug, $settings){
+add_filter('sim_email_settings', __NAMESPACE__.'\emailSettings', 10, 3);
+function emailSettings($optionsHtml, $moduleSlug, $settings){
 	//module slug should be the same as grandparent folder name
 	if($moduleSlug != MODULE_SLUG || !SIM\getModuleOption(MODULE_SLUG, 'local')){
 		return $optionsHtml;
@@ -1101,9 +1107,10 @@ add_filter('sim_email_settings', function($optionsHtml, $moduleSlug, $settings){
 	$email->printInputs($settings);
 
 	return ob_get_clean();
-}, 10, 3);
+}
 
-add_filter('sim_module_updated', function($options, $moduleSlug){
+add_filter('sim_module_updated', __NAMESPACE__.'\moduleUpdated', 10, 2);
+function moduleUpdated($options, $moduleSlug){
 	//module slug should be the same as grandparent folder name
 	if($moduleSlug != MODULE_SLUG){
 		return $options;
@@ -1118,4 +1125,4 @@ add_filter('sim_module_updated', function($options, $moduleSlug){
 	scheduleTasks();
 
 	return $options;
-}, 10, 2);
+}

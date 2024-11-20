@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_action('sim-phonenumber-updated', function($phonenumber, $userId){
+add_action('sim-phonenumber-updated', __NAMESPACE__.'\phoneNumberUpdated', 10, 2);
+function phoneNumberUpdated($phonenumber, $userId){
 
     $groupPaths		= SIM\getModuleOption(MODULE_SLUG, 'invgroups');
 
@@ -50,4 +51,4 @@ add_action('sim-phonenumber-updated', function($phonenumber, $userId){
         $message	= "Hi $firstName\n\nI noticed you just updated your phonenumber on ".SITEURLWITHOUTSCHEME.".\n\nIf you want to join our Signal group with this number you can use this url:\n$link";
         sendSignalMessage($message, $phonenumber);
     }
-}, 10, 2);
+}

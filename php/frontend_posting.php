@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_action('sim_frontend_post_after_content', function($frontendContend){
+add_action('sim_frontend_post_after_content', __NAMESPACE__.'\afterContent');
+function afterContent($frontendContend){
     $hidden	= 'hidden';
     if(
         $frontendContend->fullrights &&                             // we have publish rights
@@ -48,10 +49,11 @@ add_action('sim_frontend_post_after_content', function($frontendContend){
         </div>
     </div>
     <?php
-});
+}
 
 // Send Signal message about the new or updated post
-add_action('sim_after_post_save', function($post){
+add_action('sim_after_post_save', __NAMESPACE__.'\afterPostSave', 999);
+function afterPostSave($post){
     if(isset($_POST['send_signal']) && $_POST['send_signal']){
         update_metadata( 'post', $post->ID, 'send_signal', true);
         update_metadata( 'post', $post->ID, 'signal_message_type', $_POST['signalmessagetype']);
@@ -63,11 +65,12 @@ add_action('sim_after_post_save', function($post){
         delete_metadata( 'post', $post->ID, 'signal_url');
         delete_metadata( 'post', $post->ID, 'signal_extra_message');
     }
-}, 999);
+}
 
-add_action( 'wp_after_insert_post', function( $postId, $post ){
+add_action( 'wp_after_insert_post', __NAMESPACE__.'\afterInsertPost', 10, 3);
+function afterInsertPost( $postId, $post ){
     if(in_array($post->post_status, ['publish'])){        
         //Send signal message
         sendPostNotification($post);
     }
-}, 10, 3);
+}

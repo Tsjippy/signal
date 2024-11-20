@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_filter('sim-form-element-html', function($html, $element, $formBuilder){
+add_filter('sim-form-element-html', __NAMESPACE__.'\elmentHtml', 10, 3);
+function elmentHtml($html, $element, $formBuilder){
     if($element->name == 'phonenumbers'){
         $signalNr   = get_user_meta($formBuilder->userId, 'signal_number', true);
 
@@ -25,6 +26,6 @@ add_filter('sim-form-element-html', function($html, $element, $formBuilder){
         }
     }
     return $html;
-}, 10, 3);
+}
 
 //<input type='tel' name='phonenumbers[0]' class=' formfield formfieldinput' pattern="\+[0-9]{9,}" title="Phonenumber starting with a +. Only numbers. Example: +2349041234567" value='+2349045252526'>

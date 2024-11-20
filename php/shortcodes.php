@@ -4,7 +4,8 @@ use SIM;
 
 
 //Add Signal messages overview shortcode
-add_shortcode('signal_messages',function(){
+add_shortcode('signal_messages', __NAMESPACE__.'\signalMessages');
+function signalMessages(){
 	$signalMessages = get_option('signal_bot_messages');
 	
 	$html 			= '';
@@ -42,4 +43,4 @@ add_shortcode('signal_messages',function(){
 		$html .= "No Signal messages found";
 	}
 	return $html;
-});
+}

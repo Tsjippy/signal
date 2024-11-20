@@ -2,7 +2,8 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-add_action('sim_after_pdf_text', function($cellText, $pdf, $x, $y, $cellWidth){
+add_action('sim_after_pdf_text', __NAMESPACE__.'\afterPdf', 10, 5);
+function afterPdf($cellText, $pdf, $x, $y, $cellWidth){
     if(is_array($cellText)){
         foreach($cellText as $index=>$phoneNr){
             if($phoneNr[0] == '+'){
@@ -19,5 +20,5 @@ add_action('sim_after_pdf_text', function($cellText, $pdf, $x, $y, $cellWidth){
         }
     }
 
-}, 10, 5);
+}
 
