@@ -6,10 +6,7 @@ use SIM;
 add_action('init', __NAMESPACE__.'\taskInit');
 function taskInit(){
 	//add action for use in scheduled task
-	add_action( 'check_signal_action', function(){
-        $signal = new SignalCommandLine();
-        $signal->checkPrerequisites();
-    });
+	add_action( 'check_signal_action', __NAMESPACE__.'\checkSignal');
 
     // needed for async signal messages
     add_action( 'schedule_signal_message_action', __NAMESPACE__.'\sendSignalMessage', 10, 8);
@@ -23,6 +20,10 @@ function taskInit(){
     add_action( 'signal_number_reminder_action', __NAMESPACE__.'\signalNumberReminder');
 }
 
+function checkSignal(){
+    $signal = new SignalCommandLine();
+    $signal->checkPrerequisites();
+}
 
 function scheduleTasks(){
     SIM\scheduleTask('check_signal_action', 'daily');
