@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- removed style argument
 
 ### Fixed
 
 ### Updated
+
+## [8.1.7] - 2024-11-28
+
+
+### Changed
+- removed style argument
 
 ## [8.1.6] - 2024-11-22
 
