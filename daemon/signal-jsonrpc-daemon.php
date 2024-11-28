@@ -20,7 +20,7 @@ use SIM\SIGNAL;
 define( 'WP_USE_THEMES', false ); // Do not use the theme files
 define( 'COOKIE_DOMAIN', false ); // Do not append verify the domain to the cookie
 
-require(__DIR__."/../../../../../../../wp-load.php");
+require(__DIR__."/../../../../wp-load.php");
 require_once ABSPATH . WPINC . '/functions.php';
 
 //print(ob_get_clean());

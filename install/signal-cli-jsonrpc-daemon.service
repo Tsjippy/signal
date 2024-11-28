@@ -5,7 +5,7 @@ After=signal-cli-jsonrpc.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/php "/home/simnige1/web/simnigeria.org/public_html/wp-content/plugins/sim-plugin/includes/modules/signal/daemon/signal-jsonrpc-daemon.php"
+ExecStart=/usr/bin/php "/home/simnige1/web/simnigeria.org/public_html/wp-content/sim-modules/signal/daemon/signal-jsonrpc-daemon.php"
 
 User=signal-cli
 Restart = on-failure 
