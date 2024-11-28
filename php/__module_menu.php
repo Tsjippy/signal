@@ -940,7 +940,7 @@ function moduleFunctions($dataHtml, $moduleSlug, $settings){
 
 		// reply to previous message
 		if(!empty($_REQUEST['timesent']) && !empty($_REQUEST['replymessage']) && !empty($_REQUEST['author'])){
-			echo sendSignalMessage($message, stripslashes($_REQUEST['recipient']),'', intval($_REQUEST['timesent']), $_REQUEST['author'], $_REQUEST['replymessage']);
+			echo sendSignalMessage($message, stripslashes($_REQUEST['recipient']), '', intval($_REQUEST['timesent']), $_REQUEST['author'], $_REQUEST['replymessage']);
 		}else{
 			echo sendSignalMessage($message, stripslashes($_REQUEST['recipient']));
 		}

@@ -162,7 +162,7 @@ class SignalCommandLine extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function send($recipients, string $message, $attachments = null, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style=''){
+    public function send($recipients, string $message, $attachments = null, int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
         $groupId    = null;
         if(!is_array($recipients)){
             if(strpos( $recipients , '+' ) === 0){

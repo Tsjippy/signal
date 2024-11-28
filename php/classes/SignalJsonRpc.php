@@ -544,7 +544,13 @@ class SignalJsonRpc extends AbstractSignal{
      */
     public function isRegistered($recipient){
         // this commands needs a higher timeout than usual
-        stream_set_timeout($this->socket, 1);
+        try{
+            stream_set_timeout($this->socket, 1);
+        }catch (\Exception $e) {
+            SIM\printArray($e);    
+        
+            SIM\printArray($this->socket); 
+        }
         
         if(!is_array($recipient)){
             $recipient  = [$recipient];
@@ -576,7 +582,7 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style=''){
+    public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
         if(empty($recipients)){
             return new WP_Error('Signal', 'You should submit at least one recipient');
         }
@@ -598,6 +604,7 @@ class SignalJsonRpc extends AbstractSignal{
             }
         }
 
+        // parse any styling
         extract($this->parseMessageLayout($message));
 
         $params["message"]  = $message;
@@ -655,7 +662,7 @@ class SignalJsonRpc extends AbstractSignal{
     /**
      * Compliancy function
      */
-    public function sendGroupMessage($message, $groupId, $attachments=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style=''){
+    public function sendGroupMessage($message, $groupId, $attachments=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
         return $this->send($groupId, $message, $attachments, $timeStamp, $quoteAuthor, $quoteMessage);
     }
 

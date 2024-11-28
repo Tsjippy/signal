@@ -83,12 +83,11 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * @param	int			$timeStamp		The timestam of a message to reply to
  * @param	string		$quoteAuthor	The name of the author to respond to
  * @param	string		$quoteMessage	The message to respond to
- * @param	string		$style			Any styling of the message
  * @param   bool        $getResult  	Whether we should return the result, default true
  * 
  * @return	string					the result
  */
-function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style='', $getResult=true){
+function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber	= $recipient;
 	
 	// do not send on localhost
@@ -123,7 +122,7 @@ function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $
 	}
 
 	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
-		return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $style, $getResult);
+		return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $getResult);
 	}else{
 		return sendSignalFromExternal($message, $phonenumber, $images);
 	}
@@ -143,7 +142,7 @@ function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $
  * 
  * @return	string					the result
  */
-function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style='', $getResult=true){
+function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber		= $recipient;
 
 	if(strlen($phonenumber) < 10){
@@ -154,11 +153,11 @@ function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $q
 	$signal					= getSignalInstance($getResult);
 
 	if(str_contains($phonenumber, ',')){
-		$signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $style);
+		$signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage);
 		return;
 	}
 
-	$result	= $signal->send($phonenumber, $message, $images, $timeStamp, $quoteAuthor, $quoteMessage, $style);
+	$result	= $signal->send($phonenumber, $message, $images, $timeStamp, $quoteAuthor, $quoteMessage);
 
 	return $result;
 }

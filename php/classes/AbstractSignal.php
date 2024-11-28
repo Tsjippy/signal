@@ -60,7 +60,7 @@ abstract class AbstractSignal extends Signal {
      *
      * @return bool|string
      */
-    abstract public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style='');
+    abstract public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='');
 
     /**
      * Send a message to a group
@@ -71,7 +71,7 @@ abstract class AbstractSignal extends Signal {
      *
      * @return bool|string
      */
-    abstract public function sendGroupMessage($message, $groupId, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $style='');
+    abstract public function sendGroupMessage($message, $groupId, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='');
 
     /**
      * Mark a message as read
