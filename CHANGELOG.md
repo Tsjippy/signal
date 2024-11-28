@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- removed style argument
 
 ### Fixed
 
