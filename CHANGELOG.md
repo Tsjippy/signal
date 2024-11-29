@@ -7,6 +7,7 @@
 
 ### Fixed
 - signal bot
+- signal styling issue
 
 ### Updated
 
