@@ -402,19 +402,10 @@ class Signal{
 
 		// we found some layout in the text
 		if($result){
-			$shortened	= 0;
 			foreach($matches[0] as $index=>$match){
 				$capture		= $match[0];
-				$baseStart		= $match[1];
 				$typeIndicator	= $matches[1][$index][0];
 				$strWithoutType	= $matches[2][$index][0];
-
-				$start	= $baseStart - $shortened; // start postion without previous removed chars
-				if($start < 0){
-					$start = 0;
-				}
-
-				$length	= strlen($strWithoutType);
 
 				switch($typeIndicator){
 					case 'b':
@@ -439,13 +430,15 @@ class Signal{
 				if(empty($type)){
 					continue;
 				}
+
+                $start      = mb_strpos($message, $capture);
+
+				$length	    = mb_strlen($strWithoutType);
 				
 				$style[]	= "$start:$length:$type";
 				
 				// replace without layout
-				$message	= substr_replace($message, $strWithoutType, $baseStart - $shortened, strlen($capture));
-
-				$shortened	= $shortened + 5 + (2 * strlen($typeIndicator)); // we remove at least 5 characters (<> and </> plus 2 times the indicater chars)
+				$message	= str_replace($capture, $strWithoutType, $message);
 			}
 		}
 
