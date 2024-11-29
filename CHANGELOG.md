@@ -6,10 +6,15 @@
 ### Changed
 
 ### Fixed
-- signal bot
-- signal styling issue
 
 ### Updated
+
+## [8.1.8] - 2024-11-29
+
+
+### Fixed
+- signal bot
+- signal styling issue
 
 ## [8.1.7] - 2024-11-28
 
