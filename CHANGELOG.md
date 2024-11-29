@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- signal bot
 
 ### Updated
 
