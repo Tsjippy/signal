@@ -2,13 +2,18 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- replace html tags with signal layout
 
 ### Changed
 
 ### Fixed
 
 ### Updated
+
+## [8.1.9] - 2024-12-01
+
+
+### Added
+- replace html tags with signal layout
 
 ## [8.1.8] - 2024-11-29
 

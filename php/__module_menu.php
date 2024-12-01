@@ -2,7 +2,7 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-const MODULE_VERSION		= '8.1.8';
+const MODULE_VERSION		= '8.1.9';
 //module slug is the same as grandparent folder name
 DEFINE(__NAMESPACE__.'\MODULE_SLUG', strtolower(basename(dirname(__DIR__))));
 
