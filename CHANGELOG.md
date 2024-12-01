@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- replace html tags with signal layout
 
 ### Changed
 
