@@ -25,7 +25,6 @@ require_once ABSPATH . WPINC . '/functions.php';
 
 //print(ob_get_clean());
 
-
 /* Remove the execution time limit */
 set_time_limit(0);
 

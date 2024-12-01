@@ -395,6 +395,37 @@ class Signal{
      * Parses signal-cli message layout
      */
     protected function parseMessageLayout($message){
+        // replace html tags with signal styling
+        $message	= str_replace(
+            [
+                "&nbsp;", 
+                '&amp;',
+                '<br>',
+                '<strong>',
+                '</strong>',
+                '<em>',
+                '</em>',
+                '<details>',
+                '</details>',
+                '<s>',
+                '</s>'
+            ], 
+            [
+                ' ',
+                '&',
+                "\n",
+                '<b>',
+                '</b>',
+                '<i>',
+                '</i>',
+                '<spoiler>',
+                '</spoiler>',
+                '<ss>',
+                '</ss>'
+            ], 
+            $message
+        );
+        
         $style		= [];
 
         // parse layout

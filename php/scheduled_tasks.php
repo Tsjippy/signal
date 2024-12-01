@@ -2,7 +2,6 @@
 namespace SIM\SIGNAL;
 use SIM;
 
-
 add_action('init', __NAMESPACE__.'\taskInit');
 function taskInit(){
 	//add action for use in scheduled task
