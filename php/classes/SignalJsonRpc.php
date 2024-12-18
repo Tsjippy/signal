@@ -546,8 +546,8 @@ class SignalJsonRpc extends AbstractSignal{
         // this commands needs a higher timeout than usual
         try{
             stream_set_timeout($this->socket, 1);
-        }catch (\Exception $e) {
-            SIM\printArray($e);    
+        }catch (\Error $e) {
+            SIM\printArray($e);
         
             SIM\printArray($this->socket); 
         }
