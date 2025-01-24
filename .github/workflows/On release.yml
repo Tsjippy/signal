@@ -23,7 +23,7 @@ jobs:
               commit-msg: Update module version
               github-token: ${{ secrets.GITHUB_TOKEN }}
         - name: Zip Folder
-          run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" "CHANGELOG.md" "README.md" "*.code-workspace" "*.cmd"
+          run: zip -r ${{ github.event.repository.name }}.zip . -x ".git/*" ".github/*" "phpcs.xml" "composer.json" "composer.lock" ".gitignore" "CHANGELOG.md" "*.code-workspace" "*.cmd"
 
         - name: Release
           uses: softprops/action-gh-release@v2
