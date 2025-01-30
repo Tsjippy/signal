@@ -77,13 +77,13 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
 /**
  * Send a message on Signal
  * 
- * @param	string		$message		The message
- * @param	string		$recipient		The recipient
- * @param	array|int	$postId			The post id or an array of filepaths to pictures
- * @param	int			$timeStamp		The timestam of a message to reply to
- * @param	string		$quoteAuthor	The name of the author to respond to
- * @param	string		$quoteMessage	The message to respond to
- * @param   bool        $getResult  	Whether we should return the result, default true
+ * @param	string				$message		The message
+ * @param	string|int|WP_User	$recipient		The recipient phone number, or user id or user object
+ * @param	array|int			$postId			The post id or an array of filepaths to pictures
+ * @param	int					$timeStamp		The timestam of a message to reply to
+ * @param	string				$quoteAuthor	The name of the author to respond to
+ * @param	string				$quoteMessage	The message to respond to
+ * @param   bool        		$getResult  	Whether we should return the result, default true
  * 
  * @return	string					the result
  */
