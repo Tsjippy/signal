@@ -735,7 +735,8 @@ class SignalJsonRpc extends AbstractSignal{
             "targetTimestamp"   => intval($targetSentTimestamp)
         ];
 
-        if(str_contains($recipients, '+')){
+        $firstCharacter = mb_substr($recipients, 0, 1);
+        if($firstCharacter == '+'){
             $param['recipient'] = $recipients;
         }else{
             $param['groupId']   = $recipients;
