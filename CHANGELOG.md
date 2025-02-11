@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- sim_module_updated filter to new format
 
 ### Fixed
 
 ### Updated
+
+## [8.2.1] - 2025-02-11
+
+
+### Changed
+- sim_module_updated filter to new format
 
 ## [8.2.0] - 2025-02-09
 
