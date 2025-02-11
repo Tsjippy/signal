@@ -1109,13 +1109,8 @@ function emailSettings($optionsHtml, $moduleSlug, $settings){
 	return ob_get_clean();
 }
 
-add_filter('sim_module_updated', __NAMESPACE__.'\moduleUpdated', 10, 2);
-function moduleUpdated($options, $moduleSlug){
-	//module slug should be the same as grandparent folder name
-	if($moduleSlug != MODULE_SLUG){
-		return $options;
-	}
-
+add_filter('sim_module_signal_after_save', __NAMESPACE__.'\moduleUpdated');
+function moduleUpdated($options){
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
     $signal	= new Signal();
