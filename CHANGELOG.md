@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- better layout parsing
 
 ### Fixed
 
