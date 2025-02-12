@@ -395,41 +395,35 @@ class Signal{
      * Parses signal-cli message layout
      */
     protected function parseMessageLayout($message){
+        $replaceTags    = [
+            "&nbsp;"        => ' ',
+            '&amp;'         => '&',
+            '<br>'          => "\n",
+            '<br />'        => "\n",
+            '<strong>'      => '<b>',
+            '</strong>'     => '</b>',
+            '<em>'          => '<i>',
+            '</em>'         => '</i>',
+            '<details>'     => '<spoiler>',
+            '</details>'    => '</spoiler>',
+            '<s>'           => '<ss>',
+            '</s>'          => '</ss>'
+        ];
+
+        // Strip unwanted html
+        $message    = strip_tags($message, [...array_keys($replaceTags), '<b>', '</b>']);
+
         // replace html tags with signal styling
         $message	= str_replace(
-            [
-                "&nbsp;", 
-                '&amp;',
-                '<br>',
-                '<strong>',
-                '</strong>',
-                '<em>',
-                '</em>',
-                '<details>',
-                '</details>',
-                '<s>',
-                '</s>'
-            ], 
-            [
-                ' ',
-                '&',
-                "\n",
-                '<b>',
-                '</b>',
-                '<i>',
-                '</i>',
-                '<spoiler>',
-                '</spoiler>',
-                '<ss>',
-                '</ss>'
-            ], 
+            array_keys($replaceTags), 
+            array_values($replaceTags), 
             $message
         );
         
         $style		= [];
 
         // parse layout
-		$result	= preg_match_all('/<(b|i|spoiler|ss|tt)>(.*?)<\/(?:b|i|spoiler|ss|tt)>/', $message, $matches, PREG_OFFSET_CAPTURE);
+		$result	= preg_match_all('/<(b|i|spoiler|ss|tt)>(.*?)<\/(?:b|i|spoiler|ss|tt)>/s', $message, $matches, PREG_OFFSET_CAPTURE);
 
 		// we found some layout in the text
 		if($result){

@@ -173,6 +173,9 @@ class SignalCommandLine extends AbstractSignal{
             }
         }
 
+        // parse any styling
+        extract($this->parseMessageLayout($message));
+
         $this->baseCommand();
 
         $this->command->nonBlockingMode = true;
