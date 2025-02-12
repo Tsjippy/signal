@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- better layout parsing
 
 ### Fixed
 
 ### Updated
+
+## [8.2.2] - 2025-02-12
+
+
+### Changed
+- better layout parsing
 
 ## [8.2.1] - 2025-02-11
 
