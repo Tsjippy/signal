@@ -8,13 +8,8 @@ DEFINE(__NAMESPACE__.'\MODULE_SLUG', strtolower(basename(dirname(__DIR__))));
 
 DEFINE(__NAMESPACE__.'\MODULE_PATH', str_replace('\\', '/', plugin_dir_path(__DIR__)));
 
-add_filter('sim_submenu_description', __NAMESPACE__.'\moduleDescription', 10, 2);
-function moduleDescription($description, $moduleSlug){
-	//module slug should be the same as the constant
-	if($moduleSlug != MODULE_SLUG)	{
-		return $description;
-	}
-	
+add_filter('sim_submenu_signal_description', __NAMESPACE__.'\moduleDescription');
+function moduleDescription($description){
 	ob_start();
 	?>
 	<p>
@@ -276,13 +271,8 @@ function notLocalOptions($settings){
 	<?php
 }
 
-add_filter('sim_submenu_options', __NAMESPACE__.'\moduleOptions', 10, 3);
-function moduleOptions($optionsHtml, $moduleSlug, $settings){
-	//module slug should be the same as grandparent folder name
-	if($moduleSlug != MODULE_SLUG || isset($_GET['register']) || isset($_POST['captcha']) || isset($_POST['verification-code'])){
-		return $optionsHtml;
-	}
-
+add_filter('sim_submenu_signal_options', __NAMESPACE__.'\moduleOptions', 10, 2);
+function moduleOptions($optionsHtml, $settings){
 	$local	= false;
 	if(isset($settings['local']) && $settings['local']){
 		$local	= true;
@@ -342,7 +332,7 @@ function moduleOptions($optionsHtml, $moduleSlug, $settings){
 		notLocalOptions($settings);
 	}
 
-	return ob_get_clean();
+	return $optionsHtml.ob_get_clean();
 }
 
 function processActions($settings){
@@ -850,13 +840,8 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 	return ob_get_clean();
 }
 
-add_filter('sim_module_data', __NAMESPACE__.'\moduleData', 10, 3);
-function moduleData($dataHtml, $moduleSlug, $settings){
-	//module slug should be the same as grandparent folder name
-	if($moduleSlug != MODULE_SLUG){
-		return $dataHtml;
-	}
-
+add_filter('sim_module_signal_data', __NAMESPACE__.'\moduleData', 10, 3);
+function moduleData($html, $settings){
 	$local	= false;
 	if(isset($settings['local']) && $settings['local']){
 		$local	= true;
@@ -881,7 +866,7 @@ function moduleData($dataHtml, $moduleSlug, $settings){
 		$endDate	= $_REQUEST['end-date'];
 	}
 
-	$html			= messagesHeader($settings, $startDate, $endDate, $amount);
+	$html			.= messagesHeader($settings, $startDate, $endDate, $amount);
 	
 	$html			.= processActions($settings);
 
@@ -914,13 +899,8 @@ function moduleData($dataHtml, $moduleSlug, $settings){
 	return $html;
 }
 
-add_filter('sim_module_functions', __NAMESPACE__.'\moduleFunctions', 10, 3);
-function moduleFunctions($dataHtml, $moduleSlug, $settings){
-	//module slug should be the same as grandparent folder name
-	if($moduleSlug != MODULE_SLUG){
-		return $dataHtml;
-	}
-
+add_filter('sim_module_signal_functions', __NAMESPACE__.'\moduleFunctions', 10, 2);
+function moduleFunctions($html, $settings){
 	wp_enqueue_script('smiley');
 	
 	ob_start();
@@ -1078,14 +1058,14 @@ function moduleFunctions($dataHtml, $moduleSlug, $settings){
 
 	<?php
 
-	return ob_get_clean();
+	return $html.ob_get_clean();
 }
 
-add_filter('sim_email_settings', __NAMESPACE__.'\emailSettings', 10, 3);
-function emailSettings($optionsHtml, $moduleSlug, $settings){
+add_filter('sim_email_signal_settings', __NAMESPACE__.'\emailSettings', 10, 2);
+function emailSettings($html, $settings){
 	//module slug should be the same as grandparent folder name
-	if($moduleSlug != MODULE_SLUG || !SIM\getModuleOption(MODULE_SLUG, 'local')){
-		return $optionsHtml;
+	if(!SIM\getModuleOption(MODULE_SLUG, 'local')){
+		return $html;
 	}
 
 	ob_start();
@@ -1106,7 +1086,7 @@ function emailSettings($optionsHtml, $moduleSlug, $settings){
 
 	$email->printInputs($settings);
 
-	return ob_get_clean();
+	return $html.ob_get_clean();
 }
 
 add_filter('sim_module_signal_after_save', __NAMESPACE__.'\moduleUpdated');
