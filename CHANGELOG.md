@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- module hooks now include module slug
 
 ### Fixed
 
