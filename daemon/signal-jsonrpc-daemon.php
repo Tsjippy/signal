@@ -229,6 +229,8 @@ function getAnswer($message, $source){
 
     if($lowerMessage == 'test'){
         $response    = 'Awesome!';
+    }elseif(str_contains($lowerMessage, 'where are you')){
+        $response    = 'Sorry for being away, but I am now back in full capacity!';
     }elseif($lowerMessage == 'thanks' || str_contains($lowerMessage, 'thanks')){
         $response = 'You`re welcome!';
     }elseif(str_starts_with($lowerMessage, 'update prayer')){

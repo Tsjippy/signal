@@ -10,11 +10,11 @@ use mikehaertl\shellcommand\Command;
 use stdClass;
 use WP_Error;
 
-/* Install java apt install openjdk-17-jdk -y
-export VERSION=0.11.3
-wget https://github.com/AsamK/signal-cli/releases/download/v"${VERSION}"/signal-cli-"${VERSION}"-Linux.tar.gz
-sudo tar xf signal-cli-"${VERSION}"-Linux.tar.gz -C /opt
-sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
+//Install java apt install openjdk-17-jdk -y
+//export VERSION=$(curl --silent "https://api.github.com/repos/AsamK/signal-cli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'| sed 's/v//')
+//wget https://github.com/AsamK/signal-cli/releases/download/v"${VERSION}"/signal-cli-"${VERSION}"-Linux.tar.gz
+//sudo tar xf signal-cli-"${VERSION}"-Linux.tar.gz -C /opt
+//sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ 
 
 // data is stored in $HOME/.local/share/signal-cli
 
@@ -80,7 +80,6 @@ class SignalJsonRpc extends AbstractSignal{
         $this->lastResponse         = '';
         $this->invalidNumber        = false;
     }
-
 
     /**
      * Get response from db

@@ -12,7 +12,6 @@ apt update -yser
 echo "Installing Java"
 apt install openjdk-17-jdk -y
 
-
 # add signal-cli user
 echo "Adding signal-cli user"
 useradd -M signal-cli
