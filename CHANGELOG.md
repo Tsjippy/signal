@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- typos
 
 ### Fixed
 
