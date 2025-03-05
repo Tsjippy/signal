@@ -561,7 +561,10 @@ class SignalJsonRpc extends AbstractSignal{
 
         $result = $this->doRequest('getUserStatus', $params);
 
-        if(!$result){
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                SIM\printArray($result);
+            }
             return true;
         }
 
