@@ -20,7 +20,7 @@ function taskInit(){
 }
 
 function checkSignal(){
-    $signal = new SignalCommandLine();
+    $signal 		= SIM\SIGNAL\getSignalInstance();
     $signal->checkPrerequisites();
 }
 
@@ -105,7 +105,7 @@ function cleanSignalLog(){
 }
 
 function retryFailedMessages(){
-    $signal = new SignalCommandLine();
+    $signal     = SIM\SIGNAL\getSignalInstance();
 
     $signal->retryFailedMessages();
 }

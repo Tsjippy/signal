@@ -323,17 +323,35 @@ class SignalJsonRpc extends AbstractSignal{
             update_option('sim-signal-failed-messages', $failedCommands);
 
             $this->sendCaptchaInstructions($errorMessage);
-        }elseif(str_contains($errorMessage, '429 Too Many Requests')){
+        }
+        
+        // Rate Limit
+        elseif(
+            str_contains($errorMessage, '429 Too Many Requests') || 
+            (
+                !empty($json->error->data->response->results[0]->type)  &&
+                $json->error->data->response->results[0]->type == 'RATE_LIMIT_FAILURE'
+            )
+        ){
             // Store command
-            $failedCommands      = get_option('sim-signal-failed-messages', []);
+            $failedCommands             = get_option('sim-signal-failed-messages', []);
             $failedCommands[$method]    = $params;
             update_option('sim-signal-failed-messages', $failedCommands);
-        }elseif(str_contains($errorMessage, 'Invalid group id')){
+        }
+        
+        // Group ID
+        elseif(str_contains($errorMessage, 'Invalid group id')){
             SIM\printArray($errorMessage);
-        }elseif(str_contains($errorMessage, 'Did not receive a reply.')){
+        }
+        
+        // Timed Out
+        elseif(str_contains($errorMessage, 'Did not receive a reply.')){
             SIM\printArray($errorMessage); 
-        }else{
-            SIM\printArray("Got error $errorMessage For command $method");
+        }
+        
+        // Unknown
+        else{
+            SIM\printArray("Got error '$errorMessage' while running the '$method' command.");
             SIM\printArray($params);   
             SIM\printArray($json);            
             SIM\printArray($errorMessage);
