@@ -7,6 +7,7 @@
 - typos
 
 ### Fixed
+- retry failed sigal messages
 
 ### Updated
 
