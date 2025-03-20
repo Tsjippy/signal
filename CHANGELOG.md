@@ -4,11 +4,19 @@
 ### Added
 
 ### Changed
-- typos
 
 ### Fixed
 
 ### Updated
+
+## [8.2.4] - 2025-03-20
+
+
+### Changed
+- typos
+
+### Fixed
+- retry failed sigal messages
 
 ## [8.2.3] - 2025-02-13
 
