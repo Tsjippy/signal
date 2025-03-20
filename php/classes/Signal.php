@@ -2,10 +2,6 @@
 
 namespace SIM\SIGNAL;
 use SIM;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 use GuzzleHttp;
 use mikehaertl\shellcommand\Command;
 

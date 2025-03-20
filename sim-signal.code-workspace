@@ -1,9 +1,19 @@
 {
 	"folders": [
 		{
+			"name": "signal",
 			"path": "."
 		},
 		{
+			"name": "sim-modules",
+			"path": ".."
+		},
+		{
+			"name": "sim-plugin",
+			"path": "../../plugins/sim-plugin"
+		},
+		{
+			"name": "simnigeria",
 			"path": "../../.."
 		}
 	],
