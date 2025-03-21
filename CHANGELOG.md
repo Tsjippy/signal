@@ -2,13 +2,18 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- send signal message when sending e-mail
 
 ### Changed
 
 ### Fixed
 
 ### Updated
+
+## [8.2.5] - 2025-03-21
+
+
+### Added
+- send signal message when sending e-mail
 
 ## [8.2.4] - 2025-03-20
 
