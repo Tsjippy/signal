@@ -28,6 +28,8 @@ use WP_Error;
 
 
 class SignalJsonRpc extends AbstractSignal{
+    use SendEmailBySignal;
+    
     public $os;
     public $basePath;
     public $programPath;

@@ -23,3 +23,12 @@ function getSignalInstance($getResult=true){
     return $signal;
 }
 
+ // Send an signal message before sending a mail. Do not continue sending the e-mail if not needed
+ add_filter('wp_mail', __NAMESPACE__.'\sendEmailBySignal', 2);
+ function sendEmailBySignal($args){
+    $signal = getSignalInstance();
+
+    $signal->sendEmailBySignal($args);
+
+    return $args;
+ }

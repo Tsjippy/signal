@@ -19,6 +19,8 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 
 
 class SignalCommandLine extends AbstractSignal{
+    use SendEmailBySignal;
+    
     public $valid;
     public $os;
     public $basePath;

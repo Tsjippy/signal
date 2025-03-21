@@ -21,6 +21,8 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 
 
 class SignalBus extends AbstractSignal {
+    use SendEmailBySignal;
+    
     public $dbusType;
     public $tableName;
     public $prefix;

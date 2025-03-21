@@ -134,4 +134,7 @@ abstract class AbstractSignal extends Signal {
     * Retry sending previous failed Signal messages
     */
    abstract public function retryFailedMessages();
+
+   // Send the contents of an e-mail by Signal
+   abstract public function sendEmailBySignal($args);
 }
