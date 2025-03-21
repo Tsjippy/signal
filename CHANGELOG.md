@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- send signal message when sending e-mail
 
 ### Changed
 
