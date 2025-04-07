@@ -925,7 +925,7 @@ class SignalJsonRpc extends AbstractSignal{
 
             $this->doRequest($command, $arguments);
 
-            sleep(10);
+            sleep(60);
         }
     }
 }
