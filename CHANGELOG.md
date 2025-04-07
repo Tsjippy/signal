@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- increased sleep while resending signal messages
 
 ### Fixed
 
