@@ -10,6 +10,7 @@ use mikehaertl\shellcommand\Command;
 use stdClass;
 use WP_Error;
 
+// apt-get -y install socat
 //Install java apt install openjdk-17-jdk -y
 //export VERSION=$(curl --silent "https://api.github.com/repos/AsamK/signal-cli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'| sed 's/v//')
 //wget https://github.com/AsamK/signal-cli/releases/download/v"${VERSION}"/signal-cli-"${VERSION}"-Linux.tar.gz
