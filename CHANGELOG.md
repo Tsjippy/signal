@@ -6,6 +6,7 @@
 ### Changed
 - increased sleep while resending signal messages
 - updated docs
+- check for bad phonenumber
 
 ### Fixed
 
