@@ -622,6 +622,11 @@ class SignalJsonRpc extends AbstractSignal{
             // first character is a +
             if(strpos( $recipients , '+' ) === 0){
                 $params['recipient']    = $recipients;
+            // invalid formatted phone number
+            }elseif(strlen($recipients) < 15){
+                SIM\printArray("Invalid phonenumber '$recipients'");
+
+                return new WP_Error('Phonenumber invalid', "Invalid phonenumber '$recipients'");
             }else{
                 $params['groupId']      = $recipients;
             }
