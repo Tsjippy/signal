@@ -9,6 +9,7 @@
 - check for bad phonenumber
 
 ### Fixed
+- return types
 
 ### Updated
 
