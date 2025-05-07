@@ -85,7 +85,7 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * @param	string				$quoteMessage	The message to respond to
  * @param   bool        		$getResult  	Whether we should return the result, default true
  * 
- * @return	string					the result
+ * @return	string|False|WP_Error				the result
  */
 function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber	= $recipient;
@@ -140,7 +140,7 @@ function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $
  * @param	string		$style			Any styling of the message
  * @param   bool        $getResult  	Whether we should return the result, default true
  * 
- * @return	string					the result
+ * @return	string|False|WP_Error		the result
  */
 function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber		= $recipient;
@@ -153,8 +153,7 @@ function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $q
 	$signal					= getSignalInstance($getResult);
 
 	if(str_contains($phonenumber, ',')){
-		$signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage);
-		return;
+		return $signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage);
 	}
 
 	$result	= $signal->send($phonenumber, $message, $images, $timeStamp, $quoteAuthor, $quoteMessage);

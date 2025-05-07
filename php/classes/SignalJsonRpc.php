@@ -614,10 +614,10 @@ class SignalJsonRpc extends AbstractSignal{
 
         if(is_array($recipients)){
             foreach($recipients as $recipient){
-                $this->send($recipient, $message, $attachments, $timeStamp);
+                $result = $this->send($recipient, $message, $attachments, $timeStamp);
             }
 
-            return;
+            return $result;
         }else{
             // first character is a +
             if(strpos( $recipients , '+' ) === 0){
