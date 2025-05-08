@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [8.2.6] - 2025-05-08
+
+
+### Changed
 - increased sleep while resending signal messages
 - updated docs
 - check for bad phonenumber
 
 ### Fixed
 - return types
-
-### Updated
 
 ## [8.2.5] - 2025-03-21
 
