@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- improved daemon logging
 
 ### Fixed
 
