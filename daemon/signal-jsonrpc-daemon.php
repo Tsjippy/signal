@@ -263,12 +263,6 @@ function getAnswer($message, $source){
             $response   .= $name.', ';
         }
         $response .= "I am so sorry to hear you need help. I am afraid I am not a good councelor";
-    }elseif(!empty($lowerMessage)){
-        SIM\printArray("No answer found for '$message'");
-
-        $response = 'I have no clue, do you know?';
-    }else{
-        $response = ' ';
     }
 
     $response   = [
@@ -276,7 +270,15 @@ function getAnswer($message, $source){
         'pictures'  => $pictures
     ];
 
-    return apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
+    $response   = apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
+
+    if(empty($response) && !empty($lowerMessage)){
+        SIM\printArray("No answer found for '$message'");
+
+        $response = 'I have no clue, do you know?';
+    }
+
+    return $response;
 }
 
 
