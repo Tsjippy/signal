@@ -272,10 +272,10 @@ function getAnswer($message, $source){
 
     $response   = apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
 
-    if(empty($response) && !empty($lowerMessage)){
+    if(empty($response['message']) && !empty($lowerMessage)){
         SIM\printArray("No answer found for '$message'");
 
-        $response = 'I have no clue, do you know?';
+        $response['message'] = 'I have no clue, do you know?';
     }
 
     return $response;
