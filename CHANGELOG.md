@@ -7,6 +7,7 @@
 - improved daemon logging
 
 ### Fixed
+- empty deamon response
 
 ### Updated
 
