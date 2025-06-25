@@ -85,6 +85,105 @@ class SignalJsonRpc extends AbstractSignal{
     }
 
     /**
+     * Performs the json RPC request
+     *
+     * @param   string      $method     The command to perform
+     * @param   array       $params     The parameters for the command
+     *
+     * @return  mixed                   The result or false in case of trouble or nothing if $getResult is false
+     */
+    public function doRequest($method, $params=[]){
+        if($this->shouldCloseSocket){
+            $this->socket   = stream_socket_client('unix:////home/simnige1/sockets/signal', $errno, $this->error);
+        }
+
+        if(!$this->socket){
+            //SIM\printArray("$errno: $this->error", true);
+            return false;
+        }
+
+        // this commands needs a higher timeout than usual
+        try{
+            stream_set_timeout($this->socket, 1);
+        }catch (\Error $e) {
+            SIM\printArray($e);
+        
+            SIM\printArray($this->socket); 
+        }
+
+        $params["account"]  = $this->phoneNumber;
+
+        $id     = time(); 
+
+        $data   = [
+            "jsonrpc"       => "2.0",
+            "method"        => $method,
+            "params"        => $params,
+            "id"            => $id
+        ];
+
+        $json   = json_encode($data)."\n";
+
+        fwrite($this->socket, $json);         
+
+        flush();
+
+        if($this->getResult){
+            //stream_socket_recvfrom
+            $response = $this->getRequestResponse($id);
+        }
+
+        if($this->shouldCloseSocket){
+            fclose($this->socket);
+        }
+
+        if($this->getResult){
+            $this->checkForErrors($response, $method, $params, $id);
+
+            if(!empty($this->error)){
+                return new \WP_Error('sim-signal', $this->error);
+            }
+
+            if(!is_object($response) || empty($response->result)){
+                if(!$this->invalidNumber){
+                    SIM\printArray("Got faulty result");
+                    SIM\printArray($response);
+                }
+
+                return false;
+            }
+
+            return $response->result;
+        }
+    }
+
+    /**
+     * Get the response to a request
+     *
+     * @param   int     $id         the request id should epoch of the request
+     */
+    public function getRequestResponse(int $id){
+        if(empty($id)){
+            SIM\printArray("Got an empty Id");
+            return false;
+        }
+
+        // maximum of listentime seconds
+        if(time() - $id > $this->listenTime){
+            SIM\printArray('Cancelling as this has been running for '.time() - $id.' seconds');
+            return false;
+        }
+
+        $json   = $this->getResultFromSocket($id);
+
+        if(!$json){
+            $json   = $this->getResultFromDb($id);
+        }        
+
+        return $json; 
+    }
+
+    /**
      * Get response from db
      *
      * @param   int     $id         the request id should epoch of the request
@@ -108,7 +207,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         return $result;
     }
-
+    
     /**
      * Get response from socket
      *
@@ -214,12 +313,7 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         if(isset($json->error)){
-            if(isset($json->error->data->response->results[0]->type) && $json->error->data->response->results[0]->type == 'UNREGISTERED_FAILURE'){
-                $this->invalidNumber = true;
-            }else{
-                SIM\printArray("Error, error is: ");
-                SIM\printArray($json);
-            }
+            return $json;
         }elseif(!isset($json->result)){
             $json2   = $this->getRequestResponse($id);
 
@@ -248,33 +342,7 @@ class SignalJsonRpc extends AbstractSignal{
         return $json;
     }
 
-    /**
-     * Get the response to a request
-     *
-     * @param   int     $id         the request id should epoch of the request
-     */
-    public function getRequestResponse(int $id){
-        if(empty($id)){
-            SIM\printArray("Got an empty Id");
-            return false;
-        }
-
-        // maximum of listentime seconds
-        if(time() - $id > $this->listenTime){
-            SIM\printArray('Cancelling as this has been running for '.time() - $id.' seconds');
-            return false;
-        }
-
-        $json   = $this->getResultFromSocket($id);
-
-        if(!$json){
-            $json   = $this->getResultFromDb($id);
-        }        
-
-        return $json; 
-    }
-
-    protected function parseResult($json, $method, $params, $id){
+    protected function checkForErrors($json, $method, $params, $id){
         $this->error    = "";
 
         if(!$json){
@@ -288,11 +356,20 @@ class SignalJsonRpc extends AbstractSignal{
 
             return false;
         }elseif(empty($json->error)){
+            // Everything went well, nothing to do
             return;
         }
 
+        $errorMessage  = $json->error->message;
+
         // unregistered number or user
-        if($this->invalidNumber){
+        if(
+            isset($json->error->data->response->results[0]->type) && 
+            $json->error->data->response->results[0]->type == 'UNREGISTERED_FAILURE'
+        ){
+            $this->invalidNumber = true;
+
+            // Remove the indicator that the invalid number is an valid number
             if(isset($json->error->data->response->results[0]->recipientAddress->number)){
                 //SIM\printArray("Deleting Signal number: ".$json->error->data->response->results[0]->recipientAddress->number);
                 //SIM\printArray($json);
@@ -312,14 +389,10 @@ class SignalJsonRpc extends AbstractSignal{
             }else{
                 SIM\printArray($json->error->data->response->results);
             }
-
-            return;
         }
 
-        $errorMessage  = $json->error->message;
-
         // Captcha required
-        if(str_contains($errorMessage, 'CAPTCHA proof required')){
+        elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
             // Store command
             $failedCommands      = get_option('sim-signal-failed-messages', []);
             $failedCommands[$method]    = $params;
@@ -362,78 +435,6 @@ class SignalJsonRpc extends AbstractSignal{
         }
         
         $this->error    = "<div class='error'>$errorMessage</div>";
-    }
-
-    /**
-     * Performs the json RPC request
-     *
-     * @param   string      $method     The command to perform
-     * @param   array       $params     The parameters for the command
-     *
-     * @return  mixed                   The result or false in case of trouble or nothing if $getResult is false
-     */
-    public function doRequest($method, $params=[]){
-        if($this->shouldCloseSocket){
-            $this->socket   = stream_socket_client('unix:////home/simnige1/sockets/signal', $errno, $this->error);
-        }
-
-        if(!$this->socket){
-            //SIM\printArray("$errno: $this->error", true);
-            return false;
-        }
-
-        // this commands needs a higher timeout than usual
-        try{
-            stream_set_timeout($this->socket, 1);
-        }catch (\Error $e) {
-            SIM\printArray($e);
-        
-            SIM\printArray($this->socket); 
-        }
-
-        $params["account"]  = $this->phoneNumber;
-
-        $id     = time(); 
-
-        $data   = [
-            "jsonrpc"       => "2.0",
-            "method"        => $method,
-            "params"        => $params,
-            "id"            => $id
-        ];
-
-        $json   = json_encode($data)."\n";
-
-        fwrite($this->socket, $json);         
-
-        flush();
-
-        if($this->getResult){
-            //stream_socket_recvfrom
-            $response = $this->getRequestResponse($id);
-        }
-
-        if($this->shouldCloseSocket){
-            fclose($this->socket);
-        }
-
-        if($this->getResult){
-            $this->parseResult($response, $method, $params, $id);
-            if(!empty($this->error)){
-                return new \WP_Error('sim-signal', $this->error);
-            }
-
-            if(!is_object($response) || empty($response->result)){
-                if(!$this->invalidNumber){
-                    SIM\printArray("Got faulty result");
-                    SIM\printArray($response);
-                }
-
-                return false;
-            }
-
-            return $response->result;
-        }
     }
 
     /**
