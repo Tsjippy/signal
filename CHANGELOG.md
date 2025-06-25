@@ -5,6 +5,7 @@
 
 ### Changed
 - improved daemon logging
+- code reordering
 
 ### Fixed
 - empty deamon response
