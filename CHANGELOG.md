@@ -9,6 +9,7 @@
 
 ### Fixed
 - empty deamon response
+- enqueation of js
 
 ### Updated
 
