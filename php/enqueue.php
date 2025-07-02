@@ -8,8 +8,11 @@ function loadAssets(){
     wp_register_script( 'sim_signal_admin', SIM\pathToUrl(MODULE_PATH.'js/admin.min.js'), array('sim_formsubmit_script'), MODULE_VERSION, true);
 
 	wp_register_script('sim_frontend_signal_script', SIM\pathToUrl(MODULE_PATH.'js/frontend-signal.min.js'), [], MODULE_VERSION, true);
-    add_filter('sim-frontend-content-js', __NAMESPACE__.'\addSignalJs');
+
 }
+
+add_filter('sim-frontend-content-js', __NAMESPACE__.'\addSignalJs');
+
 function addSignalJs($dependables){
     $dependables[]  = 'sim_frontend_signal_script';
 
