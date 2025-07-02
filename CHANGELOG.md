@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [8.2.7] - 2025-07-02
+
+
+### Changed
 - improved daemon logging
 - code reordering
 
 ### Fixed
 - empty deamon response
 - enqueation of js
-
-### Updated
 
 ## [8.2.6] - 2025-05-08
 
