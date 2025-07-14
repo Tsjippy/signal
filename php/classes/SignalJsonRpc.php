@@ -394,9 +394,7 @@ class SignalJsonRpc extends AbstractSignal{
         // Captcha required
         elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
             // Store command
-            $failedCommands      = get_option('sim-signal-failed-messages', []);
-            $failedCommands[$method]    = $params;
-            update_option('sim-signal-failed-messages', $failedCommands);
+            $this->addToCommandQueue($method, $params);
 
             $this->sendCaptchaInstructions($errorMessage);
         }
@@ -410,9 +408,7 @@ class SignalJsonRpc extends AbstractSignal{
             )
         ){
             // Store command
-            $failedCommands             = get_option('sim-signal-failed-messages', []);
-            $failedCommands[$method]    = $params;
-            update_option('sim-signal-failed-messages', $failedCommands);
+            $this->addToCommandQueue($method, $params);
         }
         
         // Group ID
@@ -435,6 +431,24 @@ class SignalJsonRpc extends AbstractSignal{
         }
         
         $this->error    = "<div class='error'>$errorMessage</div>";
+    }
+
+    /**
+     * Add a command to the queue of messages to be tried again
+     */
+    protected function addToCommandQueue($method, $params){
+        // Store command
+        $failedCommands                 = get_option('sim-signal-failed-messages', []);
+
+        if(!isset($failedCommands[$method]) || !is_array($failedCommands[$method])){
+            $failedCommands[$method]    = [];
+        }
+
+        $failedCommands[$method][]      = $params;
+
+        update_option('sim-signal-failed-messages', $failedCommands);
+
+        SIM\printArray($failedCommands);
     }
 
     /**
@@ -678,11 +692,11 @@ class SignalJsonRpc extends AbstractSignal{
                 $this->addToMessageLog($recipients, $message, $ownTimeStamp);
                 return $ownTimeStamp;
             }elseif(!$this->invalidNumber){
-                SIM\printArray("Sending Signal Message failed");
+                /* SIM\printArray("Sending Signal Message failed");
                 SIM\printArray($params);
                 if(!empty($result)){
                     SIM\printArray($result);
-                }
+                } */
                 return $result;
             }
         }
@@ -927,12 +941,16 @@ class SignalJsonRpc extends AbstractSignal{
             return;
         }
 
-        foreach($failedCommands as $command=>$arguments){
+        foreach($failedCommands as $command=>$argArray){
             SIM\printArray($command);
 
-            $this->doRequest($command, $arguments);
+            foreach($argArray as $args){
+                SIM\printArray($args);
 
-            sleep(60);
+                $this->doRequest($command, $args);
+
+                sleep(60);
+            }
         }
     }
 }
