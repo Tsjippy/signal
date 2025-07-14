@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- retry queue
 
 ### Updated
+
+## [8.2.8] - 2025-07-14
+
+
+### Fixed
+- retry queue
 
 ## [8.2.7] - 2025-07-02
 
