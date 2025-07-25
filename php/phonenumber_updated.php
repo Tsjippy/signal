@@ -21,7 +21,7 @@ function phoneNumberUpdated($phonenumber, $userId){
         $link		= SIM\getModuleOption(MODULE_SLUG, 'group_link');
     }
 
-    $send   = true;
+    $valid   = true;
     
     // we send a signal message directly from the server
 	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
@@ -32,23 +32,23 @@ function phoneNumberUpdated($phonenumber, $userId){
             // Mark this number as the signal number
             update_user_meta( $userId, 'signal_number', $phonenumber );
         }else{
-           $send    = false;
+           $valid    = false;
         }
 	}
 
     // check if we need to remove the signal numbers
-    if(!$send){
-        $signalNumber   = get_user_meta( $userId, 'signal_number', $phonenumber );
-        $phoneNumbers   = (array)get_user_meta( $userId, 'phonenumbers', $phonenumber );
+    if(!$valid){
+        $signalNumber   = get_user_meta( $userId, 'signal_number' );
+        $phoneNumbers   = (array)get_user_meta( $userId, 'phonenumbers' );
 
         if(!in_array($signalNumber, $phoneNumbers)){
             delete_user_meta( $userId, 'signal_number');
         }
     }
 
-    if(!empty($link) && $send){
+    if(!empty($link) && $valid){
 	    $firstName	= get_userdata($userId)->first_name;
         $message	= "Hi $firstName\n\nI noticed you just updated your phonenumber on ".SITEURLWITHOUTSCHEME.".\n\nIf you want to join our Signal group with this number you can use this url:\n$link";
-        sendSignalMessage($message, $phonenumber);
+        asyncSignalMessageSend($message, $phonenumber);
     }
 }

@@ -66,12 +66,12 @@ function sendPostNotification($post){
 	//SIM\printArray($recipients);
 
 	foreach($recipients as $recipient){
-		sendSignalMessage($message, $recipient, $post->ID);
+		asyncSignalMessageSend($message, $recipient, $post->ID);
 	}
 }
 
 function asyncSignalMessageSend($message, $recipient, $postId=""){
-	wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId, 0, '', '', '', false]);
+	wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
 }
 
 /**
