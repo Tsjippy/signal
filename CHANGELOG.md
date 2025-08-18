@@ -9,6 +9,7 @@
 - book of the day message
 
 ### Fixed
+- bug in book signal message
 
 ### Updated
 
