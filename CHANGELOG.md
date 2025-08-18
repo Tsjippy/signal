@@ -6,6 +6,7 @@
 - send book of the day
 
 ### Changed
+- book of the day message
 
 ### Fixed
 
