@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- book of the day message title on seperate line
 
 ### Fixed
 
