@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [8.3.0] - 2025-08-18
+
+
+### Added
 - actions
 - send book of the day
 
@@ -10,8 +21,6 @@
 
 ### Fixed
 - bug in book signal message
-
-### Updated
 
 ## [8.2.8] - 2025-07-14
 
