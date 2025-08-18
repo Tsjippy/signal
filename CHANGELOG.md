@@ -3,6 +3,7 @@
 
 ### Added
 - actions
+- send book of the day
 
 ### Changed
 
