@@ -79,7 +79,7 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * 
  * @param	string				$message		The message
  * @param	string|int|WP_User	$recipient		The recipient phone number, or user id or user object
- * @param	array|int			$postId			The post id or an array of filepaths to pictures
+ * @param	array|int			$images			The post id or an array of either filepaths to pictures or base64 encoded images
  * @param	int					$timeStamp		The timestam of a message to reply to
  * @param	string				$quoteAuthor	The name of the author to respond to
  * @param	string				$quoteMessage	The message to respond to
@@ -87,7 +87,7 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * 
  * @return	string|False|WP_Error				the result
  */
-function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
+function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber	= $recipient;
 	
 	// do not send on localhost
@@ -113,12 +113,12 @@ function sendSignalMessage($message, $recipient, $postId="", int $timeStamp=0, $
 	$urlWithoutHttps	= str_replace('https://', '', SITEURL);
 	$message			= str_replace(SITEURL, $urlWithoutHttps, $message);
 
-	$images = [];
-	if(is_array($postId)){
-		// Post id is a file path
-		$images	= $postId;
-	}elseif(is_numeric($postId) && has_post_thumbnail($postId)){
-		$images = [get_attached_file(get_post_thumbnail_id($postId))];
+	if(is_numeric($images)){
+		if( has_post_thumbnail($images)){
+			$images = [get_attached_file(get_post_thumbnail_id($images))];
+		}else{
+			$images = [];
+		}
 	}
 
 	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
