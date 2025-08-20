@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- send image from base64 string
 
 ### Changed
 - book of the day message title on seperate line
