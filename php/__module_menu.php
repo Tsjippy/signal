@@ -475,7 +475,7 @@ function sentMessagesTable($startDate, $endDate, $amount){
 	}
 
 	$signal	= getSignalInstance();
-	$messages	= $signal->getMessageLog($amount, $page, strtotime($startDate), strtotime($endDate));
+	$messages	= $signal->getSentMessageLog($amount, $page, strtotime($startDate), strtotime($endDate));
 
 	if(empty($messages)){
 		return '';

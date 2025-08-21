@@ -197,14 +197,14 @@ class Signal{
     }
 
     /**
-     * Retrieves the messages from the log
+     * Retrieves the sent messages from the log
      *
      * @param   int     $amount     The amount of rows to get per page, default 100
      * @param   int     $page       Which page to get, default 1
-     * @param   int     $minTime    Time after which the message has been send, default empty
-     * @param   int     $maxTime    Time before which the message has been send, default empty
+     * @param   int     $minTime    Time after which the message has been sent in EPOCH, default empty
+     * @param   int     $maxTime    Time before which the message has been sent in EPOCH, default empty
      */
-    public function getMessageLog($amount=100, $page=1, $minTime='', $maxTime=''){
+    public function getSentMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $receiver=''){
         global $wpdb;
 
         $startIndex = 0;
@@ -215,25 +215,33 @@ class Signal{
 
         $totalQuery = "SELECT COUNT(id) as total FROM $this->tableName";
         $query      = "SELECT * FROM $this->tableName";
+        $queryExtra = "";
 
         if(!empty($minTime)){
-            $totalQuery .= " WHERE timesend > {$minTime}000";
-            $query      .= " WHERE timesend > {$minTime}000";
+            $queryExtra .= " WHERE timesend > {$minTime}000";
         }
 
         if(!empty($maxTime)){
             $combinator = 'AND';
-            if(empty($minTime)){
+            if(empty($queryExtra)){
                 $combinator     = 'WHERE';
             }
 
-            $totalQuery .= " $combinator timesend < {$maxTime}000";
-            $query      .= " $combinator timesend < {$maxTime}000";
+            $queryExtra .= " $combinator timesend < {$maxTime}000";
         }
 
-        $query      .= " ORDER BY `timesend` DESC LIMIT $startIndex,$amount;";
+        if(!empty($receiver)){
+            $combinator = 'AND';
+            if(empty($queryExtra)){
+                $combinator     = 'WHERE';
+            }
 
-        $this->totalMessages    = $wpdb->get_var($totalQuery);
+            $queryExtra .= " $combinator recipient = '$receiver'";
+        }
+
+        $query      .= "$queryExtra ORDER BY `timesend` DESC LIMIT $startIndex,$amount;";
+
+        $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
         if($this->totalMessages < $startIndex){
             return [];
@@ -247,10 +255,10 @@ class Signal{
      *
      * @param   int     $amount     The amount of rows to get per page, default 100
      * @param   int     $page       Which page to get, default 1
-     * @param   int     $minTime    Time after which the message has been send, default empty
-     * @param   int     $maxTime    Time before which the message has been send, default empty
+     * @param   int     $minTime    Time after which the message has been sent in EPOCH, default empty
+     * @param   int     $maxTime    Time before which the message has been sent in EPOCH, default empty
      */
-    public function getReceivedMessageLog($amount=100, $page=1, $minTime='', $maxTime=''){
+    public function getReceivedMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $sender=''){
         global $wpdb;
 
         $startIndex = 0;
@@ -261,25 +269,33 @@ class Signal{
 
         $totalQuery = "SELECT COUNT(id) as total FROM $this->receivedTableName";
         $query      = "SELECT * FROM $this->receivedTableName";
+        $queryExtra = "";
 
         if(!empty($minTime)){
-            $totalQuery .= " WHERE timesend > {$minTime}000";
-            $query      .= " WHERE timesend > {$minTime}000";
+            $queryExtra .= " WHERE timesend > {$minTime}000";
         }
 
         if(!empty($maxTime)){
             $combinator = 'AND';
-            if(empty($minTime)){
+            if(empty($queryExtra)){
                 $combinator     = 'WHERE';
             }
 
-            $totalQuery .= " $combinator timesend < {$maxTime}000";
-            $query      .= " $combinator timesend < {$maxTime}000";
+            $queryExtra .= " $combinator timesend < {$maxTime}000";
         }
 
-        $query      .= "  ORDER BY `chat` ASC, `timesend` DESC LIMIT $startIndex,$amount;";
+        if(!empty($sender)){
+            $combinator = 'AND';
+            if(empty($queryExtra)){
+                $combinator     = 'WHERE';
+            }
 
-        $this->totalMessages    = $wpdb->get_var($totalQuery);
+            $queryExtra .= " $combinator sender = '$sender'";
+        }
+
+        $query      .= " $queryExtra ORDER BY `chat` ASC, `timesend` DESC LIMIT $startIndex,$amount;";
+
+        $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
         if($this->totalMessages < $startIndex){
             return [];

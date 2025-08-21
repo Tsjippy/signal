@@ -177,7 +177,7 @@ function processMessage($data){
                     $signal->sentTyping($data->envelope->source, '', $groupId);
 
                     // Remove mention from message
-                    $message    = utf8_decode($message);
+                    $message    = mb_convert_encoding($message, 'UTF-8', 'UTF-8');
                     $message    = substr($message, $data->envelope->dataMessage->mentions[0]->length);
                     $answer     = getAnswer(trim($message, " \t\n\r\0\x0B?"), $data->envelope->source);
 
@@ -270,13 +270,13 @@ function getAnswer($message, $source){
         'pictures'  => $pictures
     ];
 
-    $response   = apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
-
     if(empty($response['message']) && !empty($lowerMessage)){
         SIM\printArray("No answer found for '$message'");
 
         $response['message'] = 'I have no clue, do you know?';
     }
+
+    $response   = apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
 
     return $response;
 }

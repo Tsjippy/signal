@@ -702,6 +702,7 @@ class SignalJsonRpc extends AbstractSignal{
 
             if(is_numeric($ownTimeStamp)){
                 $this->addToMessageLog($recipients, $message, $ownTimeStamp);
+                
                 return $ownTimeStamp;
             }elseif(!$this->invalidNumber){
                 /* SIM\printArray("Sending Signal Message failed");
