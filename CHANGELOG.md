@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [8.3.1] - 2025-08-21
+
+
+### Added
 - send image from base64 string
 - retrieve messages by phonenumber
 
@@ -10,8 +21,6 @@
 
 ### Fixed
 - send book picture
-
-### Updated
 
 ## [8.3.0] - 2025-08-18
 
