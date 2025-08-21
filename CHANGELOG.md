@@ -3,6 +3,7 @@
 
 ### Added
 - send image from base64 string
+- retrieve messages by phonenumber
 
 ### Changed
 - book of the day message title on seperate line
