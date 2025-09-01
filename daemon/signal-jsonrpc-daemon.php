@@ -178,7 +178,9 @@ function processMessage($data){
 
                     // Remove mention from message
                     $message    = mb_convert_encoding($message, 'UTF-8', 'UTF-8');
-                    $message    = substr($message, $data->envelope->dataMessage->mentions[0]->length);
+                    // Length of the mention is not correct, so we just remove the first 3 characters
+                    //$message    = substr($message, $data->envelope->dataMessage->mentions[0]->length);
+                    $message    = substr($message, 3);
                     $answer     = getAnswer(trim($message, " \t\n\r\0\x0B?"), $data->envelope->source);
 
                     $signal->send($groupId, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
