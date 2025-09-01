@@ -25,7 +25,7 @@ function restApiInit() {
 		RESTAPIPREFIX.'/signal',
 		'/save_preferences',
 		array(
-			'methods' 				=> \WP_REST_Server::EDITABLE,
+			'methods' 				=> \WP_REST_Server::CREATABLE,
 			'callback' 				=> __NAMESPACE__.'\savePreferences',
 			'permission_callback' 	=> '__return_true',
 			'args'					=> array(
