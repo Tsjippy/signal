@@ -568,7 +568,7 @@ class SignalCommandLine extends AbstractSignal{
 
     protected function parseResult($returnJson=false){
         if($this->command->getExitCode()){
-            $failedCommands      = get_option('sim-signal-failed-messages', []);
+            $failedCommands      = get_option('sim-signal-messages', []);
 
             $errorMessage  = $this->command->getError();
 
@@ -578,13 +578,13 @@ class SignalCommandLine extends AbstractSignal{
             if(str_contains($errorMessage, 'CAPTCHA proof required')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-failed-messages', $failedCommands);
+                update_option('sim-signal-messages', $failedCommands);
 
                 $this->sendCaptchaInstructions($errorMessage);
             }elseif(str_contains($errorMessage, '429 Too Many Requests')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-failed-messages', $failedCommands);
+                update_option('sim-signal-messages', $failedCommands);
             }elseif(str_contains($errorMessage, 'Unregistered user')){
                 // get phonenumber from the message
                 preg_match('/"(\+\d*)/m', $errorMessage, $matches);
@@ -653,7 +653,7 @@ class SignalCommandLine extends AbstractSignal{
         // to be implemented
     }
 
-    public function retryFailedMessages(){
+    public function processCommandQueue(){
         // to be implemented
     }
 }

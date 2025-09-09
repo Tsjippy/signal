@@ -107,5 +107,5 @@ function cleanSignalLog(){
 function retryFailedMessages(){
     $signal     = SIM\SIGNAL\getSignalInstance();
 
-    $signal->retryFailedMessages();
+    $signal->processCommandQueue();
 }

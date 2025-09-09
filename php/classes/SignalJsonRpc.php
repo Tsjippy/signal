@@ -53,6 +53,9 @@ class SignalJsonRpc extends AbstractSignal{
     public $listenTime;
     public $lastResponse;
     public $invalidNumber;
+    public $lastRequestTime;
+    public $commandQueue;
+    private $isProcessing;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
@@ -82,6 +85,8 @@ class SignalJsonRpc extends AbstractSignal{
         $this->listenTime           = 60;
         $this->lastResponse         = '';
         $this->invalidNumber        = false;
+        $this->isProcessing         = false;
+        $this->commandQueue         = [];
     }
 
     /**
@@ -93,6 +98,8 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  mixed                   The result or false in case of trouble or nothing if $getResult is false
      */
     public function doRequest($method, $params=[]){
+        $this->lastRequestTime = time();
+
         if($this->shouldCloseSocket){
             $this->socket   = stream_socket_client('unix:////home/simnige1/sockets/signal', $errno, $this->error);
         }
@@ -434,21 +441,36 @@ class SignalJsonRpc extends AbstractSignal{
     }
 
     /**
-     * Add a command to the queue of messages to be tried again
+     * Add a command to the queue of commannds
      */
-    protected function addToCommandQueue($method, $params){
-        // Store command
-        $failedCommands                 = get_option('sim-signal-failed-messages', []);
-
-        if(!isset($failedCommands[$method]) || !is_array($failedCommands[$method])){
-            $failedCommands[$method]    = [];
+    protected function addToCommandQueue($method, $params=[]){
+        // only add to queue if needed
+        if(empty($this->lastRequestTime) || time() - $this->lastRequestTime > 2){
+            // do this straight away
+            return $this->doRequest($method, $params);
         }
 
-        $failedCommands[$method][]      = $params;
+        // Store command
+        if(!isset($this->commandQueue[$method]) || !is_array($this->commandQueue[$method])){
+            $this->commandQueue[$method]    = [];
+        }
 
-        update_option('sim-signal-failed-messages', $failedCommands);
+        $this->commandQueue[$method][]      = $params;
 
-        SIM\printArray($failedCommands);
+        $index                              = count($this->commandQueue[$method]) - 1;
+
+        SIM\printArray($this->commandQueue);
+
+        if(!$this->isProcessing){
+            $this->processCommandQueue();
+        }
+
+        // Wait till the params are replaced by the result
+        while($this->commandQueue[$method][$index] == $params){
+            sleep(5);
+        }
+
+        return $this->commandQueue[$method][$index];
     }
 
     /**
@@ -595,7 +617,7 @@ class SignalJsonRpc extends AbstractSignal{
             "recipient"     => $recipient
         ];
 
-        $result = $this->doRequest('getUserStatus', $params);
+        $result = $this->addToCommandQueue('getUserStatus', $params);
 
         if(!$result || is_wp_error($result)){
             if(is_wp_error($result)){
@@ -692,7 +714,7 @@ class SignalJsonRpc extends AbstractSignal{
             $params['textStyle']   = $style;
         }
 
-        $result   =  $this->doRequest('send', $params);
+        $result   =  $this->addToCommandQueue('send', $params);
 
         if($this->getResult){
 
@@ -729,7 +751,7 @@ class SignalJsonRpc extends AbstractSignal{
             "type"              => "read"
         ];
         
-        return $this->doRequest('sendReceipt', $params);
+        return $this->addToCommandQueue('sendReceipt', $params);
     }
 
     /**
@@ -800,7 +822,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         //SIM\printArray($param, true);
         
-        $result = $this->doRequest('remoteDelete', $param);
+        $result = $this->addToCommandQueue('remoteDelete', $param);
 
         if(isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
             $this->markAsDeleted($targetSentTimestamp);
@@ -835,7 +857,7 @@ class SignalJsonRpc extends AbstractSignal{
             $params["groupId"] = $groupId;
         }
 
-        return $this->doRequest('sendTyping', $params);
+        return $this->addToCommandQueue('sendTyping', $params);
     }
 
     /**
@@ -861,7 +883,7 @@ class SignalJsonRpc extends AbstractSignal{
             $params['groupId']  = $groupId;
         }
 
-        return $this->doRequest('sendReaction', $params);
+        return $this->addToCommandQueue('sendReaction', $params);
     }
 
     /**
@@ -891,7 +913,7 @@ class SignalJsonRpc extends AbstractSignal{
             $params['removeAvatar'] = true;
         }
 
-        return $this->doRequest('updateProfile', $params);
+        return $this->addToCommandQueue('updateProfile', $params);
     }
 
     /**
@@ -941,29 +963,27 @@ class SignalJsonRpc extends AbstractSignal{
     }
 
     /**
-     * Retry sending previous failed Signal messages
+     * Send all messages in the queue
      */
-    public function retryFailedMessages(){
-        // get failed commands from db
-        $failedCommands      = get_option('sim-signal-failed-messages', []);
-        
-        // clean db
-        delete_option('sim-signal-failed-messages');
-
-        if(empty($failedCommands)){
+    public function processCommandQueue(){
+        if(empty($this->commandQueue)){
             return;
         }
 
-        foreach($failedCommands as $command=>$argArray){
+        $this->isProcessing = true;
+
+        foreach($this->commandQueue as $command => &$argArray){
             SIM\printArray($command);
 
-            foreach($argArray as $args){
+            foreach($argArray as $index => &$args){
                 SIM\printArray($args);
 
-                $this->doRequest($command, $args);
+                $args   = $this->doRequest($command, $args);
 
-                sleep(60);
+                sleep(5);
             }
         }
+
+        $this->isProcessing = false;
     }
 }

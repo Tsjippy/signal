@@ -8,6 +8,15 @@ use SIM;
  * @param   bool        $getResult  Whether we should return the result, default true
  */
 function getSignalInstance($getResult=true){
+    global $signalTrue;
+    global $signalFalse;
+
+    if($getResult && !empty($signalTrue)){
+        return $signalTrue;
+    }elseif(!empty($signalFalse)){
+        return $signalFalse;
+    }
+
     if(str_contains(php_uname(), 'Linux')){
         $type   = SIM\getModuleOption(MODULE_SLUG, 'type');
         
@@ -17,8 +26,15 @@ function getSignalInstance($getResult=true){
             $signal = new SignalJsonRpc(true, $getResult);
         }
     }else{
-		$signal = new SignalCommandLine($getResult);
-	}     
+		//$signal = new SignalCommandLine($getResult);
+        $signal = new SignalJsonRpc(true, $getResult);
+	}
+
+    if($getResult){
+        $signalTrue     = $signal;
+    }else{
+        $signalFalse    = $signal;
+    }
     
     return $signal;
 }

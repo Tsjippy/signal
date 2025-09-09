@@ -29,6 +29,7 @@ class Signal{
     public $tableName;
     public $receivedTableName;
     public $totalMessages;
+    private $commandQueue;
 
     public function __construct(){
         global $wpdb;
@@ -95,6 +96,17 @@ class Signal{
         $this->daemon           = false;
 
         $this->osUserId         = "";
+
+        $this->commandQueue     = get_option('sim-signal-messages', []);
+        
+        // clean db
+        delete_option('sim-signal-messages');
+    }
+
+    public function __destruct() {
+        update_option('sim-signal-messages', $this->commandQueue );
+
+        SIM\printArray($this->commandQueue );
     }
 
     /**

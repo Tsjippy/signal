@@ -577,7 +577,7 @@ class SignalBus extends AbstractSignal {
 
     protected function parseResult($returnJson=false){
         if($this->command->getExitCode()){
-            $failedCommands      = get_option('sim-signal-failed-messages', []);
+            $failedCommands      = get_option('sim-signal-messages', []);
 
             $errorMessage  = $this->command->getError();
 
@@ -587,13 +587,13 @@ class SignalBus extends AbstractSignal {
             if(str_contains($errorMessage, 'CAPTCHA proof required')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-failed-messages', $failedCommands);
+                update_option('sim-signal-messages', $failedCommands);
 
                 $this->sendCaptchaInstructions($errorMessage);
             }elseif(str_contains($errorMessage, '429 Too Many Requests')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-failed-messages', $failedCommands);
+                update_option('sim-signal-messages', $failedCommands);
             }elseif(str_contains($errorMessage, 'Unregistered user')){
                 // get phonenumber from the message
                 preg_match('/"(\+\d*)/m', $errorMessage, $matches);
@@ -639,12 +639,12 @@ class SignalBus extends AbstractSignal {
     /**
      * Retry sending previous failed Signal messages
      */
-    public function retryFailedMessages(){
+    public function processCommandQueue(){
         // get failed commands from db
-        $failedCommands      = get_option('sim-signal-failed-messages', []);
+        $failedCommands      = get_option('sim-signal-messages', []);
         
         // clean db
-        delete_option('sim-signal-failed-messages');
+        delete_option('sim-signal-messages');
 
         if(empty($failedCommands)){
             return;
