@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [8.3.2] - 2025-09-10
+
+
+### Changed
 - synchronous signal actions to prevent overload
 
 ### Fixed
 - reply to metioned messaged
-
-### Updated
 
 ## [8.3.1] - 2025-08-21
 
