@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- synchronous signal actions to prevent overload
 
 ### Fixed
 - reply to metioned messaged
