@@ -579,8 +579,9 @@ class Signal{
 
             if(!empty($release['assets']) && is_array($release['assets'])){
                 foreach($release['assets'] as $asset){
-                    if(str_contains($asset['browser_download_url'], $this->os)){
+                    if(str_contains($asset['browser_download_url'], $this->os) && isset($asset['size']) && $asset['size'] > 1000000){
                         $url    = $asset['browser_download_url'];
+                        break;
                     }
                 }
             }

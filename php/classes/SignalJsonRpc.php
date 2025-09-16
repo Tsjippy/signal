@@ -252,6 +252,8 @@ class SignalJsonRpc extends AbstractSignal{
         $streamMetaData         = stream_get_meta_data($this->socket);
         if ($streamMetaData['timed_out']) {
             SIM\printArray("Signal Socket Timed Out");
+
+            return false;
         }
 
         $this->lastResponse     = trim($response);
@@ -470,7 +472,16 @@ class SignalJsonRpc extends AbstractSignal{
             sleep(5);
         }
 
-        return $this->commandQueue[$method][$index];
+        $result = $this->commandQueue[$method][$index]; 
+
+        // clean up the command queue
+        unset($this->commandQueue[$method][$index]);
+
+        if(empty($this->commandQueue[$method])){
+            unset($this->commandQueue[$method]);
+        }
+
+        return $result;
     }
 
     /**
@@ -973,14 +984,15 @@ class SignalJsonRpc extends AbstractSignal{
         $this->isProcessing = true;
 
         foreach($this->commandQueue as $command => &$argArray){
-            SIM\printArray($command);
-
             foreach($argArray as $index => &$args){
-                SIM\printArray($args);
+                // If this is an object, it has already been processed
+                if(gettype($args) == 'object'){
+                    continue;
+                }
 
                 $args   = $this->doRequest($command, $args);
 
-                sleep(5);
+                sleep(1);
             }
         }
 

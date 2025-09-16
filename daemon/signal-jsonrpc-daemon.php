@@ -206,7 +206,7 @@ function getAnswer($message, $source){
 
     $lowerMessage = strtolower($message);
 
-    //Change the user to the adminaccount otherwise get_users will not work
+    //Change the user to the admin account otherwise get_users will not work
     wp_set_current_user(1);
 
     // Find the first name
