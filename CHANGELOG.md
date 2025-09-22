@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- nice selects
 
 ### Updated
 
