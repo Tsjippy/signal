@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- cleaner admin js
 
 ### Fixed
 
