@@ -1,4 +1,4 @@
-import {copyFormInput, fixNumbering, removeNode} from '../../forms/js/forms.js';
+import {copyFormInput, fixNumbering, removeNode} from '../../forms/js/form_exports.js';
 
 document.addEventListener('click', function(event) {
 	let target = event.target;
