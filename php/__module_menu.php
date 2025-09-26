@@ -243,11 +243,11 @@ function notLocalOptions($settings){
 
 	<div class="">
 		<h4>Give optional Signal group name(s) to send new content messages to:</h4>
-		<div class="clone_divs_wrapper">
+		<div class="clone-divs-wrapper">
 			<?php
 			foreach($groups as $index=>$group){
 				?>
-				<div class="clone_div" data-divid="<?php echo $index;?>">
+				<div class="clone-div" data-divid="<?php echo $index;?>">
 					<label>
 						<h4 style='margin: 0px;'>Signal groupname <?php echo $index+1;?></h4>
 						<input type='text' name="groups[<?php echo $index;?>]" value='<?php echo $group;?>'>

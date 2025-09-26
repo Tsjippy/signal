@@ -5,9 +5,9 @@ document.addEventListener('click', function(event) {
 	
 	//add element
 	if(target.matches('.add')){
-		copyFormInput(target.closest(".clone_div"));
+		copyFormInput(target.closest(".clone-div"));
 
-		fixNumbering(target.closest('.clone_divs_wrapper'));
+		fixNumbering(target.closest('.clone-divs-wrapper'));
 
 		target.remove();
 	}
