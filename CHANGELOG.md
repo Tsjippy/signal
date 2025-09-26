@@ -5,6 +5,7 @@
 
 ### Changed
 - cleaner admin js
+- classnames replace _ with -
 
 ### Fixed
 
