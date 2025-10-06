@@ -252,7 +252,7 @@ function notLocalOptions($settings){
 						<h4 style='margin: 0px;'>Signal groupname <?php echo $index+1;?></h4>
 						<input type='text' name="groups[<?php echo $index;?>]" value='<?php echo $group;?>'>
 					</label>
-					<span class='buttonwrapper' style='margin:auto;'>
+					<span class='button-wrapper' style='margin:auto;'>
 						<button type="button" class="add button" style="flex: 1;">+</button>
 						<?php
 						if(count($groups)> 1){
