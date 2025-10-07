@@ -99,7 +99,7 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
 		$recipient	= $recipient->ID;
 	}
 
-	//Check if recipient is an existing userid
+	//Check if recipient is an existing user-id
 	if(is_numeric($recipient) && get_userdata($recipient)){
 		$phonenumber = get_user_meta( $recipient, 'signal_number', true );
 	}

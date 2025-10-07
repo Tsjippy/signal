@@ -29,7 +29,7 @@ function restApiInit() {
 			'callback' 				=> __NAMESPACE__.'\savePreferences',
 			'permission_callback' 	=> '__return_true',
 			'args'					=> array(
-				'userid'		=> array(
+				'user-id'		=> array(
 					'required'	=> true,
                     'validate_callback' => function($userId){
 						return is_numeric($userId);
@@ -73,7 +73,7 @@ function findFirstname(\WP_REST_Request $request ) {
 }
 
 function savePreferences(){
-	$userId			= $_POST['userid'];
+	$userId			= $_POST['user-id'];
 	$currentUser	= wp_get_current_user();
 
 	// If updating for someone else, check if we have the right to do so
@@ -82,7 +82,7 @@ function savePreferences(){
 	}
 
 	$signalPreferences	= $_POST;
-	unset($signalPreferences['userid']);
+	unset($signalPreferences['user-id']);
 	unset($signalPreferences['_wpnonce']);
 
 	do_action('sim_signal_before_pref_save', $userId, $signalPreferences);

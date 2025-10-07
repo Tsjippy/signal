@@ -888,8 +888,8 @@ function moduleData($html, $settings){
 			$active2	= '';
 		}
 		$html	.= '<div class="tablink-wrapper">';
-			$html	.= "<button class='tablink $active1' id='show_description' data-target='sent'>Sent messages</button>";
-			$html	.= "<button class='tablink $active2' id='show_settings' data-target='received'>Received messages</button>";
+			$html	.= "<button class='tablink $active1' id='show-description' data-target='sent'>Sent messages</button>";
+			$html	.= "<button class='tablink $active2' id='show-settings' data-target='received'>Received messages</button>";
 		$html	.= '</div>';
 	}
 
