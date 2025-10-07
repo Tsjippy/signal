@@ -18,7 +18,7 @@ function phoneNumberUpdated($phonenumber, $userId){
             }
         }
     }else{
-        $link		= SIM\getModuleOption(MODULE_SLUG, 'group_link');
+        $link		= SIM\getModuleOption(MODULE_SLUG, 'group-link');
     }
 
     $valid   = true;

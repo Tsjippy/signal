@@ -18,32 +18,32 @@ function afterContent($frontendContend){
     }
 
     ?>
-    <div id="signalmessage" class="frontendform">
+    <div id="signal-message" class="frontend-form">
         <h4>Signal</h4>
         <label>
-            <input type='checkbox' name='send_signal' value='1' <?php echo $checked; ?>>
+            <input type='checkbox' name='send-signal' value='1' <?php echo $checked; ?>>
             Send signal message on <?php echo $frontendContend->update == 'true' ? 'update' : 'publish';?>
         </label>
 
-        <div class='signalmessagetype <?php echo $hidden;?>' style='margin-top:15px;'>
+        <div class='signal-message-type <?php echo $hidden;?>' style='margin-top:15px;'>
             <label>
-                <input type='radio' name='signalmessagetype' value='summary' <?php if($messageType != 'all'){echo 'checked';}?>>
+                <input type='radio' name='signal-message-type' value='summary' <?php if($messageType != 'all'){echo 'checked';}?>>
                 Send a summary
             </label>
             <label>
-                <input type='radio' name='signalmessagetype' value='all' <?php if($messageType == 'all'){echo 'checked';}?>>
+                <input type='radio' name='signal-message-type' value='all' <?php if($messageType == 'all'){echo 'checked';}?>>
                 Send the whole post content
             </label>
             <br>
             <br>
             <label>
                 Add this sentence to the signal message:<br>
-                <input type="text" name="signal_extra_message">
+                <input type="text" name="signal-extra-message">
             </label>
             <br>
             <br>
             <label>
-                <input type="checkbox" name="signal_url" value='1'>
+                <input type="checkbox" name="signal-url" value='1'>
                 Include the url in the message even if the whole content is posted
             </label>
         </div>
@@ -54,15 +54,15 @@ function afterContent($frontendContend){
 // Send Signal message about the new or updated post
 add_action('sim_after_post_save', __NAMESPACE__.'\afterPostSave', 999);
 function afterPostSave($post){
-    if(isset($_POST['send_signal']) && $_POST['send_signal']){
+    if(isset($_POST['send-signal']) && $_POST['send-signal']){
         update_metadata( 'post', $post->ID, 'send_signal', true);
-        update_metadata( 'post', $post->ID, 'signal_message_type', $_POST['signalmessagetype']);
+        update_metadata( 'post', $post->ID, 'signal_message_type', $_POST['signal-message-type']);
         update_metadata( 'post', $post->ID, 'signal_url', true);
-        update_metadata( 'post', $post->ID, 'signal_extra_message', $_POST['signal_extra_message']);
+        update_metadata( 'post', $post->ID, 'signal_extra_message', $_POST['signal-extra-message']);
     }else{
         delete_metadata( 'post', $post->ID, 'send_signal');
         delete_metadata( 'post', $post->ID, 'signal_message_type');
-        delete_metadata( 'post', $post->ID, 'signal_url');
+        delete_metadata( 'post', $post->ID, 'signa_-url');
         delete_metadata( 'post', $post->ID, 'signal_extra_message');
     }
 }

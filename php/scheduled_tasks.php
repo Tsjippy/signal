@@ -33,7 +33,7 @@ function scheduleTasks(){
 
     SIM\scheduleTask('retry_failed_signal_messages_action', 'quarterly');
 
-    $freq   = SIM\getModuleOption(MODULE_SLUG, 'reminder_freq');
+    $freq   = SIM\getModuleOption(MODULE_SLUG, 'reminder-freq');
     if($freq){
         SIM\scheduleTask('signal_number_reminder_action', $freq);
     }

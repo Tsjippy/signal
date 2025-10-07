@@ -138,11 +138,11 @@ function connectedOptions($signal, $settings){
 		<a href='<?php echo $url;?>&unregister=true' class='button'>Unregister</a><br>
 	</p>
 
-	<label for="reminder_freq">How often should people be reminded to add a signal phonenumber  to the website</label>
+	<label for="reminder-freq">How often should people be reminded to add a signal phonenumber  to the website</label>
 	<br>
-	<select name="reminder_freq" class='hidden'>
+	<select name="reminder-freq" class='hidden'>
 		<?php
-		SIM\ADMIN\recurrenceSelector($settings['reminder_freq']);
+		SIM\ADMIN\recurrenceSelector($settings['reminder-freq']);
 		?>
 	</select>
 
@@ -238,7 +238,7 @@ function notLocalOptions($settings){
 	?>
 	<label>
 		Link to join the Signal group
-		<input type='url' name='group_link' value='<?php echo $settings["group_link"]; ?>' style='width:100%'>
+		<input type='url' name='group-link' value='<?php echo $settings["group-link"]; ?>' style='width:100%'>
 	</label>
 
 	<div class="">
@@ -491,13 +491,13 @@ function sentMessagesTable($startDate, $endDate, $amount){
 			padding: 20px;
 		}
 
-		.signal_table td.message{
+		.signal-table td.message{
 			max-width: 500px;
 			word-break: break-word;
   			white-space: break-spaces;
 		}
 	</style>
-	<div class='send-signal-messages tabcontent <?php if(!empty($_GET['second_tab']) && $_GET['second_tab']=='received_messages'){echo ' hidden';}?>' id='sent'>
+	<div class='send-signal-messages tabcontent <?php if(!empty($_GET['second-tab']) && $_GET['second-tab']=='received_messages'){echo ' hidden';}?>' id='sent'>
 		<?php
 
 		if($signal->totalMessages > $amount){
@@ -527,7 +527,7 @@ function sentMessagesTable($startDate, $endDate, $amount){
 
 		?>
 
-        <table class='signal_table sim-table'>
+        <table class='signal-table sim-table'>
 			<thead>
 				<th>Date</th>
 				<th>Time</th>
@@ -594,7 +594,7 @@ function sentMessagesTable($startDate, $endDate, $amount){
 function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 	global $wpdb;
 
-	if(!empty($_GET['second_tab']) && $_GET['second_tab']=='received_messages'){
+	if(!empty($_GET['second-tab']) && $_GET['second-tab']=='received_messages'){
 		$hidden	= '';
 	}
 
@@ -717,7 +717,7 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 
 		?>
 
-        <table class='signal_table sim-table'>
+        <table class='signal-table sim-table'>
 			<thead>
 				<th>Chat</th>
 				<th>Date</th>
@@ -880,7 +880,7 @@ function moduleData($html, $settings){
 	$receivedTable	= receivedMessagesTable($startDate, $endDate, $amount, $hidden);
 
 	if(!empty($sentTable) && !empty($receivedTable)){
-		if(isset($_GET['second_tab']) && $_GET['second_tab']=='received_messages'){
+		if(isset($_GET['second-tab']) && $_GET['second-tab']=='received_messages'){
 			$active1	= '';
 			$active2	= 'active';
 		}else{

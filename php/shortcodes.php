@@ -11,16 +11,16 @@ function signalMessages(){
 	$html 			= '';
 	
 	//Perform remove action
-	if(isset($_POST['recipient_number']) && isset($_POST['key'])){
+	if(isset($_POST['recipient-number']) && isset($_POST['key'])){
 		if($_SERVER['HTTP_HOST'] == 'localhost'){
 			$html .= '<div class="success">Succesfully removed all the messages</div>';
 			delete_option('signal_bot_messages');
 		}else{
 			$html .= '<div class="success">Succesfully removed the message</div>';
 
-			unset($signalMessages[$_POST['recipient_number']][$_POST['key']]);
+			unset($signalMessages[$_POST['recipient-number']][$_POST['key']]);
 			
-			if(count($signalMessages[$_POST['recipient_number']]) == 0) unset($signalMessages[$_POST['recipient_number']]);
+			if(count($signalMessages[$_POST['recipient-number']]) == 0) unset($signalMessages[$_POST['recipient-number']]);
 			
 			update_option('signal_bot_messages', $signalMessages);
 		}
@@ -33,9 +33,9 @@ function signalMessages(){
 				$html .= 'Message '.($key+1).":<br>";
 				$html .= $signal_message[0].'<br>';
 				$html .= '<form action="" method="post">
-					<input type="hidden" id="recipient_number" name="recipient_number" value="'.$recipient_number.'">
+					<input type="hidden" id="recipient-number" name="recipient-number" value="'.$recipient_number.'">
 					<input type="hidden" id="key" name="key" value="'.$key.'">
-					<button class="button remove signal_message sim" type="submit" style="margin-top:10px;">Remove this message</button>
+					<button class="button remove signal-message sim" type="submit" style="margin-top:10px;">Remove this message</button>
 				</form>';
 			}
 		}

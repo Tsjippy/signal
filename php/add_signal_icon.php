@@ -28,4 +28,4 @@ function elmentHtml($html, $element, $formBuilder){
     return $html;
 }
 
-//<input type='tel' name='phonenumbers[0]' class=' formfield formfieldinput' pattern="\+[0-9]{9,}" title="Phonenumber starting with a +. Only numbers. Example: +2349041234567" value='+2349045252526'>
+//<input type='tel' name='phonenumbers[0]' class=' formfield formfield-input' pattern="\+[0-9]{9,}" title="Phonenumber starting with a +. Only numbers. Example: +2349041234567" value='+2349045252526'>
