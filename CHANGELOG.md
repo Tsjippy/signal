@@ -5,6 +5,7 @@
 
 ### Changed
 - classnames
+- data attribute names
 
 ### Fixed
 - bugs
