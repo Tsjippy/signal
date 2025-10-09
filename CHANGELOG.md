@@ -7,6 +7,7 @@
 - classnames
 
 ### Fixed
+- bugs
 
 ### Updated
 
