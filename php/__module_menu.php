@@ -247,7 +247,7 @@ function notLocalOptions($settings){
 			<?php
 			foreach($groups as $index=>$group){
 				?>
-				<div class="clone-div" data-divid="<?php echo $index;?>">
+				<div class="clone-div" data-div-id="<?php echo $index;?>">
 					<label>
 						<h4 style='margin: 0px;'>Signal groupname <?php echo $index+1;?></h4>
 						<input type='text' name="groups[<?php echo $index;?>]" value='<?php echo $group;?>'>

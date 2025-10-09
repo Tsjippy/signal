@@ -15,7 +15,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user){
 	}
 
 	//Add an extra tab
-	$filteredHtml['tabs']['Signal']	= "<li class='tablink' id='show-signal_options' data-target='signal_options'>Signal options</li>";
+	$filteredHtml['tabs']['Signal']	= "<li class='tablink' id='show-signal-options' data-target='signal_options'>Signal options</li>";
 	
     wp_enqueue_script( 'sim_signal_options');
 
@@ -23,7 +23,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user){
 	ob_start();
     
 	?>
-	<div id='signal_options' class='tabcontent hidden'>
+	<div id='signal-options' class='tabcontent hidden'>
         <form>
 			<input type='hidden' name='user-id' value='<?php echo $user->ID;?>'>
             <h3>Signal Options</h3>
