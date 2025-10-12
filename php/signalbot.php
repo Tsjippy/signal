@@ -50,7 +50,7 @@ function sendPostNotification($post){
 
 	$excerpt = apply_filters('sim_signal_post_notification_message', $excerpt, $post);
 	
-	if($_POST['update'] == 'true'){
+	if($_POST['update']){
 		$message 	= "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
 	}else{
 		$author		= get_userdata($post->post_author)->display_name;

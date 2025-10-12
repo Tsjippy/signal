@@ -22,7 +22,7 @@ function afterContent($frontendContend){
         <h4>Signal</h4>
         <label>
             <input type='checkbox' name='send-signal' value='1' <?php echo $checked; ?>>
-            Send signal message on <?php echo $frontendContend->update == 'true' ? 'update' : 'publish';?>
+            Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish';?>
         </label>
 
         <div class='signal-message-type <?php echo $hidden;?>' style='margin-top:15px;'>

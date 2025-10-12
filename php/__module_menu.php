@@ -52,7 +52,7 @@ function registerForm(){
 		<br>
 		<br>
 		<label>
-			<input type='checkbox' name='voice' value='true'>
+			<input type='checkbox' name='voice' value=1>
 			Register with a voice call in stead of sms
 		</label>
 		<br>
@@ -813,7 +813,7 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 									$author	= urlencode($message['sender']);
 									$chat	= urlencode($chat);
 									?>
-									<button type="button" class="trigger" data-target="[name='emoji']" data-replace='true' title='Send an emoji reaction'>emoji</button>
+									<button type="button" class="trigger" data-target="[name='emoji']" data-replace=1 title='Send an emoji reaction'>emoji</button>
 									<form method='post' class='hidden'>
 										<input type="hidden" name="timesent" value="<?php echo $message['timesent'];?>" />
 										<input type="hidden" name="id" value="<?php echo $message['id'];?>" />
