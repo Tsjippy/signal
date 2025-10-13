@@ -409,8 +409,8 @@ function messagesHeader($settings, $startDate, $endDate, $amount){
 			<h2>Show Message History</h2>
 
 			<form method='get' id='message-overview-settings'>
-				<input type="hidden" name="page" value="sim_signal" />
-				<input type="hidden" name="tab" value="data" />
+				<input type="hidden" class="no-reset" name="page" value="sim_signal" />
+				<input type="hidden" class="no-reset" name="tab" value="data" />
 
 				<label>
 					Show Messages send between <input type='date' name='start-date' value='<?php echo $startDate;?>' max='<?php echo date('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo $endDate;?>' max='<?php echo date('Y-m-d', strtotime('+1 day')); ?>'>
@@ -428,8 +428,8 @@ function messagesHeader($settings, $startDate, $endDate, $amount){
 			<h2>Clear Message History</h2>
 
 			<form method='post'>
-				<input type="hidden" name="page" value="sim_signal" />
-				<input type="hidden" name="tab" value="data" />
+				<input type="hidden" class="no-reset" name="page" value="sim_signal" />
+				<input type="hidden" class="no-reset" name="tab" value="data" />
 
 				<label>
 					Delete Messages send before <input type='date' name='delete-date' value='<?php echo date('Y-m-d', strtotime('-1 month'));?>' max='<?php echo date('Y-m-d'); ?>'>
@@ -443,8 +443,8 @@ function messagesHeader($settings, $startDate, $endDate, $amount){
 			<h2>Auto clean Message History</h2>
 
 			<form method='get' id='message-overview-settings'>
-				<input type="hidden" name="page" value="sim_signal" />
-				<input type="hidden" name="tab" value="data" />
+				<input type="hidden" class="no-reset" name="page" value="sim_signal" />
+				<input type="hidden" class="no-reset" name="tab" value="data" />
 
 				<label>
 					Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo $settings['clean-amount'];?>' style='width:60px;'>
@@ -570,9 +570,9 @@ function sentMessagesTable($startDate, $endDate, $amount){
 								}else{
 									?>
 									<form method='post'>
-										<input type="hidden" name="timesend" value="<?php echo $message->timesend;?>" />
-										<input type="hidden" name="id" value="<?php echo $message->id;?>" />
-										<input type="hidden" name="recipients" value="<?php echo $message->recipient;?>" />
+										<input type="hidden" class="no-reset" name="timesend" value="<?php echo $message->timesend;?>" />
+										<input type="hidden" class="no-reset" name="id" value="<?php echo $message->id;?>" />
+										<input type="hidden" class="no-reset" name="recipients" value="<?php echo $message->recipient;?>" />
 										<input type='submit' name='action' value='Delete'>
 									</form>
 									<?php
@@ -815,11 +815,11 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 									?>
 									<button type="button" class="trigger" data-target="[name='emoji']" data-replace=1 title='Send an emoji reaction'>emoji</button>
 									<form method='post' class='hidden'>
-										<input type="hidden" name="timesent" value="<?php echo $message['timesent'];?>" />
-										<input type="hidden" name="id" value="<?php echo $message['id'];?>" />
-										<input type="hidden" name="sender" value="<?php echo $message['sender'];?>" />
-										<input type="hidden" name="chat" value="<?php echo $chat;?>" />
-										<input type='hidden' name='emoji'>
+										<input type="hidden" class="no-reset" name="timesent" value="<?php echo $message['timesent'];?>" />
+										<input type="hidden" class="no-reset" name="id" value="<?php echo $message['id'];?>" />
+										<input type="hidden" class="no-reset" name="sender" value="<?php echo $message['sender'];?>" />
+										<input type="hidden" class="no-reset" name="chat" value="<?php echo $chat;?>" />
+										<input type='hidden' class='no-reset' name='emoji'>
 										<input type='submit' name='action' value='Reply'>
 									</form>
 									<a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
@@ -937,8 +937,8 @@ function moduleFunctions($html, $settings){
 	if(isset($_REQUEST['challenge']) && !isset($_REQUEST['captchastring'])){
 		?>
 		<form method='get'>
-			<input type="hidden" name="page" value="sim_signal">
-			<input type="hidden" name="tab" value="functions">
+			<input type="hidden" class="no-reset" name="page" value="sim_signal">
+			<input type="hidden" class="no-reset" name="tab" value="functions">
 
 			<label>
 				<h4>Challenge string</h4>
@@ -980,9 +980,9 @@ function moduleFunctions($html, $settings){
 
 	?>
 	<form method='post'>
-		<input type='hidden' name='timestamp' 	value='<?php echo $timeStamp;?>'>
-		<input type='hidden' name='author' 		value='<?php echo $author;?>'>
-		<input type='hidden' name='prevmessage' value='<?php echo $prevMessage;?>'>
+		<input type='hidden' class='no-reset' name='timestamp' 	value='<?php echo $timeStamp;?>'>
+		<input type='hidden' class='no-reset' name='author' 		value='<?php echo $author;?>'>
+		<input type='hidden' class='no-reset' name='prevmessage' value='<?php echo $prevMessage;?>'>
 
 		<label>
 			<h4>Message to be send</h4>

@@ -25,7 +25,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user){
 	?>
 	<div id='signal-options' class='tabcontent hidden'>
         <form>
-			<input type='hidden' name='user-id' value='<?php echo $user->ID;?>'>
+			<input type='hidden' class='no-reset' name='user-id' value='<?php echo $user->ID;?>'>
             <h3>Signal Options</h3>
             <?php
                 $prefs      = get_user_meta($user->ID, 'signal_preferences', true);
