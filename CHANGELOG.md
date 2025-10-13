@@ -4,13 +4,20 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [8.3.7] - 2025-10-13
+
+
+### Changed
 - classnames
 - data attribute names
 
 ### Fixed
 - bugs
-
-### Updated
 
 ## [8.3.6] - 2025-10-06
 
