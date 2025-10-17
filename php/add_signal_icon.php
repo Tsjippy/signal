@@ -3,9 +3,11 @@ namespace SIM\SIGNAL;
 use SIM;
 
 add_filter('sim-form-element-html', __NAMESPACE__.'\elmentHtml', 10, 3);
-function elmentHtml($html, $element, $formBuilder){
+function elmentHtml($html, $object){
+    $element    = $object->element;
+    
     if($element->name == 'phonenumbers'){
-        $signalNr   = get_user_meta($formBuilder->userId, 'signal_number', true);
+        $signalNr   = get_user_meta($object->userId, 'signal_number', true);
 
         if(!empty($signalNr)){
             // add the signal logo behind the phone number input
