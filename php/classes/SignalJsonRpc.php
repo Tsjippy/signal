@@ -452,6 +452,11 @@ class SignalJsonRpc extends AbstractSignal{
             return $this->doRequest($method, $params);
         }
 
+        if(!empty($this->commandQueue)){
+            SIM\printArray("Current Signal Message queue:");
+            SIM\printArray($this->commandQueue);
+        }
+
         // Store command
         if(!isset($this->commandQueue[$method]) || !is_array($this->commandQueue[$method])){
             $this->commandQueue[$method]    = [];
@@ -460,8 +465,6 @@ class SignalJsonRpc extends AbstractSignal{
         $this->commandQueue[$method][]      = $params;
 
         $index                              = count($this->commandQueue[$method]) - 1;
-
-        SIM\printArray($this->commandQueue);
 
         if(!$this->isProcessing){
             $this->processCommandQueue();

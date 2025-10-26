@@ -278,7 +278,7 @@ function getAnswer($message, $source){
         $response['message'] = 'I have no clue, do you know?';
     }
 
-    $response   = apply_filters('sim-signal-daemon-response', $response, $lowerMessage, $source, $users, $name, $signal);
+    $response   = apply_filters('sim-signal-daemon-response', $response, $message, $source, $users, $name, $signal);
 
     return $response;
 }
