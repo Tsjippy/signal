@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- feed the original message to the deamon response filter, not the lowercase one
 
 ### Fixed
 
