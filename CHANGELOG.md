@@ -4,12 +4,17 @@
 ### Added
 
 ### Changed
-- feed the original message to the deamon response filter, not the lowercase one
-- use upgrade.php not install-helper.php
 
 ### Fixed
 
 ### Updated
+
+## [8.4.0] - 2025-10-30
+
+
+### Changed
+- feed the original message to the deamon response filter, not the lowercase one
+- use upgrade.php not install-helper.php
 
 ## [8.3.9] - 2025-10-20
 
