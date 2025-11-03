@@ -643,6 +643,7 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 	<script>
 		document.addEventListener("click", function(ev) {
 			let target	= ev.target;
+			
 			if(target.matches('.expand')){
 
 				let rowspan = target.closest('td').dataset.rowspan;
@@ -680,7 +681,11 @@ function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
 
 				target.textContent	= '+';
 				target.classList.replace('condense','expand');
+			}else{
+				return;
 			}
+
+			ev.stopImmediatePropagation();
 		});
 
 		document.addEventListener("emoji_selected", function(ev) {

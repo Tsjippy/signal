@@ -13,9 +13,13 @@ document.addEventListener('click', function(event) {
 	}
 	
 	//remove element
-	if(target.matches('.remove')){
+	else if(target.matches('.remove')){
         console.log(target);
 		//Remove node clicked
 		removeNode(target);
+	}else{
+		return;
 	}
+
+	event.stopImmediatePropagation();
 });
