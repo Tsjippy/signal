@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- stop listening to events if we have a match
 
 ### Fixed
 
