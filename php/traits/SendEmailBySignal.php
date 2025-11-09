@@ -5,10 +5,10 @@ namespace SIM\SIGNAL;
 trait SendEmailBySignal{
     function sendEmailBySignal($args){
         $numbers    = [];
-        if(!empty($args['formresults'])){
+        if(!empty($args['submission'])){
             $forms      = new \SIM\FORMS\SimForms();
 
-            $numbers    = (array) $args['formresults'][$forms->findPhoneNumberElementName()];
+            $numbers    = (array) $args['submission']->{$forms->findPhoneNumberElementName()};
         }
         
         if(empty($numbers)){
