@@ -5,6 +5,7 @@
 
 ### Changed
 - formresults to submission
+- signal icon to node based html
 
 ### Fixed
 
