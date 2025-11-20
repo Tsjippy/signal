@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- support for Local
 
 ### Changed
 - formresults to submission
