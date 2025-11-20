@@ -1,7 +1,7 @@
 <?php
 
 /**
- * find signal config here: nano /home/simnige1/.local/share/signal-cli/data/accounts.json
+ * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
  * this file should be run from a service, see install/signal-cli-jsonrpc-daemon.service
 */
 //use SIM;

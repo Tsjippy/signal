@@ -91,7 +91,7 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
 	$phonenumber	= $recipient;
 	
 	// do not send on localhost
-	if($_SERVER['HTTP_HOST'] == 'localhost' || get_option("wpstg_is_staging_site") == "true"){
+	if($_SERVER['HTTP_HOST'] == 'localhost' || get_option("wpstg_is_staging_site") == "true" || str_contains($_SERVER['HTTP_HOST'], '.local')){
 		return;
 	}
 

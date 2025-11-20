@@ -336,6 +336,51 @@ function moduleOptions($optionsHtml, $settings){
 }
 
 function processActions($settings){
+	/**
+	 * Download a backup of the configuration
+	 */
+	if(isset($_REQUEST['backup'])){
+		$zip = new \ZipArchive();
+
+		$zipFileName	= 'Signal-cli-Backup.zip';
+
+		$zipFilePath 	= get_temp_dir() . $zipFileName; // Use a temporary directory
+
+		if ($zip->open($zipFilePath, \ZipArchive::CREATE) !== TRUE) {
+			exit("Cannot open <$zipFilePath>");
+		}
+
+		// Get the current user's UID
+		$uid = posix_getuid();
+
+		// Get user information based on the UID
+		$userInfo = posix_getpwuid($uid);
+
+		// Extract the user's home directory
+		$userHomeDir = $userInfo['dir'];
+
+        if(!empty($userHomeDir)){
+
+			SIM\printArray(scandir("$userHomeDir/.local/share/signal-cli/data"));
+
+			foreach (scandir("$userHomeDir/.local/share/signal-cli/data") as $file) {
+				if (file_exists($file)) {
+					$zip->addFile($file, basename($file)); // Add with its original filename
+				}
+			}
+
+			$zip->close();
+
+			header('Content-Type: application/zip');
+			header('Content-Disposition: attachment; filename="' . $zipFileName . '"');
+			header('Content-Length: ' . filesize($zipFilePath));
+			readfile($zipFilePath); // Output the file content
+
+			unlink($zipFilePath);
+			exit;
+		}
+	}
+
 	if(!isset($_REQUEST['action'])){
 		return '';
 	}
