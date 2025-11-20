@@ -5,8 +5,8 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStartPre=-/usr/bin/rm /home/simnige1/sockets/signal
-ExecStart=/home/simnige1/web/simnigeria.org/public_html/wp-content/signal-cli/program/signal-cli --config /home/simnige1/.local/share/signal-cli/ --trust-new-identities=always daemon --socket=/home/simnige1/sockets/signal
+ExecStartPre=-/usr/bin/rm $HOME/sockets/signal
+ExecStart=$HOME/YOURPATH/public_html/wp-content/signal-cli/program/signal-cli --config HOME/YOURPATH/public_html/wp-content/signal-cli/config/ --trust-new-identities=always daemon --socket=$HOME/sockets/signal
 
 User=simnige1
 Restart = on-failure 
