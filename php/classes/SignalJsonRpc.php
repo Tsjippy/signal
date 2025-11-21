@@ -10,21 +10,13 @@ use mikehaertl\shellcommand\Command;
 use stdClass;
 use WP_Error;
 
-// apt-get -y install socat
-//Install java apt install openjdk-17-jdk -y
-//export VERSION=$(curl --silent "https://api.github.com/repos/AsamK/signal-cli/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'| sed 's/v//')
-//wget https://github.com/AsamK/signal-cli/releases/download/v"${VERSION}"/signal-cli-"${VERSION}"-Linux.tar.gz
-//sudo tar xf signal-cli-"${VERSION}"-Linux.tar.gz -C /opt
-//sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ 
-
-// data is stored in $HOME/.local/share/signal-cli
-
 /*
-    Test unix socket from command line: 
-    printf  '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":SOMEID}\n' | socat UNIX-CONNECT:/home/simnige1/sockets/signal -
+    To
+    Test unix socket from command line:
+    printf  '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":SOMEID}\n' | socat STDIN UNIX-CONNECT:SOCKETPATH -YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/socket
 
     Test json RPC
-    echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | ...public_html/wp-content/signal-cli/program/signal-cli --config ..../.local/share/signal-cli jsonRpc
+    echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | YOURPATH/public_html/wp-content/signal-cli/program/signal-cli --config /home/user/htdocs/srv1140598.hstgr.cloud/wp-content/signal-cli jsonRpc
 */
 
 
@@ -56,6 +48,7 @@ class SignalJsonRpc extends AbstractSignal{
     public $lastRequestTime;
     public $commandQueue;
     private $isProcessing;
+    public $socketPath;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
@@ -64,20 +57,25 @@ class SignalJsonRpc extends AbstractSignal{
         $this->daemonIsRunning();
         $this->startDaemon();
 
-        $socketPath     = "/home/simnige1/sockets/signal";
+        $this->socketPath     = "$this->basePath/socket";
 
-        $this->socket   = stream_socket_client("unix:///$socketPath", $errno, $this->error);
-
+        $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
+        
         if($errno == 111){
             // remove the old socket file
-            unlink($socketPath);
+            unlink($this->socketPath);
 
             // try again
-            $this->socket   = stream_socket_client("unix:///$socketPath", $errno, $this->error);
+            $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
         }
 
-        if(!$this->socket){
-            SIM\printArray("$errno: $this->error", true);
+        if($errno == 2){
+            echo "<div class='error'>Could not start, is the signal-cli jsonrpc daemon running?</div>";
+
+        }elseif(!$this->socket){
+            echo "<div class='error'>Unable to create socket on $this->socketPath</div>";
+
+            SIM\printArray("$errno: $this->error");
         }
 
         $this->shouldCloseSocket    = $shouldCloseSocket;
@@ -101,7 +99,7 @@ class SignalJsonRpc extends AbstractSignal{
         $this->lastRequestTime = time();
 
         if($this->shouldCloseSocket){
-            $this->socket   = stream_socket_client('unix:////home/simnige1/sockets/signal', $errno, $this->error);
+            $this->socket   = stream_socket_client("unix:////$this->socketPath" , $errno, $this->error);
         }
 
         if(!$this->socket){
@@ -911,7 +909,7 @@ class SignalJsonRpc extends AbstractSignal{
      * 
      * @return bool|string
      */
-    public function updateProfile(string $name, string $avatarPath = null, bool $removeAvatar = false){
+    public function updateProfile(string $name, ?string $avatarPath = null, bool $removeAvatar = false){
 
         $params = [];
 

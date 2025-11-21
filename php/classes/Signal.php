@@ -25,6 +25,7 @@ class Signal{
     public $command;
     public $error;
     public $attachmentsPath;
+    public $configPath;
     public $tableName;
     public $receivedTableName;
     public $totalMessages;
@@ -51,6 +52,23 @@ class Signal{
             mkdir($this->attachmentsPath , 0777, true);
         }
 
+        $this->configPath  = $this->basePath.'/config';
+        if (!is_dir($this->configPath )) {
+            mkdir($this->configPath , 0777, true);
+        }
+
+        $this->programPath      = $this->basePath.'/program/';
+        if (!is_dir($this->programPath )) {
+            mkdir($this->programPath , 0777, true);
+            SIM\printArray("Created $this->programPath");
+        }
+
+        // check permissions
+        $path   = $this->programPath.'/signal-cli';
+        if(!is_executable($path)){
+            chmod($path, 0555);
+        }
+
         // .htaccess to prevent access
         if(!file_exists($this->basePath.'/.htaccess')){
             file_put_contents($this->basePath.'/.htaccess', 'deny from all');
@@ -68,22 +86,11 @@ class Signal{
         }elseif(str_contains(php_uname(), 'Linux')){
             $this->os               = 'Linux';
         }
-        
-        $this->programPath      = $this->basePath.'/program/';
-        if (!is_dir($this->programPath )) {
-            mkdir($this->programPath , 0777, true);
-            SIM\printArray("Created $this->programPath");
-        }
-
-        // check permissions
-        $path   = $this->programPath.'/signal-cli';
-        if(!is_executable($path)){
-            chmod($path, 0555);
-        }
-
         $this->phoneNumber      = '';
-        if(file_exists($this->basePath.'/phone.signal')){
-            $this->phoneNumber      = trim(file_get_contents($this->basePath.'/phone.signal'));
+        if(file_exists("$this->configPath/data/accounts.json")){
+            $accountData        = file_get_contents("$this->configPath/data/accounts.json");
+            $accountData        = json_decode($accountData);
+            $this->phoneNumber  = $accountData->accounts[0]->number;
         }
 
         $this->path             = $this->programPath.'bin/signal-cli';
@@ -105,7 +112,9 @@ class Signal{
     public function __destruct() {
         update_option('sim-signal-messages', $this->commandQueue );
 
-        SIM\printArray($this->commandQueue );
+        if(!empty($this->commandQueue)){
+            SIM\printArray($this->commandQueue );
+        }
     }
 
     /**
@@ -538,7 +547,7 @@ class Signal{
         $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($this->path.' --version')));
 
         if(empty($curVersion)){
-            SIM\printArray($this->path.' --version did not return any result', true);
+            SIM\printArray($this->path.' --version did not return any result', false);
             echo $this->path.' --version did not return any result';
         }
 

@@ -5,10 +5,11 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStartPre=-/usr/bin/rm $HOME/sockets/signal
-ExecStart=$HOME/YOURPATH/public_html/wp-content/signal-cli/program/signal-cli --config HOME/YOURPATH/public_html/wp-content/signal-cli/config/ --trust-new-identities=always daemon --socket=$HOME/sockets/signal
+Environment="BASEPATH=YOURPATH TO THE WP CONTENT DIR/wp-content/signal-cli"
+ExecStartPre=-/usr/bin/rm ${BASEPATH}/socket
+ExecStart=${BASEPATH}/program/signal-cli --config ${BASEPATH}/config/ --trust-new-identities=always daemon --socket=${BASEPATH}/socket
 
-User=simnige1
+User=USERNAME
 Restart = on-failure 
 RestartSec = 5
 

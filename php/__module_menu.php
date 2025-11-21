@@ -340,30 +340,20 @@ function processActions($settings){
 	 * Download a backup of the configuration
 	 */
 	if(isset($_REQUEST['backup'])){
-		$zip = new \ZipArchive();
+		$signal	= getSignalInstance();
 
-		$zipFileName	= 'Signal-cli-Backup.zip';
+        if(!empty($signal->configPath)){
+			$zip = new \ZipArchive();
 
-		$zipFilePath 	= get_temp_dir() . $zipFileName; // Use a temporary directory
+			$zipFileName	= 'Signal-cli-Backup.zip';
 
-		if ($zip->open($zipFilePath, \ZipArchive::CREATE) !== TRUE) {
-			exit("Cannot open <$zipFilePath>");
-		}
+			$zipFilePath 	= get_temp_dir() . $zipFileName; // Use a temporary directory
 
-		// Get the current user's UID
-		$uid = posix_getuid();
+			if ($zip->open($zipFilePath, \ZipArchive::CREATE) !== TRUE) {
+				exit("Cannot open <$zipFilePath>");
+			}
 
-		// Get user information based on the UID
-		$userInfo = posix_getpwuid($uid);
-
-		// Extract the user's home directory
-		$userHomeDir = $userInfo['dir'];
-
-        if(!empty($userHomeDir)){
-
-			SIM\printArray(scandir("$userHomeDir/.local/share/signal-cli/data"));
-
-			foreach (scandir("$userHomeDir/.local/share/signal-cli/data") as $file) {
+			foreach (scandir("$signal->configPath/data") as $file) {
 				if (file_exists($file)) {
 					$zip->addFile($file, basename($file)); // Add with its original filename
 				}

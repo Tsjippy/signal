@@ -113,7 +113,7 @@ abstract class AbstractSignal extends Signal {
      * @param bool $removeAvatar Remove the avatar visible by message recipients
      * @return bool|string
      */
-    abstract public function updateProfile(string $name, string $avatarPath = null, bool $removeAvatar = false);
+    abstract public function updateProfile(string $name, ?string $avatarPath = null, bool $removeAvatar = false);
 
     /**
      * Submit a challenge
