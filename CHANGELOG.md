@@ -9,6 +9,7 @@
 - signal icon to node based html
 
 ### Fixed
+- php8.4 complicance
 
 ### Updated
 
