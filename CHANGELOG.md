@@ -8,6 +8,7 @@
 - formresults to submission
 - signal icon to node based html
 - composer updated
+- dropped support for DBUS
 
 ### Fixed
 - php8.4 complicance
