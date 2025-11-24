@@ -18,13 +18,7 @@ function getSignalInstance($getResult=true){
     }
 
     if(str_contains(php_uname(), 'Linux')){
-        $type   = SIM\getModuleOption(MODULE_SLUG, 'type');
-        
-        if($type && $type == 'dbus'){
-            $signal	= new SignalBus($getResult);
-        }else{
-            $signal = new SignalJsonRpc(true, $getResult);
-        }
+        $signal = new SignalJsonRpc(true, $getResult);
     }else{
 		//$signal = new SignalCommandLine($getResult);
         $signal = new SignalJsonRpc(true, $getResult);

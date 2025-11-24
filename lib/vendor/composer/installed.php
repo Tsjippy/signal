@@ -3,7 +3,7 @@
         'name' => 'sim/signal',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '59caefccf8c73423ae085d356274ffe315a7dd9c',
+        'reference' => '1c7dbd423edcf17e81ebcc1130f774f5295efb99',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'bacon/bacon-qr-code' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '36a1cb2b81493fa5b82e50bf8068bf84d1542563',
+            'reference' => 'c2fe9b34b471745d0b0a0bd4b7e4a294632e4bce',
             'type' => 'library',
             'install_path' => __DIR__ . '/../bacon/bacon-qr-code',
             'aliases' => array(
@@ -129,7 +129,7 @@
         'sim/signal' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '59caefccf8c73423ae085d356274ffe315a7dd9c',
+            'reference' => '1c7dbd423edcf17e81ebcc1130f774f5295efb99',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

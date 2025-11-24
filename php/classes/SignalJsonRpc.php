@@ -59,6 +59,12 @@ class SignalJsonRpc extends AbstractSignal{
 
         $this->socketPath     = "$this->basePath/socket";
 
+        clearstatcache();
+
+        if (!is_writable($this->socketPath )) {
+            SIM\printArray( "Please chick the file permisions to $this->socketPath");
+        }
+
         $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
         
         if($errno == 111){

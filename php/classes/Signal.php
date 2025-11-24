@@ -57,7 +57,7 @@ class Signal{
             mkdir($this->configPath , 0777, true);
         }
 
-        $this->programPath      = $this->basePath.'/program/';
+        $this->programPath      = $this->basePath.'/program';
         if (!is_dir($this->programPath )) {
             mkdir($this->programPath , 0777, true);
             SIM\printArray("Created $this->programPath");
@@ -93,10 +93,10 @@ class Signal{
             $this->phoneNumber  = $accountData->accounts[0]->number;
         }
 
-        $this->path             = $this->programPath.'bin/signal-cli';
+        $this->path             = $this->programPath.'/bin/signal-cli';
 
-        if(!file_exists($this->path) && file_exists($this->programPath.'signal-cli')){
-            $this->path = $this->programPath.'signal-cli';
+        if(!file_exists($this->path) && file_exists($this->programPath.'/signal-cli')){
+            $this->path = $this->programPath.'/signal-cli';
         }
 
         $this->daemon           = false;

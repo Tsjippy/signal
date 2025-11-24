@@ -7,12 +7,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Bacon/BaconQrCode.git",
-                "reference": "36a1cb2b81493fa5b82e50bf8068bf84d1542563"
+                "reference": "c2fe9b34b471745d0b0a0bd4b7e4a294632e4bce"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Bacon/BaconQrCode/zipball/36a1cb2b81493fa5b82e50bf8068bf84d1542563",
-                "reference": "36a1cb2b81493fa5b82e50bf8068bf84d1542563",
+                "url": "https://api.github.com/repos/Bacon/BaconQrCode/zipball/c2fe9b34b471745d0b0a0bd4b7e4a294632e4bce",
+                "reference": "c2fe9b34b471745d0b0a0bd4b7e4a294632e4bce",
                 "shasum": ""
             },
             "require": {
@@ -30,7 +30,7 @@
             "suggest": {
                 "ext-imagick": "to generate QR code images"
             },
-            "time": "2025-11-19T17:15:36+00:00",
+            "time": "2025-11-22T18:35:16+00:00",
             "default-branch": true,
             "type": "library",
             "installation-source": "dist",

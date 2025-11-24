@@ -295,17 +295,6 @@ function moduleOptions($optionsHtml, $settings){
 	</label>
 	<br>
 	<br>
-	Which type of connection do you use?<br>
-	<label>
-		<input type="radio" id='type' name="type" value='dbus' <?php if($type == 'dbus'){echo 'checked';}?>>
-		Dbus
-	</label>
-	<label>
-		<input type="radio" id='type' name="type" value='json' <?php if($type == 'json'){echo 'checked';}?>>
-		JsonRpc
-	</label>
-	<br>
-	<br>
 	<?php
 	
 	if($local){

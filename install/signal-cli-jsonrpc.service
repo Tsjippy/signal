@@ -9,7 +9,7 @@ Environment="BASEPATH=YOURPATH TO THE WP CONTENT DIR/wp-content/signal-cli"
 ExecStartPre=-/usr/bin/rm ${BASEPATH}/socket
 ExecStart=${BASEPATH}/program/signal-cli --config ${BASEPATH}/config/ --trust-new-identities=always daemon --socket=${BASEPATH}/socket
 
-User=USERNAME
+User=USERNAME/root
 Restart = on-failure 
 RestartSec = 5
 
