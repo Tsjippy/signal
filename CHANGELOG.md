@@ -7,6 +7,7 @@
 ### Changed
 - formresults to submission
 - signal icon to node based html
+- composer updated
 
 ### Fixed
 - php8.4 complicance
