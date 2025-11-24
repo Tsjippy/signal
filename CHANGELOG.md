@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [8.4.2] - 2025-11-24
+
+
+### Added
 - support for Local
 
 ### Changed
@@ -12,8 +23,6 @@
 
 ### Fixed
 - php8.4 complicance
-
-### Updated
 
 ## [8.4.1] - 2025-11-03
 
