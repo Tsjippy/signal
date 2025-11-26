@@ -767,7 +767,8 @@
     "minimum-stability": "dev",
     "stability-flags": {
         "mikehaertl/php-shellcommand": 20,
-        "bacon/bacon-qr-code": 20
+        "bacon/bacon-qr-code": 20,
+        "guzzlehttp/guzzle": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
