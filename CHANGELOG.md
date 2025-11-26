@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- lib update
 
 ### Fixed
 
 ### Updated
+
+## [8.4.3] - 2025-11-26
+
+
+### Changed
+- lib update
 
 ## [8.4.2] - 2025-11-24
 
