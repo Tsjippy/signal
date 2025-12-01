@@ -44,22 +44,22 @@ class Signal{
         $this->os               = 'macOS';
         $this->basePath = WP_CONTENT_DIR.'/signal-cli';
         if (!is_dir($this->basePath )) {
-            mkdir($this->basePath , 0777, true);
+            wp_mkdir_p($this->basePath);
         }
 
         $this->attachmentsPath  = $this->basePath.'/attachments';
         if (!is_dir($this->attachmentsPath )) {
-            mkdir($this->attachmentsPath , 0777, true);
+            wp_mkdir_p($this->attachmentsPath);
         }
 
         $this->configPath  = $this->basePath.'/config';
         if (!is_dir($this->configPath )) {
-            mkdir($this->configPath , 0777, true);
+            wp_mkdir_p($this->configPath);
         }
 
         $this->programPath      = $this->basePath.'/program';
         if (!is_dir($this->programPath )) {
-            mkdir($this->programPath , 0777, true);
+            wp_mkdir_p($this->programPath);
             SIM\printArray("Created $this->programPath");
         }
 
@@ -671,7 +671,7 @@ class Signal{
 
                 exec("rm -rfd $this->programPath");
 
-                mkdir($this->programPath , 0777, true);
+                wp_mkdir_p($this->programPath);
                 SIM\printArray("Created $this->programPath");
             }
         }

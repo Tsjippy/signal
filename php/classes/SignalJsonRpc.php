@@ -62,7 +62,7 @@ class SignalJsonRpc extends AbstractSignal{
         clearstatcache();
 
         if (!is_writable($this->socketPath )) {
-            SIM\printArray( "Please chick the file permisions to $this->socketPath");
+            //SIM\printArray( "Please chick the file permisions to $this->socketPath");
         }
 
         $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
@@ -81,7 +81,7 @@ class SignalJsonRpc extends AbstractSignal{
         }elseif(!$this->socket){
             echo "<div class='error'>Unable to create socket on $this->socketPath</div>";
 
-            SIM\printArray("$errno: $this->error");
+            //SIM\printArray("$errno: $this->error");
         }
 
         $this->shouldCloseSocket    = $shouldCloseSocket;
