@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- you can now select to which group to send new content to
 
 ### Changed
 
