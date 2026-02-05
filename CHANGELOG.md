@@ -5,6 +5,7 @@
 - you can now select to which group to send new content to
 
 ### Changed
+- label
 
 ### Fixed
 
