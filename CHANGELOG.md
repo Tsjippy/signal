@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- you can now select to which group to send new content to
 
 ### Changed
-- label
 
 ### Fixed
 
 ### Updated
+
+## [8.4.5] - 2026-02-05
+
+
+### Added
+- you can now select to which group to send new content to
+
+### Changed
+- label
 
 ## [8.4.4] - 2025-12-01
 
