@@ -21,8 +21,10 @@ function sendPostNotification($post){
 	$signalMessageType	= get_post_meta($post->ID, 'signal_message_type', true);
 	$signalUrl			= get_post_meta($post->ID, 'signal_url', true);
 	$signalExtraMessage	= get_post_meta($post->ID, 'signal_extra_message', true);
+	$recipients		= get_post_meta($post->ID, 'signal_groups', true);
 
 	delete_post_meta($post->ID, 'send_signal');
+	delete_metadata( 'post', $post->ID, 'signal_groups');
 	delete_post_meta($post->ID, 'signal_message_type');
 	delete_post_meta($post->ID, 'signal_url');
 	delete_post_meta($post->ID, 'signal_extra_message');
@@ -60,10 +62,6 @@ function sendPostNotification($post){
 	if(!empty($signalExtraMessage)){
 		$message .=	"\n\n$signalExtraMessage";
 	}
-
-	$recipients		= SIM\getModuleOption(MODULE_SLUG, 'groups');
-
-	//SIM\printArray($recipients);
 
 	foreach($recipients as $recipient){
 		asyncSignalMessageSend($message, $recipient, $post->ID);

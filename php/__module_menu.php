@@ -150,7 +150,7 @@ function connectedOptions($signal, $settings){
 	if(!empty($signalGroups)){
 		?>
 		<div class="">
-			<h4>Select optional Signal group(s) to send new content messages to:</h4>
+			<h4>Select Signal group(s) to send new content messages to by default:</h4>
 			<?php
 
 			if(empty($settings['groups'])){
