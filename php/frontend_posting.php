@@ -34,19 +34,10 @@ function afterContent($frontendContend){
 
         <div class='signal-message-type <?php echo $hidden;?>' style='margin-top:15px;'>                
 	        <?php
-            $signalGroups   = [
-                (object) array('id' => 1, 'name' => 'foo'),
-                (object) array('id' => 2, 'name' => 'bar'),
-                (object) array('id' => 3, 'name' => 'doo'),
-                (object) array('id' => 'hzR2JedCcIQ+aRIh/ByziWfPrNY7GNeyvStkZ+tbyB0=', 'name' => 'SIM Nigeria'),
-                (object) array('id' => 4, 'name' => 'foo1'),
-                (object) array('id' => 5, 'name' => 'bar2'),
-                (object) array('id' => 6, 'name' => 'doo3'),
-            ];
             if(!empty($signalGroups)){
                 ?>
                 <label>
-                    Which group(s) do you want to send it to?<br>
+                    Target Signal Groups<br>
 
                     <?php                
                     if(count($signalGroups) < 6){
