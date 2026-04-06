@@ -531,6 +531,8 @@ class SignalJsonRpc extends AbstractSignal{
 
         file_put_contents($this->basePath.'/phone.signal', $phone);
 
+        $this->phoneNumber = $phone;
+
         $captcha    = str_replace('signalcaptcha://', '', $captcha);
 
         $params     = [
@@ -546,15 +548,13 @@ class SignalJsonRpc extends AbstractSignal{
      * @param string $code The verification code e.g 123-456
      * @return bool|string
      */
-    public function verify(string $code)
-    {
+    public function verify(string $code){
+        $phone              = trim(file_get_contents($this->basePath.'/phone.signal'));
 
-        /* if($this->command->getExitCode()){
-            unlink($this->basePath.'/phone.signal');
-        } */
+        $this->phoneNumber  = $phone;
 
         $params     = [
-            "VERIFICATIONCODE"     => $code
+            "verificationCode"     => $code
         ];
 
         return $this->doRequest('verify', $params);

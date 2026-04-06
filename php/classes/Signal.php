@@ -549,7 +549,7 @@ class Signal{
             SIM\printArray($this->path.' --version did not return any result', false);
             echo $this->path.' --version did not return any result<br>';
         }else{
-            echo "Current version is <b>$curVersion</b><br>";
+            echo "Current Signal version is <b>$curVersion</b><br>";
         }
 
         if(!file_exists($this->path) || empty($curVersion)){

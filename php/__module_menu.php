@@ -64,7 +64,6 @@ function registerForm(){
 
 add_action('sim-admin-settings-post', __NAMESPACE__.'\settingsPost' );
 function settingsPost(){
-
 	$local	= SIM\getModuleOption(MODULE_SLUG, 'local');
 
 	if($local){
@@ -73,39 +72,25 @@ function settingsPost(){
 
 	if(isset($_GET['unregister'])){
 		$signal->unregister();
-
-	}elseif(isset($_GET['register'])){
-		registerForm();
 	}elseif(!empty($_POST['captcha'])){
-		echo $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
+		$result= $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
 
-		if(!empty($signal->error)){
-			registerForm();
-		}else{
-			?>
-			<form method='post'>
-				You should have received a verification code.<br>
-				Please insert the code below.
-				<br>
-				<label>
-					Verification code
-					<input type='number' name='verification-code' required>
-				</label>
-
-				<br>
-				<br>
-				<button>Verify</button>
-			</form>
-			<?php
+		if(is_wp_error($result)){
+			echo "<div class='error'>".$result->get_error_message()."</div>";
+		}elseif(empty($signal->error)){
+			SIM\storeInTransient('signal-verify', true);
 		}
 	}elseif(!empty($_POST['verification-code'])){
-		echo $signal->verify($_POST['verification-code']);
-		if(empty($signal->error)){
+		$result	= $signal->verify($_POST['verification-code']);
+
+		if(is_wp_error($result)){
+			echo "<div class='error'>".$result->get_error_message()."</div>";
+		}elseif(!empty($signal->error)){
+			echo "<div class='error'>$signal->error</div>";
+		}else{
 			unset($_POST['verification-code']);
 
 			echo "<div class='success'>Succesfully registered with Signal!</div>";
-		}else{
-			registerForm();
 		}
 	}elseif(isset($_GET['link'])){
 		echo $signal->link();
@@ -128,7 +113,15 @@ function connectedOptions($signal, $settings){
 	}
 
 	if(!empty($signal->error)){
-		echo "<div class='error'>$signal->error<br><br></div>";
+		if(str_contains($signal->error, 'Specified account does not exist')){
+			echo "<div class='warning'>
+				$signal->phoneNumber is connected to on this machine but not registered on the Signal Servers, please register the number again<br>
+			</div>";
+
+			return notConnectedOptions();
+		}
+		
+		echo $signal->error;
 	}
 
 	?>
@@ -206,6 +199,41 @@ function connectedOptions($signal, $settings){
  * @param	array	$settings		The module settings
  */
 function notConnectedOptions(){
+	if(isset($_GET['verify']) ||SIM\getFromTransient('signal-verify')){	// show the verification form after the registration form if there is no error
+		?>
+		<form method='post'>
+			You should have received a verification code.<br>
+			Please insert the code below.
+			<br>
+			<label>
+				Verification code
+				<input type='number' name='verification-code' required>
+			</label>
+
+			<br>
+			<br>
+			<button>Verify</button>
+		</form>
+		<?php
+		return;
+	}
+
+	/**
+	 * Show the registration form if needed
+	 */
+	if(
+		isset($_GET['register']) ||						// register key in url
+		(	
+			(
+				!empty($_POST['captcha']) ||			// captcha filled in
+				!empty($_POST['verification-code'])		// verification code filled in
+			) &&
+			!empty($signal->error)						// there is an error from the signal instance, probably because the number is not registered yet
+		)
+	){
+		return registerForm();
+	}
+
 	$url		= admin_url( "admin.php?page={$_GET['page']}" );
 	if(!empty($_GET['tab'])){
 		$url	.= "&tab={$_GET['tab']}";
@@ -278,11 +306,6 @@ function moduleOptions($optionsHtml, $settings){
 		$local	= true;
 	}
 
-	$type	= false;
-	if(isset($settings['type'])){
-		$type	= $settings['type'];
-	}
-
 	ob_start();
 
 	?>
@@ -311,7 +334,7 @@ function moduleOptions($optionsHtml, $settings){
 				echo "Java JDK is not installed.<br>You need to install Java JDK.<br>";
 			echo "</div>";
 		}else{
-			if($signal->phoneNumber){
+			if($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
 				connectedOptions($signal, $settings);
 			}else{
 				notConnectedOptions();
