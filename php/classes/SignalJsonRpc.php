@@ -788,16 +788,18 @@ class SignalJsonRpc extends AbstractSignal{
      * @return array|string
      */
     public function listGroups($detailed = false, $groupId = false, $force=false){
-        if(!empty($this->groups) && !$force){
-            return $this->groups;
-        }
+        if(!$force){
+            if(!empty($this->groups)){
+                return $this->groups;
+            }
 
-        $transientGroups    = get_transient('sim-signal-groups');
+            $transientGroups    = get_transient('sim-signal-groups');
 
-        if($transientGroups && is_array($transientGroups) && !$force){
-            $this->groups   = $transientGroups;
-            
-            return $transientGroups;
+            if($transientGroups && is_array($transientGroups)){
+                $this->groups   = $transientGroups;
+                
+                return $transientGroups;
+            }
         }
 
         $params = [];
