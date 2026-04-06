@@ -7,6 +7,7 @@
 
 ### Fixed
 - updating signal
+- registration issues
 
 ### Updated
 
