@@ -949,9 +949,15 @@ function moduleFunctions($html, $settings){
 
 		// reply to previous message
 		if(!empty($_REQUEST['timesent']) && !empty($_REQUEST['replymessage']) && !empty($_REQUEST['author'])){
-			echo sendSignalMessage($message, stripslashes($_REQUEST['recipient']), '', intval($_REQUEST['timesent']), $_REQUEST['author'], $_REQUEST['replymessage']);
+			$result	= sendSignalMessage($message, stripslashes($_REQUEST['recipient']), '', intval($_REQUEST['timesent']), $_REQUEST['author'], $_REQUEST['replymessage']);
 		}else{
-			echo sendSignalMessage($message, stripslashes($_REQUEST['recipient']));
+			$result	= sendSignalMessage($message, stripslashes($_REQUEST['recipient']));
+		}
+
+		if(is_wp_error($result)){
+			echo "<div class='error'>Message could not be send<br>".$result->get_error_message()."</div>";
+		}else{
+			echo "<div class='success'>Message succesfully send: $result</div>";
 		}
     }
 

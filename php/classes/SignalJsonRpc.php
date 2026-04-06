@@ -404,6 +404,13 @@ class SignalJsonRpc extends AbstractSignal{
             }
         }
 
+        // The connected number is not registered on the Signal Servers
+        elseif(str_contains($errorMessage, 'Specified account does not exist')){
+            $this->invalidNumber = true;
+
+            SIM\printArray("The connected number is not registered on the Signal Servers, please register the number first");
+        }
+
         // Captcha required
         elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
             // Store command

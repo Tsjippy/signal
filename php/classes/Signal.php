@@ -418,8 +418,7 @@ class Signal{
      * Get Command to further get output, error or more details of the command.
      * @return Command
      */
-    public function getCommand()
-    {
+    public function getCommand(){
         return $this->command;
     }
 
@@ -538,7 +537,7 @@ class Signal{
         }
 
         $github         = new SIM\GITHUB\Github();
-        $release        = $github->getLatestRelease('AsamK', 'signal-cli');
+        $release        = $github->getLatestRelease('AsamK', 'signal-cli', true);
 
         if(is_wp_error($release)){
             return false;
@@ -548,10 +547,10 @@ class Signal{
 
         if(empty($curVersion)){
             SIM\printArray($this->path.' --version did not return any result', false);
-            echo $this->path.' --version did not return any result';
+            echo $this->path.' --version did not return any result<br>';
+        }else{
+            echo "Current version is <b>$curVersion</b><br>";
         }
-
-        #echo "Current version is '$curVersion'<br>";
 
         if(!file_exists($this->path) || empty($curVersion)){
             $this->installSignal($release);
@@ -566,9 +565,11 @@ class Signal{
             $this->installSignal($release);
         }
 
-        if(empty($this->error)){
-            return true;
+        if(!empty($this->error)){
+            return false;
         }
+
+        return $curVersion;
     }
 
     private function installSignal($release){
@@ -587,7 +588,7 @@ class Signal{
 
             if(!empty($release['assets']) && is_array($release['assets'])){
                 foreach($release['assets'] as $asset){
-                    if(str_contains($asset['browser_download_url'], $this->os) && isset($asset['size']) && $asset['size'] > 1000000){
+                    if(str_contains($asset['browser_download_url'], $this->os) && isset($asset['size']) && $asset['size'] > 10000000){
                         $url    = $asset['browser_download_url'];
                         break;
                     }
@@ -650,6 +651,16 @@ class Signal{
             return $this->error;
         } finally {
             unlink($pidFile);
+        }
+
+        // Check if it is a vakid signal-cli folder
+        if(file_exists($folder.'/signal-cli')) {
+            echo "Signal-cli archive is valid<br>";
+        }else{
+            echo "Signal-cli archive is invalid<br>'$folder/signal-cli' not found, please check the archive contents<br>";
+
+            //SIM\printArray($release['assets'], true);
+            return;
         }
 
         // remove the old folder
