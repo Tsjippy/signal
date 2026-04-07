@@ -9,6 +9,7 @@
 - updating signal
 - registration issues
 - refresh groups
+- install on Windows
 
 ### Updated
 
