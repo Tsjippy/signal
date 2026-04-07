@@ -575,12 +575,14 @@ class Signal{
     private function installSignal($release){
         $version    = str_replace('v', '', $release['tag_name']);
 
-        $pidFile    = __DIR__.'/installing.signal';
-        if(file_exists($pidFile)){
-            echo "$pidFile exists, another installation might by running already<br>";
-            return;
+        if($this->os == 'Linux'){
+            $pidFile    = __DIR__.'/installing.signal';
+            if(file_exists($pidFile)){
+                echo "$pidFile exists, another installation might by running already<br>";
+                return;
+            }
+            file_put_contents($pidFile, 'running');
         }
-        file_put_contents($pidFile, 'running');
 
         try {
             echo "Downloading Signal version $version<br>";
@@ -650,7 +652,9 @@ class Signal{
             $this->error    = 'Installation error';
             return $this->error;
         } finally {
-            unlink($pidFile);
+            if($this->os == 'Linux'){
+                unlink($pidFile);
+            }
         }
 
         // Check if it is a vakid signal-cli folder
@@ -712,7 +716,7 @@ class Signal{
 
     private function downloadSignal($url){
         $filename   = basename($url);
-        $tempPath       = sys_get_temp_dir().'/'.$filename;
+        $tempPath   = sys_get_temp_dir().'/'.$filename;
 
         $tempPath = str_replace('\\', '/', $tempPath);
 
@@ -733,6 +737,14 @@ class Signal{
             }
         }catch (\GuzzleHttp\Exception\ClientException $e) {
             unlink($tempPath);
+
+            if($e->getResponse()->getStatusCode() == 404){
+                $newUrl = str_replace("-".$this->os, '', $url);
+
+                if($newUrl != $url){
+                    return $this->downloadSignal($newUrl);
+                }
+            }
 
             if($e->getResponse()->getReasonPhrase() == 'Gone'){
                 return "The link has expired, please get a new one";

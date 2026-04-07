@@ -34,6 +34,7 @@ function moduleDescription($description){
 }
 
 function registerForm(){
+	ob_start();
 	?>
 	<form method='post' action='<?php echo admin_url( "admin.php?page={$_GET['page']}&tab={$_GET['tab']}" );?>'>
 		<h4>Register with Signal</h4>
@@ -60,41 +61,108 @@ function registerForm(){
 		<button>Register</button>
 	</form>
 	<?php
+
+	return ob_get_clean();
 }
 
-add_action('sim-admin-settings-post', __NAMESPACE__.'\settingsPost' );
-function settingsPost(){
+add_filter('sim-admin-settings-post', __NAMESPACE__.'\settingsPost' );
+function settingsPost($message){
 	$local	= SIM\getModuleOption(MODULE_SLUG, 'local');
 
 	if($local){
 		$signal	= getSignalInstance();
 	}
 
-	if(isset($_GET['unregister'])){
+	// Change account details
+	if(isset($_POST['display-name']) || isset($_POST['avatar'])){
+		if(!$local){
+			return $message."<div class='error'>You need to have root access to change these settings</div>";
+		}
+
+		if(isset($_POST['display-name'])){
+			$displayName	= sanitize_text_field($_POST['display-name']);
+
+			$result	= $signal->updateProfile($displayName);
+
+			if(is_wp_error($result)){
+				$message	.= "<div class='error'>".$result->get_error_message()."</div>";
+			}else{
+				$message	.= "<div class='success'>Display name changed succesfully to $displayName</div>";
+			}
+		}
+
+		if(isset($_POST['avatar'])){
+			$avatarAttachmentId	= sanitize_text_field($_POST["picture-ids[avatar]"]);
+
+			if(empty($avatarAttachmentId)){
+				$result	= $signal->updateProfile(null, null, true);
+			}else{
+				$path	= get_attached_file($avatarAttachmentId);
+
+				if(empty($path) || !file_exists($path)){
+					return $message."<div class='error'>Something went wrong with the avatar, please try again</div>";
+				}
+				$result	= $signal->updateProfile(null, $path);
+			}
+
+			if(is_wp_error($result)){
+				$message	.= "<div class='error'>".$result->get_error_message()."</div>";
+			}else{
+				$message	.= "<div class='success'>Avatar changed succesfully</div>";
+			}
+		}
+	}
+
+	/**
+	 * Show the registration form if needed
+	 */
+	if( isset($_GET['register']) ){
+		return $message.registerForm();
+	}elseif(isset($_GET['unregister'])){
 		$signal->unregister();
 	}elseif(!empty($_POST['captcha'])){
 		$result= $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
 
 		if(is_wp_error($result)){
-			echo "<div class='error'>".$result->get_error_message()."</div>";
+			$message	.= "<div class='error'>".$result->get_error_message()."</div>";
 		}elseif(empty($signal->error)){
-			SIM\storeInTransient('signal-verify', true);
+			ob_start();
+			// show the verification form after the registration form if there is no error
+			?>
+			<form method='post'>
+				You should have received a verification code.<br>
+				Please insert the code below.
+				<br>
+				<label>
+					Verification code
+					<input type='number' name='verification-code' required>
+				</label>
+
+				<br>
+				<br>
+				<button>Verify</button>
+			</form>
+			<?php
+
+			return $message.ob_get_clean();
 		}
 	}elseif(!empty($_POST['verification-code'])){
 		$result	= $signal->verify($_POST['verification-code']);
 
 		if(is_wp_error($result)){
-			echo "<div class='error'>".$result->get_error_message()."</div>";
+			$message	.= "<div class='error'>".$result->get_error_message()."</div>".registerForm();
 		}elseif(!empty($signal->error)){
-			echo "<div class='error'>$signal->error</div>";
+			$message	.= "<div class='error'>$signal->error</div>".registerForm();
 		}else{
 			unset($_POST['verification-code']);
 
-			echo "<div class='success'>Succesfully registered with Signal!</div>";
+			$message	.= "<div class='success'>Succesfully registered with Signal!</div>";
 		}
 	}elseif(isset($_GET['link'])){
-		echo $signal->link();
+		$message	.= $signal->link();
 	}
+
+	return $message;
 }
 
  /**
@@ -131,9 +199,21 @@ function connectedOptions($signal, $settings){
 		<a href='<?php echo $url;?>&unregister=true' class='button'>Unregister</a><br>
 	</p>
 
-	<label for="reminder-freq">How often should people be reminded to add a signal phonenumber  to the website</label>
+	<label>
+		Signal Messenger Display name<br>
+		<input type='text' name='display-name' value='<?php echo $settings['display-name'];?>' style='width:310px'>
+	</label>
 	<br>
-	<select name="reminder-freq" class='hidden'>
+	<br>
+	<label>
+		Signal Messenger Avatar (328pxx328px)<br>
+	</label>
+	<?php SIM\pictureSelector('avatar', 'avatar', $settings);?>
+	<br>
+	<br>	
+
+	<label for="reminder-freq">How often should people be reminded to add a signal phonenumber  to the website</label>
+	<select name="reminder-freq">
 		<?php
 		SIM\ADMIN\recurrenceSelector($settings['reminder-freq']);
 		?>
@@ -199,41 +279,6 @@ function connectedOptions($signal, $settings){
  * @param	array	$settings		The module settings
  */
 function notConnectedOptions(){
-	if(isset($_GET['verify']) ||SIM\getFromTransient('signal-verify')){	// show the verification form after the registration form if there is no error
-		?>
-		<form method='post'>
-			You should have received a verification code.<br>
-			Please insert the code below.
-			<br>
-			<label>
-				Verification code
-				<input type='number' name='verification-code' required>
-			</label>
-
-			<br>
-			<br>
-			<button>Verify</button>
-		</form>
-		<?php
-		return;
-	}
-
-	/**
-	 * Show the registration form if needed
-	 */
-	if(
-		isset($_GET['register']) ||						// register key in url
-		(	
-			(
-				!empty($_POST['captcha']) ||			// captcha filled in
-				!empty($_POST['verification-code'])		// verification code filled in
-			) &&
-			!empty($signal->error)						// there is an error from the signal instance, probably because the number is not registered yet
-		)
-	){
-		return registerForm();
-	}
-
 	$url		= admin_url( "admin.php?page={$_GET['page']}" );
 	if(!empty($_GET['tab'])){
 		$url	.= "&tab={$_GET['tab']}";
@@ -333,12 +378,10 @@ function moduleOptions($optionsHtml, $settings){
 			echo "<div class='warning'>";
 				echo "Java JDK is not installed.<br>You need to install Java JDK.<br>";
 			echo "</div>";
+		}elseif($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
+			connectedOptions($signal, $settings);
 		}else{
-			if($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
-				connectedOptions($signal, $settings);
-			}else{
-				notConnectedOptions();
-			}
+			notConnectedOptions();
 		}
 	}else{
 		notLocalOptions($settings);
