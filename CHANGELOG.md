@@ -8,6 +8,7 @@
 ### Fixed
 - updating signal
 - registration issues
+- refresh groups
 
 ### Updated
 
