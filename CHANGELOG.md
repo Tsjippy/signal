@@ -10,6 +10,7 @@
 - registration issues
 - refresh groups
 - install on Windows
+- changing avatar
 
 ### Updated
 
