@@ -16,7 +16,7 @@ use WP_Error;
     printf  '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":SOMEID}\n' | socat STDIN UNIX-CONNECT:SOCKETPATH -YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/socket
 
     Test json RPC
-    echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | YOURPATH/public_html/wp-content/signal-cli/program/signal-cli --config /home/user/htdocs/srv1140598.hstgr.cloud/wp-content/signal-cli jsonRpc
+    echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/config --config YOURPATH/wp-content/signal-cli jsonRpc
 */
 
 
@@ -929,7 +929,7 @@ class SignalJsonRpc extends AbstractSignal{
         $params = [];
 
         if(!empty($name)){
-            $params['name'] = $name;
+            $params['given-name'] = $name;
         }
 
         if(!empty($avatarPath) && file_exists($avatarPath)){
@@ -940,7 +940,11 @@ class SignalJsonRpc extends AbstractSignal{
             $params['removeAvatar'] = true;
         }
 
-        return $this->addToCommandQueue('updateProfile', $params);
+        $result = $this->addToCommandQueue('updateProfile', $params);
+
+        SIM\printArray($result, true);
+
+        return $result;
     }
 
     /**

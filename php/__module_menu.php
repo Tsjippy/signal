@@ -65,8 +65,8 @@ function registerForm(){
 	return ob_get_clean();
 }
 
-add_filter('sim-admin-settings-post', __NAMESPACE__.'\settingsPost' );
-function settingsPost($message){
+add_filter('sim-admin-settings-post', __NAMESPACE__.'\settingsPost', 10, 2 );
+function settingsPost($message, $settings){
 	$local	= SIM\getModuleOption(MODULE_SLUG, 'local');
 
 	if($local){
@@ -82,33 +82,38 @@ function settingsPost($message){
 		if(isset($_POST['display-name'])){
 			$displayName	= sanitize_text_field($_POST['display-name']);
 
-			$result	= $signal->updateProfile($displayName);
+			if($displayName != $settings['display-name']){
+				$result	= $signal->updateProfile($displayName);
 
-			if(is_wp_error($result)){
-				$message	.= "<div class='error'>".$result->get_error_message()."</div>";
-			}else{
-				$message	.= "<div class='success'>Display name changed succesfully to $displayName</div>";
+				if(is_wp_error($result)){
+					$message	.= "<div class='error'>".$result->get_error_message()."</div>";
+				}else{
+					$message	.= "<div class='success'>Display name changed succesfully to $displayName</div>";
+				}
 			}
 		}
 
-		if(isset($_POST['avatar'])){
-			$avatarAttachmentId	= sanitize_text_field($_POST["picture-ids[avatar]"]);
 
-			if(empty($avatarAttachmentId)){
-				$result	= $signal->updateProfile(null, null, true);
-			}else{
-				$path	= get_attached_file($avatarAttachmentId);
+		if(isset($_POST['picture-ids']['avatar'])){
+			$avatarAttachmentId	= sanitize_text_field($_POST['picture-ids']['avatar']);
 
-				if(empty($path) || !file_exists($path)){
-					return $message."<div class='error'>Something went wrong with the avatar, please try again</div>";
+			if($avatarAttachmentId != $settings['picture-ids']['avatar']){
+				if(empty($avatarAttachmentId)){
+					$result	= $signal->updateProfile(null, null, true);
+				}else{
+					$path	= get_attached_file($avatarAttachmentId);
+
+					if(empty($path) || !file_exists($path)){
+						return $message."<div class='error'>Something went wrong with the avatar, please try again</div>";
+					}
+					$result	= $signal->updateProfile(null, $path);
 				}
-				$result	= $signal->updateProfile(null, $path);
-			}
 
-			if(is_wp_error($result)){
-				$message	.= "<div class='error'>".$result->get_error_message()."</div>";
-			}else{
-				$message	.= "<div class='success'>Avatar changed succesfully</div>";
+				if(is_wp_error($result)){
+					$message	.= "<div class='error'>".$result->get_error_message()."</div>";
+				}else{
+					$message	.= "<div class='success'>Avatar changed succesfully</div>";
+				}
 			}
 		}
 	}
@@ -376,7 +381,7 @@ function moduleOptions($optionsHtml, $settings){
 
 		if(empty(shell_exec('javac -version'))){
 			echo "<div class='warning'>";
-				echo "Java JDK is not installed.<br>You need to install Java JDK.<br>";
+				echo "Java JDK is not installed.<br>You need to install it.<br>";
 			echo "</div>";
 		}elseif($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
 			connectedOptions($signal, $settings);

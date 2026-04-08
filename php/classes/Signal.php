@@ -531,8 +531,8 @@ class Signal{
         $this->error   = '';
 
         $curVersion = str_replace('javac ', '', shell_exec('javac -version'));
-        if(version_compare('17.0.0.0', $curVersion) > 0){
-            $this->error    .= "Please install Java JDK, at least version 17<br>install dbus-x11";
+        if(version_compare('25.0.0.0', $curVersion) > 0){
+            $this->error    .= "Please install Java JDK, at least version 25";
             $this->valid    = false;
         }
 
@@ -655,16 +655,6 @@ class Signal{
             if($this->os == 'Linux'){
                 unlink($pidFile);
             }
-        }
-
-        // Check if it is a vakid signal-cli folder
-        if(file_exists($folder.'/signal-cli')) {
-            echo "Signal-cli archive is valid<br>";
-        }else{
-            echo "Signal-cli archive is invalid<br>'$folder/signal-cli' not found, please check the archive contents<br>";
-
-            //SIM\printArray($release['assets'], true);
-            return;
         }
 
         // remove the old folder
