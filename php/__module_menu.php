@@ -377,11 +377,9 @@ function moduleOptions($optionsHtml, $settings){
 			$signal->createDbTable();
 		}
 
-		$signal->checkPrerequisites();
-
-		if(empty(shell_exec('javac -version'))){
-			echo "<div class='warning'>";
-				echo "Java JDK is not installed.<br>You need to install it.<br>";
+		if(!$signal->checkPrerequisites()){
+			echo "<div class='error'>";
+				echo "Signal-cli is not working properly, please check the error log for more details.<br>$signal->error";
 			echo "</div>";
 		}elseif($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
 			connectedOptions($signal, $settings);

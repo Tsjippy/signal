@@ -42,7 +42,7 @@ class Signal{
         $this->receivedTableName= $wpdb->prefix.'sim_received_signal_messages';
 
         $this->os               = 'macOS';
-        $this->basePath = WP_CONTENT_DIR.'/signal-cli';
+        $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
         if (!is_dir($this->basePath )) {
             wp_mkdir_p($this->basePath);
         }
@@ -93,10 +93,10 @@ class Signal{
             $this->phoneNumber  = $accountData->accounts[0]->number;
         }
 
-        $this->path             = $this->programPath.'/bin/signal-cli';
+        $this->path             = $this->programPath.'/signal-cli';
 
-        if(!file_exists($this->path) && file_exists($this->programPath.'/signal-cli')){
-            $this->path = $this->programPath.'/signal-cli';
+        if(file_exists("$this->path/bin/signal-cli")){
+            $this->path = "$this->path/bin/signal-cli";
         }
 
         $this->daemon           = false;
@@ -527,10 +527,39 @@ class Signal{
         wp_mail($to, $subject, $message);
     }
 
+    /**
+     * Checks if signal-cli is installed and up to date
+     */
     public function checkPrerequisites(){
         $this->error   = '';
 
         $curVersion = str_replace('javac ', '', shell_exec('javac -version'));
+
+        if(empty($curVersion) && $this->os == 'Windows'){
+            // Try to find the path for java in case javac is not in the PATH variable
+            $basePath   = is_dir('C:/Program Files/Java') ? 'C:/Program Files/Java' : 'C:/Program Files (x86)/Java';
+            $subs       = scandir($basePath);
+            rsort($subs);
+
+            // FInd latest version of java and set the path to that
+            foreach($subs as $sub){
+                if(str_contains($sub, 'jdk') || str_contains($sub, 'openjdk')){
+                    $javaPath   = "$basePath/$sub/bin";
+                    putenv("PATH=$javaPath");
+                    $curVersion = str_replace('javac ', '', shell_exec('javac -version'));
+
+                    if(!empty($curVersion)){
+                        break;
+                    }
+                }
+            }
+            
+            if(empty($curVersion)){
+                echo "javac did not return any result<br>";
+                $this->error    .= "Please install Java JDK and make sure javac is in your PATH variable<br>";
+            }
+        }
+
         if(version_compare('25.0.0.0', $curVersion) > 0){
             $this->error    .= "Please install Java JDK, at least version 25";
             $this->valid    = false;
@@ -543,16 +572,17 @@ class Signal{
             return false;
         }
 
-        $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($this->path.' --version')));
+        $command         = '"' . $this->path . '" --version';
+        $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($command)));
 
         if(empty($curVersion)){
-            SIM\printArray($this->path.' --version did not return any result', false);
-            echo $this->path.' --version did not return any result<br>';
+            var_dump(shell_exec("$command 2>&1"));
+            echo "$command did not return any result<br>";
         }else{
             echo "Current Signal version is <b>$curVersion</b><br>";
         }
 
-        if(!file_exists($this->path) || empty($curVersion)){
+        if(!file_exists($this->path)){
             $this->installSignal($release);
 
             if(!file_exists($this->path)){
@@ -635,7 +665,7 @@ class Signal{
             if(file_exists($folder)){
                 if($this->os == 'Windows'){
                     // remove the folder
-                    exec("rmdir $folder /s /q");
+                    exec("rmdir \"$folder\" /s /q");
                 }else{
                     exec("rm -R $folder");
                 }
@@ -667,7 +697,7 @@ class Signal{
                 exec("taskkill /IM signal-cli /F");
 
                 // remove the folder
-                exec("rmdir $path /s /q");
+                exec("rmdir \"$path\" /s /q");
             }else{
                 // stop the deamon
                 #exec("kill $(ps -ef | grep -v grep | grep -P 'signal-cli.*daemon'| awk '{print $2}')");
@@ -685,11 +715,14 @@ class Signal{
         $path   = "$folder/signal-cli";
         if(file_exists("$folder/signal-cli-$version")){
             $path   = "$folder/signal-cli-$version";
-            #echo "$path exists<br>";
-            $result = rename("$folder/signal-cli-$version", "$this->programPath/signal-cli" );
+
+            if (!is_dir(dirname($this->path))) {
+                mkdir(dirname($this->path), 0777, true);
+            }
+
+            $result = rename($path, $this->path );
         }elseif(file_exists("$folder/signal-cli")){
-            #echo "$path exists<br>";
-            $result = rename("$folder/signal-cli", "$this->programPath/signal-cli" );
+            $result = rename("$folder/signal-cli", "$this->path" );
         }else{
             echo "$path does not exist<br>";
             SIM\printArray("$folder/signal-cli not found please check", true);
