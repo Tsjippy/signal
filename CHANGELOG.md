@@ -11,6 +11,7 @@
 - refresh groups
 - install on Windows
 - changing avatar
+- install on Windows
 
 ### Updated
 
