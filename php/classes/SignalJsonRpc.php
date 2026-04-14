@@ -46,8 +46,6 @@ class SignalJsonRpc extends AbstractSignal{
     public $lastResponse;
     public $invalidNumber;
     public $lastRequestTime;
-    public $commandQueue;
-    private $isProcessing;
     public $socketPath;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
@@ -89,8 +87,6 @@ class SignalJsonRpc extends AbstractSignal{
         $this->listenTime           = 60;
         $this->lastResponse         = '';
         $this->invalidNumber        = false;
-        $this->isProcessing         = false;
-        $this->commandQueue         = [];
     }
 
     /**
@@ -414,7 +410,7 @@ class SignalJsonRpc extends AbstractSignal{
         // Captcha required
         elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
             // Store command
-            $this->addToCommandQueue($method, $params);
+            $this->addToCommandQueue($method, $params, 10, false);
 
             $this->sendCaptchaInstructions($errorMessage);
         }
@@ -428,7 +424,7 @@ class SignalJsonRpc extends AbstractSignal{
             )
         ){
             // Store command
-            $this->addToCommandQueue($method, $params);
+            $this->addToCommandQueue($method, $params, 10, false);
         }
         
         // Group ID
@@ -455,45 +451,38 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * Add a command to the queue of commannds
+     * if the queue is empty, do the command straight away, otherwise add it to the queue and wait till it is processed and a result is added to the db
+     * @param   string      $method     The command to perform
+     * @param   array       $params     The parameters for the command
+     * @param   int         $priority   The priority of the command, lower numbers are processed first, default 10
+     * @param   bool        $waitForResult Whether to wait for the result of the command, default true
+     * 
+     * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
-    protected function addToCommandQueue($method, $params=[]){
+    protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
         // only add to queue if needed
-        if(empty($this->lastRequestTime) || time() - $this->lastRequestTime > 2){
+        if(empty($this->getQueue())){
             // do this straight away
             return $this->doRequest($method, $params);
         }
 
-        if(!empty($this->commandQueue)){
-            SIM\printArray("Current Signal Message queue:");
-            SIM\printArray($this->commandQueue);
-        }
-
         // Store command
-        if(!isset($this->commandQueue[$method]) || !is_array($this->commandQueue[$method])){
-            $this->commandQueue[$method]    = [];
+        $commandId      = $this->addToQueue($method, $params, $priority);
+
+        if(!$waitForResult){
+            return $commandId;
         }
 
-        $this->commandQueue[$method][]      = $params;
-
-        $index                              = count($this->commandQueue[$method]) - 1;
-
-        if(!$this->isProcessing){
-            $this->processCommandQueue();
-        }
+        $result         = '';
 
         // Wait till the params are replaced by the result
-        while($this->commandQueue[$method][$index] == $params){
+        while(empty($result)){
+            $result = $this->getQueue($commandId)->result;
+
             sleep(5);
         }
 
-        $result = $this->commandQueue[$method][$index]; 
-
-        // clean up the command queue
-        unset($this->commandQueue[$method][$index]);
-
-        if(empty($this->commandQueue[$method])){
-            unset($this->commandQueue[$method]);
-        }
+        $this->removeFromQueue($commandId);
 
         return $result;
     }
@@ -942,8 +931,6 @@ class SignalJsonRpc extends AbstractSignal{
 
         $result = $this->addToCommandQueue('updateProfile', $params);
 
-        SIM\printArray($result, true);
-
         return $result;
     }
 
@@ -991,31 +978,5 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         return '';
-    }
-
-    /**
-     * Send all messages in the queue
-     */
-    public function processCommandQueue(){
-        if(empty($this->commandQueue)){
-            return;
-        }
-
-        $this->isProcessing = true;
-
-        foreach($this->commandQueue as $command => &$argArray){
-            foreach($argArray as $index => &$args){
-                // If this is an object, it has already been processed
-                if(gettype($args) == 'object'){
-                    continue;
-                }
-
-                $args   = $this->doRequest($command, $args);
-
-                sleep(1);
-            }
-        }
-
-        $this->isProcessing = false;
     }
 }

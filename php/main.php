@@ -18,8 +18,11 @@ function getSignalInstance($getResult=true){
     }
 
     if(str_contains(php_uname(), 'Linux')){
+        include_once __DIR__.'/../php/classes/SignalJsonRpc.php';
         $signal = new SignalJsonRpc(true, $getResult);
     }else{
+        include_once __DIR__.'/../php/classes/SignalCommandLine.php';
+        include_once __DIR__.'/../php/classes/SignalJsonRpc.php';
 		//$signal = new SignalCommandLine($getResult);
         $signal = new SignalJsonRpc(true, $getResult);
 	}

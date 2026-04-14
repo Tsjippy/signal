@@ -14,8 +14,6 @@ function taskInit(){
 
     add_action( 'clean_signal_log_action', __NAMESPACE__.'\cleanSignalLog');
 
-    add_action( 'retry_failed_signal_messages_action', __NAMESPACE__.'\retryFailedMessages');
-
     add_action( 'signal_number_reminder_action', __NAMESPACE__.'\signalNumberReminder');
 }
 
@@ -102,10 +100,4 @@ function cleanSignalLog(){
     $signal     = new Signal();
 
     $signal->clearMessageLog($maxDate);
-}
-
-function retryFailedMessages(){
-    $signal     = SIM\SIGNAL\getSignalInstance();
-
-    $signal->processCommandQueue();
 }

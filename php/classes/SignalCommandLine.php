@@ -653,7 +653,7 @@ class SignalCommandLine extends AbstractSignal{
         // to be implemented
     }
 
-    public function processCommandQueue(){
+    public function doRequest($command, $params){
         // to be implemented
     }
 }

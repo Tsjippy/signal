@@ -129,12 +129,14 @@ abstract class AbstractSignal extends Signal {
 
     abstract public function findGroupName($id);
 
-
-    /**
-    * Message sending queue
-    */
-   abstract public function processCommandQueue();
-
    // Send the contents of an e-mail by Signal
    abstract public function sendEmailBySignal($args);
+
+   /**
+    * Process a specific command from the queue, or the oldest command if no id is provided
+    * @param string $command The command to process
+    * @param array $params The parameters for the command
+    * @return mixed The result of the command execution
+    */
+   abstract public function doRequest($command, $params);
 }

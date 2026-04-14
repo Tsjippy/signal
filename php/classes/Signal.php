@@ -28,6 +28,7 @@ class Signal{
     public $configPath;
     public $tableName;
     public $receivedTableName;
+    public $queueTableName;
     public $totalMessages;
     private $commandQueue;
 
@@ -40,6 +41,8 @@ class Signal{
         $this->tableName        = $wpdb->prefix.'sim_signal_messages';
 
         $this->receivedTableName= $wpdb->prefix.'sim_received_signal_messages';
+
+        $this->queueTableName   = $wpdb->prefix.'sim_signal_message_queue';
 
         $this->os               = 'macOS';
         $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
@@ -130,6 +133,7 @@ class Signal{
 		//only create db if it does not exist
 		$charsetCollate = $wpdb->get_charset_collate();
 
+        // Sent messages log
 		$sql = "CREATE TABLE {$this->tableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             timesend bigint(20) NOT NULL,
@@ -141,6 +145,7 @@ class Signal{
 
 		maybe_create_table($this->tableName, $sql );
 
+        // Received messages log
         $sql = "CREATE TABLE {$this->receivedTableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             timesend bigint(20) NOT NULL,
@@ -153,6 +158,19 @@ class Signal{
 		) $charsetCollate;";
 
 		maybe_create_table($this->receivedTableName, $sql );
+
+        // Command queue
+        $sql = "CREATE TABLE {$this->queueTableName} (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            timeadded bigint(20) NOT NULL,
+            method longtext NOT NULL,
+            params longtext,
+            priority int,
+            result longtext,
+            PRIMARY KEY  (id)
+		) $charsetCollate;";
+
+		maybe_create_table($this->queueTableName, $sql );
 	}
 
     /**
@@ -804,11 +822,13 @@ class Signal{
     }
 
     public function startDaemon(){
+        return;
         if($this->os == 'Windows'){
             return;
         }
 
         if(!$this->daemon){
+            // Messaging deamon to receive messages, needs to be running in the background to receive messages, also needs to be started with the same user that starts the daemon to prevent DB
             $display    = 'export DISPLAY=:0.0;';
             $dbus       = "export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$this->osUserId/bus;";
             $cli        = "$this->path -o json --trust-new-identities=always daemon";
@@ -819,8 +839,96 @@ class Signal{
             ]);
 
             $command->execute();
+
+            // queue processing
+            $cmd       = 'do php '.__DIR__.'/../../daemon/signal-command-queue-daemon.php';
+            
+            $command = new Command([
+                'command' => "bash -c '$cmd' &"
+            ]);
+
+            $command->execute();
         }
  
         $this->daemon   = true;
+    }
+
+    /**
+     * Adds a message to the queue to be send to prevent rate limit issues
+     * 
+     * @param   string  $method    The method to execute, e.g. send or receive
+     * @param   array   $params    The parameters for the method
+     * @param   int     $priority  The priority of the message, lower numbers are executed first, default 10
+     * 
+     * @return  int                 The db row id
+     */
+    public function addToQueue($method, $params=[], $priority=10){
+        global $wpdb;
+
+        $wpdb->insert(
+            $this->queueTableName,
+            array(
+                'timeadded'    => time(),
+                'method'       => $method,
+                'params'       => maybe_serialize($params),
+                'priority'     => $priority
+            )
+        );
+
+        return $wpdb->insert_id;
+    }
+
+     /**
+     * Retrieves the message queue
+     *
+     * @return  object   The oldest command in the queue, or a specific command if id is provided
+     */
+    public function getQueue($id=-1){
+        global $wpdb;
+
+        if($id == -1){
+            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, timeadded ASC LIMIT 1;";
+        } else {
+            $query      = $wpdb->prepare("SELECT * FROM $this->queueTableName WHERE id = %d", $id);
+        }
+
+        $result         = $wpdb->get_row( $query );
+
+        if(isset($result->params)){
+            $result->params = maybe_unserialize($result->params);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Removes a message from the queue
+     *
+     * @param   int     $id The id of the message to remove
+     *
+     * @return  bool        Whether the message was removed successfully
+     */
+
+    public function removeFromQueue($id){
+        global $wpdb;
+
+        $query      = $wpdb->prepare("DELETE FROM $this->queueTableName WHERE id = %d", $id);
+
+        return $wpdb->query( $query );
+    }
+
+    /**
+     * Updates a message in the queue with the result of the command
+     * @param   int     $id     The id of the message to update
+     * @param   string  $result The result of the command
+     * 
+     * @return  bool            Whether the message was updated successfully
+     */
+    public function updateQueueResult($id, $result){
+        global $wpdb;
+
+        $query      = $wpdb->prepare("UPDATE $this->queueTableName SET result = %s WHERE id = %d", maybe_serialize($result), $id);
+
+        return $wpdb->query( $query );
     }
 }
