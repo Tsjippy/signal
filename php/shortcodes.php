@@ -12,7 +12,7 @@ function signalMessages(){
 	
 	//Perform remove action
 	if(isset($_POST['recipient-number']) && isset($_POST['key'])){
-		if($_SERVER['HTTP_HOST'] == 'localhost' || str_contains($_SERVER['HTTP_HOST'], '.local')){
+		if(wp_get_environment_type() === 'local'){
 			$html .= '<div class="success">Succesfully removed all the messages</div>';
 			delete_option('signal_bot_messages');
 		}else{

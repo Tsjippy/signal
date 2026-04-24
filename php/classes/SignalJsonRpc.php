@@ -913,7 +913,7 @@ class SignalJsonRpc extends AbstractSignal{
      * 
      * @return bool|string
      */
-    public function updateProfile(string $name = '', ?string $avatarPath = null, bool $removeAvatar = false){
+    public function updateProfile(string $name = '', ?string $avatarPath = '', bool $removeAvatar = false){
 
         $params = [];
 

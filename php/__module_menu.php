@@ -1165,8 +1165,8 @@ function moduleFunctions($html, $settings){
 	return $html.ob_get_clean();
 }
 
-add_filter('sim_email_signal_settings', __NAMESPACE__.'\emailSettings', 10, 2);
-function emailSettings($html, $settings){
+add_filter('sim_email_signal_settings', __NAMESPACE__.'\emailSettings');
+function emailSettings($html){
 	//module slug should be the same as grandparent folder name
 	if(!SIM\getModuleOption(MODULE_SLUG, 'local')){
 		return $html;
@@ -1188,7 +1188,7 @@ function emailSettings($html, $settings){
 	<h4>E-mail to remind people to add their Signal phonenumber</h4>
 	<?php
 
-	$email->printInputs($settings);
+	$email->printInputs();
 
 	return $html.ob_get_clean();
 }

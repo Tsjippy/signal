@@ -268,7 +268,7 @@ class SignalCommandLine extends AbstractSignal{
      * @param bool $removeAvatar Remove the avatar visible by message recipients
      * @return bool|string
      */
-    public function updateProfile(string $name, string $avatarPath = null, bool $removeAvatar = false)
+    public function updateProfile(string $name, ?string $avatarPath = '', bool $removeAvatar = false)
     {
         $this->baseCommand();
 
@@ -438,7 +438,7 @@ class SignalCommandLine extends AbstractSignal{
      *                             If not specified, a new group with a new random ID is generated
      * @return bool|string
      */
-    private function _createOrUpdateGroup(string $name = null, array $members = [], string $avatarPath = null, string $groupId = null)
+    private function _createOrUpdateGroup(string $name = '', array $members = [], string $avatarPath = '', string $groupId = '')
     {
         $this->baseCommand();
 
@@ -472,19 +472,19 @@ class SignalCommandLine extends AbstractSignal{
      * @param string|null $avatarPath
      * @return bool
      */
-    public function createGroup(string $name, array $members = [], string $avatarPath = null): bool
+    public function createGroup(string $name, array $members = [], string $avatarPath = ''): bool
     {
         return $this->_createOrUpdateGroup($name, $members, $avatarPath);
     }
 
-    public function updateGroup(string $groupId, string $name = null, array $members = [], string $avatarPath = null): bool
+    public function updateGroup(string $groupId, string $name = '', array $members = [], string $avatarPath = ''): bool
     {
         return $this->_createOrUpdateGroup($name, $members, $avatarPath, $groupId);
     }
 
     public function addMembersToGroup(string $groupId, array $members)
     {
-        return $this->_createOrUpdateGroup(null,$members,null,$groupId);
+        return $this->_createOrUpdateGroup('', $members, '', $groupId);
     }
 
     /**
