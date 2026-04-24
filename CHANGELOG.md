@@ -5,6 +5,7 @@
 - messaging queue
 
 ### Changed
+- implemented wp_get_environment_type(
 
 ### Fixed
 - updating signal
