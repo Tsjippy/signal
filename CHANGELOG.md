@@ -6,6 +6,7 @@
 
 ### Changed
 - implemented wp_get_environment_type(
+- module to plugin
 
 ### Fixed
 - updating signal
