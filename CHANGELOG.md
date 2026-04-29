@@ -7,6 +7,7 @@
 ### Changed
 - implemented wp_get_environment_type(
 - module to plugin
+- recurrence selector code
 
 ### Fixed
 - updating signal
