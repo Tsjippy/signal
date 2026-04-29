@@ -4,8 +4,8 @@
  * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
  * this file should be run from a service, see install/signal-cli-jsonrpc-daemon.service
 */
-//use SIM;
-use SIM\SIGNAL;
+//use TSJIPPY;
+use TSJIPPY\SIGNAL;
 
 // load wp
 //ob_start();
@@ -27,7 +27,7 @@ $signal = new SIGNAL\SignalJsonRpc(false, true);
 
 if(!$signal->socket){
    print("Invalid socket: $signal->error\n");
-   SIM\printArray("Invalid socket: $signal->error\n", true);
+   TSJIPPY\printArray("Invalid socket: $signal->error\n", true);
    return;
 }
 
@@ -52,10 +52,10 @@ while(1){
             }
         }
 
-        //SIM\printArray($response, true);
+        //TSJIPPY\printArray($response, true);
 
         if(!empty(json_decode($response))){
-            //SIM\printArray(json_decode($response));
+            //TSJIPPY\printArray(json_decode($response));
             break;
         }
 
@@ -81,29 +81,29 @@ while(1){
 
     if(empty($json)){
         if(empty($response)){
-            SIM\printArray("Response is empty");
+            TSJIPPY\printArray("Response is empty");
         }else{
-            SIM\printArray("Response is '$response'");
+            TSJIPPY\printArray("Response is '$response'");
         }
 
         switch (json_last_error()) {
             case JSON_ERROR_NONE:
-                SIM\printArray(' No errors'.$response, true);
+                TSJIPPY\printArray(' No errors'.$response, true);
                 break;
             case JSON_ERROR_DEPTH:
-                SIM\printArray(' Maximum stack depth exceeded'.$response, true);
+                TSJIPPY\printArray(' Maximum stack depth exceeded'.$response, true);
                 break;
             case JSON_ERROR_STATE_MISMATCH:
-                SIM\printArray(' Underflow or the modes mismatch'.$response, true);
+                TSJIPPY\printArray(' Underflow or the modes mismatch'.$response, true);
                 break;
             case JSON_ERROR_CTRL_CHAR:
-                SIM\printArray(' Unexpected control character found'.$response, true);
+                TSJIPPY\printArray(' Unexpected control character found'.$response, true);
                 break;
             case JSON_ERROR_SYNTAX:
-                SIM\printArray(' Syntax error, malformed JSON: '.$response, true);
+                TSJIPPY\printArray(' Syntax error, malformed JSON: '.$response, true);
                 break;
             case JSON_ERROR_UTF8:
-                SIM\printArray(' Malformed UTF-8 characters, possibly incorrectly encoded'.$response, true);
+                TSJIPPY\printArray(' Malformed UTF-8 characters, possibly incorrectly encoded'.$response, true);
                 break;
             default:
                 break;
@@ -117,21 +117,21 @@ while(1){
         print("receive");
         processMessage($json->params);
     }elseif(isset($json->result)){
-        SIM\printArray($json);
-        $signalResults              = get_option('sim-signal-results', []);
+        TSJIPPY\printArray($json);
+        $signalResults              = get_option('tsjippy-signal-results', []);
 
         $signalResults[$json->id]   = $json;
 
-        update_option('sim-signal-results', $signalResults);
+        update_option('tsjippy-signal-results', $signalResults);
     }
 }
 
-SIM\printArray("The end", true);
+TSJIPPY\printArray("The end", true);
 
 function processMessage($data){
     global $signal;
 
-    //SIM\printArray($data, true);
+    //TSJIPPY\printArray($data, true);
 
     // no message found
     if(!isset($data->envelope->dataMessage) || empty($data->envelope->dataMessage->message)){
@@ -139,7 +139,7 @@ function processMessage($data){
     }
 
     if($data->account != $signal->phoneNumber){
-        SIM\printArray($data);
+        TSJIPPY\printArray($data);
         return;
     }
 
@@ -159,7 +159,7 @@ function processMessage($data){
             if($result){
                 $attachments[]      = $newPath;
             }else{
-                SIM\printArray("Failed to move $path to $newPath ");
+                TSJIPPY\printArray("Failed to move $path to $newPath ");
             }
         }
     }
@@ -273,12 +273,12 @@ function getAnswer($message, $source){
     ];
 
     if(empty($response['message']) && !empty($lowerMessage)){
-        SIM\printArray("No answer found for '$message'");
+        TSJIPPY\printArray("No answer found for '$message'");
 
         $response['message'] = 'I have no clue, do you know?';
     }
 
-    $response   = apply_filters('sim-signal-daemon-response', $response, $message, $source, $users, $name, $signal);
+    $response   = apply_filters('tsjippy-signal-daemon-response', $response, $message, $source, $users, $name, $signal);
 
     return $response;
 }

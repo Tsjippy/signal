@@ -1,7 +1,7 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
-use SIM\ADMIN;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
+use TSJIPPY\ADMIN;
 
 class SignalEmail extends ADMIN\MailSetting{
 
@@ -9,7 +9,7 @@ class SignalEmail extends ADMIN\MailSetting{
 
     public function __construct($user) {
         // call parent constructor
-		parent::__construct('signal_reminder', MODULE_SLUG);
+		parent::__construct('signal_reminder', PLUGINSLUG);
 
         $this->addUser($user);
 

@@ -1,7 +1,7 @@
 <?php
 
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -196,7 +196,7 @@ class SignalCommandLine extends AbstractSignal{
             if(!is_array($attachments)){
                 $attachments    = [$attachments];
             }
-            SIM\printArray($attachments);
+            TSJIPPY\printArray($attachments);
             $this->command->addArg('-a', $attachments);
         }
 
@@ -334,7 +334,7 @@ class SignalCommandLine extends AbstractSignal{
         }
         unlink($randFile);
 
-        SIM\clearOutput();
+        TSJIPPY\clearOutput();
         header("X-Accel-Buffering: no");
         header('Content-Encoding: none');
 
@@ -568,23 +568,20 @@ class SignalCommandLine extends AbstractSignal{
 
     protected function parseResult($returnJson=false){
         if($this->command->getExitCode()){
-            $failedCommands      = get_option('sim-signal-messages', []);
 
             $errorMessage  = $this->command->getError();
 
-            //SIM\printArray($errorMessage);
+            //TSJIPPY\printArray($errorMessage);
 
             // Captcha required
             if(str_contains($errorMessage, 'CAPTCHA proof required')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-messages', $failedCommands);
 
                 $this->sendCaptchaInstructions($errorMessage);
             }elseif(str_contains($errorMessage, '429 Too Many Requests')){
                 // Store command
                 $failedCommands[]    = $this->command->getCommand();
-                update_option('sim-signal-messages', $failedCommands);
             }elseif(str_contains($errorMessage, 'Unregistered user')){
                 // get phonenumber from the message
                 preg_match('/"(\+\d*)/m', $errorMessage, $matches);
@@ -600,15 +597,15 @@ class SignalCommandLine extends AbstractSignal{
                     foreach($users as $user){
                         delete_user_meta($user->ID, 'signal_number');
 
-                        SIM\printArray("Deleting Signal number {$matches[1]} for user $user->ID as it is not valid anymore");
+                        TSJIPPY\printArray("Deleting Signal number {$matches[1]} for user $user->ID as it is not valid anymore");
                     }
                 }
             }elseif(str_contains($errorMessage, 'Invalid group id')){
-                SIM\printArray($errorMessage);
+                TSJIPPY\printArray($errorMessage);
             }elseif(str_contains($errorMessage, 'Did not receive a reply.')){
-                SIM\printArray($errorMessage); 
+                TSJIPPY\printArray($errorMessage); 
             }else{
-                SIM\printArray($this->command);
+                TSJIPPY\printArray($this->command);
             }
             
             $this->error    = "<div class='error'>$errorMessage</div>";

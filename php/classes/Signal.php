@@ -1,7 +1,7 @@
 <?php
 
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 use GuzzleHttp;
 use mikehaertl\shellcommand\Command;
 
@@ -35,14 +35,14 @@ class Signal{
     public function __construct(){
         global $wpdb;
 
-        require_once( MODULE_PATH  . 'lib/vendor/autoload.php');
+        require_once( PLUGINPATH  . 'lib/vendor/autoload.php');
 
         $this->valid            = true;
-        $this->tableName        = $wpdb->prefix.'sim_signal_messages';
+        $this->tableName        = $wpdb->prefix.'tsjippy_signal_messages';
 
-        $this->receivedTableName= $wpdb->prefix.'sim_received_signal_messages';
+        $this->receivedTableName= $wpdb->prefix.'tsjippy_received_signal_messages';
 
-        $this->queueTableName   = $wpdb->prefix.'sim_signal_message_queue';
+        $this->queueTableName   = $wpdb->prefix.'tsjippy_signal_message_queue';
 
         $this->os               = 'macOS';
         $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
@@ -63,7 +63,7 @@ class Signal{
         $this->programPath      = $this->basePath.'/program';
         if (!is_dir($this->programPath )) {
             wp_mkdir_p($this->programPath);
-            SIM\printArray("Created $this->programPath");
+            TSJIPPY\printArray("Created $this->programPath");
         }
 
         // check permissions
@@ -105,25 +105,15 @@ class Signal{
         $this->daemon           = false;
 
         $this->osUserId         = "";
-
-        $this->commandQueue     = get_option('sim-signal-messages', []);
         
         // clean db
-        delete_option('sim-signal-messages');
-    }
-
-    public function __destruct() {
-        update_option('sim-signal-messages', $this->commandQueue );
-
-        if(!empty($this->commandQueue)){
-            SIM\printArray($this->commandQueue );
-        }
+        delete_option('tsjippy-signal-messages');
     }
 
     /**
      * Create the sent messages table if it does not exist
      */
-    public function createDbTable(){
+    public function createDbTables(){
 		global $wpdb;
 
 		if ( !function_exists( 'maybe_create_table' ) ) {
@@ -136,7 +126,7 @@ class Signal{
         // Sent messages log
 		$sql = "CREATE TABLE {$this->tableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            timesend bigint(20) NOT NULL,
+            time_send bigint(20) NOT NULL,
             recipient longtext NOT NULL,
             message longtext NOT NULL,
             status text NOT NULL,
@@ -148,7 +138,7 @@ class Signal{
         // Received messages log
         $sql = "CREATE TABLE {$this->receivedTableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            timesend bigint(20) NOT NULL,
+            time_send bigint(20) NOT NULL,
             sender longtext NOT NULL,
             message longtext NOT NULL,
             chat longtext,
@@ -162,7 +152,7 @@ class Signal{
         // Command queue
         $sql = "CREATE TABLE {$this->queueTableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
-            timeadded bigint(20) NOT NULL,
+            time_added bigint(20) NOT NULL,
             method longtext NOT NULL,
             params longtext,
             priority int,
@@ -192,7 +182,7 @@ class Signal{
         $wpdb->insert(
             $this->tableName,
             array(
-                'timesend'      => $timestamp,
+                'time_send'      => $timestamp,
                 'recipient'     => $recipient,
                 'message'		=> $message,
             )
@@ -223,7 +213,7 @@ class Signal{
         $wpdb->insert(
             $this->receivedTableName,
             array(
-                'timesend'      => $time,
+                'time_send'      => $time,
                 'sender'        => $sender,
                 'message'	    => $message,
                 'chat'          => $chat,
@@ -256,7 +246,7 @@ class Signal{
         $queryExtra = "";
 
         if(!empty($minTime)){
-            $queryExtra .= " WHERE timesend > {$minTime}000";
+            $queryExtra .= " WHERE time_send > {$minTime}000";
         }
 
         if(!empty($maxTime)){
@@ -265,7 +255,7 @@ class Signal{
                 $combinator     = 'WHERE';
             }
 
-            $queryExtra .= " $combinator timesend < {$maxTime}000";
+            $queryExtra .= " $combinator time_send < {$maxTime}000";
         }
 
         if(!empty($receiver)){
@@ -277,7 +267,7 @@ class Signal{
             $queryExtra .= " $combinator recipient = '$receiver'";
         }
 
-        $query      .= "$queryExtra ORDER BY `timesend` DESC LIMIT $startIndex,$amount;";
+        $query      .= "$queryExtra ORDER BY `time_send` DESC LIMIT $startIndex,$amount;";
 
         $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
@@ -310,7 +300,7 @@ class Signal{
         $queryExtra = "";
 
         if(!empty($minTime)){
-            $queryExtra .= " WHERE timesend > {$minTime}000";
+            $queryExtra .= " WHERE time_send > {$minTime}000";
         }
 
         if(!empty($maxTime)){
@@ -319,7 +309,7 @@ class Signal{
                 $combinator     = 'WHERE';
             }
 
-            $queryExtra .= " $combinator timesend < {$maxTime}000";
+            $queryExtra .= " $combinator time_send < {$maxTime}000";
         }
 
         if(!empty($sender)){
@@ -331,7 +321,7 @@ class Signal{
             $queryExtra .= " $combinator sender = '$sender'";
         }
 
-        $query      .= " $queryExtra ORDER BY `chat` ASC, `timesend` DESC LIMIT $startIndex,$amount;";
+        $query      .= " $queryExtra ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex,$amount;";
 
         $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
@@ -360,7 +350,7 @@ class Signal{
 
         global $wpdb;
 
-        $query      = "SELECT * FROM $this->tableName WHERE `recipient` = '$phoneNumber' ORDER BY `timesend` DESC LIMIT 5; ";
+        $query      = "SELECT * FROM $this->tableName WHERE `recipient` = '$phoneNumber' ORDER BY `time_send` DESC LIMIT 5; ";
 
         return $wpdb->get_results( $query );
     }
@@ -375,7 +365,7 @@ class Signal{
     public function getSendMessageByTimestamp($timestamp){
         global $wpdb;
 
-        $query      = "SELECT message FROM $this->tableName WHERE `timesend` = '$timestamp'";
+        $query      = "SELECT message FROM $this->tableName WHERE `time_send` = '$timestamp'";
 
         return $wpdb->get_var( $query );
     }
@@ -393,12 +383,12 @@ class Signal{
         $timeSend   = strtotime(get_gmt_from_date($maxDate, 'Y-m-d'));
 
         // remove sent messages
-        $query      = "DELETE FROM $this->tableName WHERE `timesend` < {$timeSend}000";
+        $query      = "DELETE FROM $this->tableName WHERE `time_send` < {$timeSend}000";
 
         $result1    = $wpdb->query( $query );
 
         // remove attachment files
-        $query      = "SELECT * FROM $this->receivedTableName WHERE `timesend` < {$timeSend}000 AND `attachments` is NOT NULL; ";
+        $query      = "SELECT * FROM $this->receivedTableName WHERE `time_send` < {$timeSend}000 AND `attachments` is NOT NULL; ";
         foreach($wpdb->get_results($query) as $result){
             $attachments    = unserialize($result->attachments);
 
@@ -410,7 +400,7 @@ class Signal{
         }
 
         // remove received messages
-        $query      = "DELETE FROM $this->receivedTableName WHERE `timesend` < {$timeSend}000";
+        $query      = "DELETE FROM $this->receivedTableName WHERE `time_send` < {$timeSend}000";
 
         $result2    = $wpdb->query( $query );
 
@@ -420,14 +410,14 @@ class Signal{
     /**
      * Marks a specific message as deleted in the log
      *
-     * @param   int     $timesend     The date after which messages should be kept Should be in yyyy-mm-dd format
+     * @param   int     $time_send     The date after which messages should be kept Should be in yyyy-mm-dd format
      *
      * @return  string                  The message
      */
     public function markAsDeleted($timeStamp){
         global $wpdb;
 
-        $query      = "UPDATE $this->tableName SET `status` = 'deleted' WHERE timesend = $timeStamp";
+        $query      = "UPDATE $this->tableName SET `status` = 'deleted' WHERE time_send = $timeStamp";
 
         return $wpdb->query( $query );
     }
@@ -532,7 +522,7 @@ class Signal{
         exec("bash -c 'whoami'", $username);
         $instructions   = $error;
         $instructions   = str_replace('signal-cli', "$this->path --config /home/{$username[0]}/.local/share/signal-cli" , $instructions);
-        $adminUrl       = admin_url("admin.php?page=sim_signal&tab=functions&challenge=");
+        $adminUrl       = admin_url("admin.php?page=tsjippy_signal&tab=functions&challenge=");
 
         $to             = get_option('admin_email');
         $subject        = "Signal captcha required";
@@ -583,7 +573,7 @@ class Signal{
             $this->valid    = false;
         }
 
-        $github         = new SIM\GITHUB\Github();
+        $github         = new TSJIPPY\GITHUB\Github();
         $release        = $github->getLatestRelease('AsamK', 'signal-cli', true);
 
         if(is_wp_error($release)){
@@ -725,7 +715,7 @@ class Signal{
                 exec("rm -rfd $this->programPath");
 
                 wp_mkdir_p($this->programPath);
-                SIM\printArray("Created $this->programPath");
+                TSJIPPY\printArray("Created $this->programPath");
             }
         }
 
@@ -743,7 +733,7 @@ class Signal{
             $result = rename("$folder/signal-cli", "$this->path" );
         }else{
             echo "$path does not exist<br>";
-            SIM\printArray("$folder/signal-cli not found please check", true);
+            TSJIPPY\printArray("$folder/signal-cli not found please check", true);
         }
 
         if($result){
@@ -868,7 +858,7 @@ class Signal{
         $wpdb->insert(
             $this->queueTableName,
             array(
-                'timeadded'    => time(),
+                'time_added'    => time(),
                 'method'       => $method,
                 'params'       => maybe_serialize($params),
                 'priority'     => $priority
@@ -887,7 +877,7 @@ class Signal{
         global $wpdb;
 
         if($id == -1){
-            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, timeadded ASC LIMIT 1;";
+            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, time_added ASC LIMIT 1;";
         } else {
             $query      = $wpdb->prepare("SELECT * FROM $this->queueTableName WHERE id = %d", $id);
         }

@@ -1,12 +1,12 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
-add_filter('sim-form-element-html', __NAMESPACE__.'\elmentHtml', 10, 3);
+add_filter('tsjippy-form-element-html', __NAMESPACE__.'\elmentHtml', 10, 3);
 function elmentHtml($node, $object){
     $element    = $object->element;
     
-    if($element->name == 'phonenumbers'){
+    if($element->slug == 'phonenumbers'){
         $signalNr   = get_user_meta($object->userId, 'signal_number', true);
 
         if(!empty($signalNr)){

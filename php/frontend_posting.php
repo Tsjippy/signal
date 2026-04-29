@@ -1,8 +1,8 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
-add_action('sim_frontend_post_after_content', __NAMESPACE__.'\afterContent');
+add_action('tsjippy_frontend_post_after_content', __NAMESPACE__.'\afterContent');
 function afterContent($frontendContend){
     $hidden	= 'hidden';
     if(
@@ -18,10 +18,10 @@ function afterContent($frontendContend){
     }
 
     $signalGroups       = [];
-	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
+	if(SETTINGS['local'] ?? false){
 		$signal	        = getSignalInstance();
         $signalGroups	= $signal->listGroups();
-        $defaultGroups	= SIM\getModuleOption(MODULE_SLUG, 'groups');
+        $defaultGroups	= SETTINGS['groups'] ?? [];
 	}
 
     ?>
@@ -112,7 +112,7 @@ function afterContent($frontendContend){
 }
 
 // Send Signal message about the new or updated post
-add_action('sim_after_post_save', __NAMESPACE__.'\afterPostSave', 999);
+add_action('tsjippy_after_post_save', __NAMESPACE__.'\afterPostSave', 999);
 function afterPostSave($post){
     if(isset($_POST['send-signal']) && $_POST['send-signal']){
         update_metadata( 'post', $post->ID, 'send_signal', true);

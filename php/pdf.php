@@ -1,8 +1,8 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
-add_action('sim_after_pdf_text', __NAMESPACE__.'\afterPdf', 10, 5);
+add_action('tsjippy_after_pdf_text', __NAMESPACE__.'\afterPdf', 10, 5);
 function afterPdf($cellText, $pdf, $x, $y, $cellWidth){
     if(is_array($cellText)){
         foreach($cellText as $index=>$phoneNr){
@@ -14,7 +14,7 @@ function afterPdf($cellText, $pdf, $x, $y, $cellWidth){
             
                 if(!empty($users)){
                     $signalNr   	  = get_user_meta($users[0]->ID, 'signal_number', true);
-                    $pdf->addCellPicture(MODULE_PATH.'pictures/signal.png', $x + $cellWidth - 4, $y + ($index * 6), "https://signal.me/#p/$signalNr", 4);
+                    $pdf->addCellPicture(PLUGINPATH.'pictures/signal.png', $x + $cellWidth - 4, $y + ($index * 6), "https://signal.me/#p/$signalNr", 4);
                 }
             }
         }

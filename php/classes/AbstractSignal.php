@@ -1,6 +1,6 @@
 <?php
 
-namespace SIM\SIGNAL;
+namespace TSJIPPY\SIGNAL;
 
 /* Install java apt install openjdk-17-jdk -y
 export VERSION=0.11.3

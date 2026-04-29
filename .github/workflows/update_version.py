@@ -3,14 +3,15 @@ import sys
 from pathlib import Path
 import datetime
 
-name    = './php/__module_menu.php'
+name = 'tsjippy-signal.php'
+
 # load plugin file
 txt = Path(name).read_text()
 newVersion  = sys.argv[1]
 
 # get old version
 try:
-    oldVersion = re.search(r'const MODULE_VERSION		= [ \t]*\'([\d.]+)\'', txt).group(1)
+    oldVersion = re.search(r'\* Version:[ \t]*([\d.]+)', txt).group(1)
 except Exception as e:
     exit()
 

@@ -1,12 +1,12 @@
 <?php
 
-namespace SIM\SIGNAL;
+namespace TSJIPPY\SIGNAL;
 
 trait SendEmailBySignal{
     function sendEmailBySignal($args){
         $numbers    = [];
         if(!empty($args['submission'])){
-            $forms      = new \SIM\FORMS\SimForms();
+            $forms      = new \TSJIPPY\FORMS\Forms();
 
             $numbers    = (array) $args['submission']->{$forms->findPhoneNumberElementName()};
         }

@@ -1,6 +1,6 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 /**
  *
@@ -50,7 +50,7 @@ function sendPostNotification($post){
 	
 	$excerpt = strip_tags(str_replace('<br>',"\n",$excerpt));
 
-	$excerpt = apply_filters('sim_signal_post_notification_message', $excerpt, $post);
+	$excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
 	
 	if($_POST['update']){
 		$message 	= "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
@@ -103,7 +103,7 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
 	}
 
 	if(!is_string($phonenumber) || empty($phonenumber)){
-		//SIM\printArray("No Phonennumer $phonenumber", false, true);
+		//TSJIPPY\printArray("No Phonennumer $phonenumber", false, true);
 		return false;
 	}
 
@@ -119,7 +119,7 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
 		}
 	}
 
-	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
+	if(SETTINGS['local'] ?? false){
 		return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $getResult);
 	}else{
 		return sendSignalFromExternal($message, $phonenumber, $images);
@@ -144,7 +144,7 @@ function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $q
 	$phonenumber		= $recipient;
 
 	if(strlen($phonenumber) < 10){
-		//SIM\printArray("Invalid Phonennumer $phonenumber", false, true);
+		//TSJIPPY\printArray("Invalid Phonennumer $phonenumber", false, true);
 		return false;
 	}
 

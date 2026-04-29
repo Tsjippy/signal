@@ -1,6 +1,6 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 /**
  * Check returns the required signal instance: cmd, dbus or jsonrpc

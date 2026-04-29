@@ -1,14 +1,14 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 /*
 	Add a signal page to user management screen
 */
-add_filter('sim_user_info_page', __NAMESPACE__.'\userInfoPage', 10, 4);
+add_filter('tsjippy_user_info_page', __NAMESPACE__.'\userInfoPage', 10, 4);
 function userInfoPage($filteredHtml, $showCurrentUserData, $user){
 
-	$shouldShow	= apply_filters('sim-should-show-vaccination-form', true, $user->ID);
+	$shouldShow	= apply_filters('tsjippy-should-show-vaccination-form', true, $user->ID);
 
 	if(!$shouldShow){
 		return $filteredHtml;
@@ -17,7 +17,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user){
 	//Add an extra tab
 	$filteredHtml['tabs']['Signal']	= "<li class='tablink' id='show-signal-options' data-target='signal_options'>Signal options</li>";
 	
-    wp_enqueue_script( 'sim_signal_options');
+    wp_enqueue_script( 'tsjippy_signal_options');
 
 	//Content
 	ob_start();
@@ -29,9 +29,9 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user){
             <h3>Signal Options</h3>
             <?php
                 $prefs      = get_user_meta($user->ID, 'signal_preferences', true);
-                echo apply_filters('sim_personal_signal_settings', '', $user, $prefs);
+                echo apply_filters('tsjippy_personal_signal_settings', '', $user, $prefs);
 
-                echo SIM\addSaveButton('save_signal_preferences','Update Preferences');
+                echo TSJIPPY\addSaveButton('save_signal_preferences','Update Preferences');
             ?>
         </form>
 	</div>

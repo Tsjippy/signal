@@ -1,7 +1,7 @@
 <?php
 
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
@@ -60,7 +60,7 @@ class SignalJsonRpc extends AbstractSignal{
         clearstatcache();
 
         if (!is_writable($this->socketPath )) {
-            //SIM\printArray( "Please chick the file permisions to $this->socketPath");
+            //TSJIPPY\printArray( "Please chick the file permisions to $this->socketPath");
         }
 
         $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
@@ -79,7 +79,7 @@ class SignalJsonRpc extends AbstractSignal{
         }elseif(!$this->socket){
             echo "<div class='error'>Unable to create socket on $this->socketPath</div>";
 
-            //SIM\printArray("$errno: $this->error");
+            //TSJIPPY\printArray("$errno: $this->error");
         }
 
         $this->shouldCloseSocket    = $shouldCloseSocket;
@@ -105,7 +105,7 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         if(!$this->socket){
-            //SIM\printArray("$errno: $this->error", true);
+            //TSJIPPY\printArray("$errno: $this->error", true);
             return false;
         }
 
@@ -113,9 +113,9 @@ class SignalJsonRpc extends AbstractSignal{
         try{
             stream_set_timeout($this->socket, 1);
         }catch (\Error $e) {
-            SIM\printArray($e);
+            TSJIPPY\printArray($e);
         
-            SIM\printArray($this->socket); 
+            TSJIPPY\printArray($this->socket); 
         }
 
         $params["account"]  = $this->phoneNumber;
@@ -135,6 +135,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         flush();
 
+        $response   = '';
         if($this->getResult){
             //stream_socket_recvfrom
             $response = $this->getRequestResponse($id);
@@ -148,13 +149,13 @@ class SignalJsonRpc extends AbstractSignal{
             $this->checkForErrors($response, $method, $params, $id);
 
             if(!empty($this->error)){
-                return new \WP_Error('sim-signal', $this->error);
+                return new \WP_Error('tsjippy-signal', $this->error);
             }
 
             if(!is_object($response) || empty($response->result)){
                 if(!$this->invalidNumber){
-                    SIM\printArray("Got faulty result");
-                    SIM\printArray($response);
+                    TSJIPPY\printArray("Got faulty result");
+                    TSJIPPY\printArray($response);
                 }
 
                 return false;
@@ -171,13 +172,13 @@ class SignalJsonRpc extends AbstractSignal{
      */
     public function getRequestResponse(int $id){
         if(empty($id)){
-            SIM\printArray("Got an empty Id");
+            TSJIPPY\printArray("Got an empty Id");
             return false;
         }
 
         // maximum of listentime seconds
         if(time() - $id > $this->listenTime){
-            SIM\printArray('Cancelling as this has been running for '.time() - $id.' seconds');
+            TSJIPPY\printArray('Cancelling as this has been running for '.time() - $id.' seconds');
             return false;
         }
 
@@ -198,7 +199,7 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  mixed               the result or empty if no result
      */
     public function getResultFromDb($id){
-        $signalResults  = get_option('sim-signal-results', []);
+        $signalResults  = get_option('tsjippy-signal-results', []);
 
         // the id is not found in the db
         if(!!isset($signalResults[$id])){
@@ -210,7 +211,7 @@ class SignalJsonRpc extends AbstractSignal{
         unset($signalResults[$id]);
 
         // remove the result from the array
-        update_option('sim-signal-results', $signalResults);
+        update_option('tsjippy-signal-results', $signalResults);
 
         return $result;
     }
@@ -251,7 +252,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         $streamMetaData         = stream_get_meta_data($this->socket);
         if ($streamMetaData['timed_out']) {
-            SIM\printArray("Signal Socket Timed Out");
+            TSJIPPY\printArray("Signal Socket Timed Out");
 
             return false;
         }
@@ -265,7 +266,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         // somehow we have red multiple responses
         if(substr_count($this->lastResponse, $base) > 1){
-            SIM\printArray($this->lastResponse);
+            TSJIPPY\printArray($this->lastResponse);
 
             $results    = [];
 
@@ -286,11 +287,11 @@ class SignalJsonRpc extends AbstractSignal{
 
             // add the results we are not interested in to the db
             if(!empty($results)){
-                $signalResults              = get_option('sim-signal-results', []);
+                $signalResults              = get_option('tsjippy-signal-results', []);
 
                 array_merge($signalResults, $results);
 
-                update_option('sim-signal-results', $signalResults);
+                update_option('tsjippy-signal-results', $signalResults);
             }
         }
 
@@ -299,22 +300,22 @@ class SignalJsonRpc extends AbstractSignal{
         if(empty($json)){
             switch (json_last_error()) {
                 case JSON_ERROR_NONE:
-                    SIM\printArray(' - No errors'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - No errors'.$this->lastResponse, true);
                     break;
                 case JSON_ERROR_DEPTH:
-                    SIM\printArray(' - Maximum stack depth exceeded'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Maximum stack depth exceeded'.$this->lastResponse, true);
                     break;
                 case JSON_ERROR_STATE_MISMATCH:
-                    SIM\printArray(' - Underflow or the modes mismatch'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Underflow or the modes mismatch'.$this->lastResponse, true);
                     break;
                 case JSON_ERROR_CTRL_CHAR:
-                    SIM\printArray(' - Unexpected control character found'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Unexpected control character found'.$this->lastResponse, true);
                     break;
                 case JSON_ERROR_SYNTAX:
-                    SIM\printArray(' - Syntax error, malformed JSON: '.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Syntax error, malformed JSON: '.$this->lastResponse, true);
                     break;
                 case JSON_ERROR_UTF8:
-                    SIM\printArray(' - Malformed UTF-8 characters, possibly incorrectly encoded'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Malformed UTF-8 characters, possibly incorrectly encoded'.$this->lastResponse, true);
                     break;
                 default:
                     break;
@@ -327,25 +328,25 @@ class SignalJsonRpc extends AbstractSignal{
             $json2   = $this->getRequestResponse($id);
 
             if(!isset($json->method) || $json->method != 'receive'){
-                SIM\printArray("Trying again:");
-                SIM\printArray($json);
+                TSJIPPY\printArray("Trying again:");
+                TSJIPPY\printArray($json);
 
-                SIM\printArray($json2);
+                TSJIPPY\printArray($json2);
             }
 
             $json   = $json2;
         }elseif(!isset($json->id)){
-            SIM\printArray("Response has no id");
-            SIM\printArray($this->lastResponse);
-            SIM\printArray($json);
+            TSJIPPY\printArray("Response has no id");
+            TSJIPPY\printArray($this->lastResponse);
+            TSJIPPY\printArray($json);
             $json   = $this->getRequestResponse($id);
-            SIM\printArray($json);
+            TSJIPPY\printArray($json);
         }elseif($json->id != $id){
-            SIM\printArray("Id '$json->id' is not the right id '$id', trying again");
-            SIM\printArray($response);
-            SIM\printArray($json);
+            TSJIPPY\printArray("Id '$json->id' is not the right id '$id', trying again");
+            TSJIPPY\printArray($response);
+            TSJIPPY\printArray($json);
             $json   = $this->getRequestResponse($id);
-            SIM\printArray($json);
+            TSJIPPY\printArray($json);
         }
 
         return $json;
@@ -355,12 +356,12 @@ class SignalJsonRpc extends AbstractSignal{
         $this->error    = "";
 
         if(!$json){
-            SIM\printArray("Getting response for command $method timed out");
-            SIM\printArray($params);
+            TSJIPPY\printArray("Getting response for command $method timed out");
+            TSJIPPY\printArray($params);
 
-            $signalResults              = get_option('sim-signal-results', []);
+            $signalResults              = get_option('tsjippy-signal-results', []);
             if(isset($signalResults[$id])){
-                SIM\printArray($signalResults[$id]);
+                TSJIPPY\printArray($signalResults[$id]);
             }
 
             return false;
@@ -380,8 +381,8 @@ class SignalJsonRpc extends AbstractSignal{
 
             // Remove the indicator that the invalid number is an valid number
             if(isset($json->error->data->response->results[0]->recipientAddress->number)){
-                //SIM\printArray("Deleting Signal number: ".$json->error->data->response->results[0]->recipientAddress->number);
-                //SIM\printArray($json);
+                //TSJIPPY\printArray("Deleting Signal number: ".$json->error->data->response->results[0]->recipientAddress->number);
+                //TSJIPPY\printArray($json);
 
                 // delete the signal meta key
                 $users = get_users(array(
@@ -393,10 +394,10 @@ class SignalJsonRpc extends AbstractSignal{
                 foreach($users as $user){
                     delete_user_meta($user->ID, 'signal_number');
 
-                    SIM\printArray("Deleting Signal number {$json->error->data->response->results[0]->recipientAddress->number} for $user->display_name with id $user->ID as it is not valid anymore");
+                    TSJIPPY\printArray("Deleting Signal number {$json->error->data->response->results[0]->recipientAddress->number} for $user->display_name with id $user->ID as it is not valid anymore");
                 }
             }else{
-                SIM\printArray($json->error->data->response->results);
+                TSJIPPY\printArray($json->error->data->response->results);
             }
         }
 
@@ -404,7 +405,7 @@ class SignalJsonRpc extends AbstractSignal{
         elseif(str_contains($errorMessage, 'Specified account does not exist')){
             $this->invalidNumber = true;
 
-            SIM\printArray("The connected number is not registered on the Signal Servers, please register the number first");
+            TSJIPPY\printArray("The connected number is not registered on the Signal Servers, please register the number first");
         }
 
         // Captcha required
@@ -429,21 +430,21 @@ class SignalJsonRpc extends AbstractSignal{
         
         // Group ID
         elseif(str_contains($errorMessage, 'Invalid group id')){
-            SIM\printArray($errorMessage);
+            TSJIPPY\printArray($errorMessage);
         }
         
         // Timed Out
         elseif(str_contains($errorMessage, 'Did not receive a reply.')){
-            SIM\printArray($errorMessage); 
+            TSJIPPY\printArray($errorMessage); 
         }
         
         // Unknown
         else{
-            SIM\printArray("Got error '$errorMessage' while running the '$method' command.");
-            SIM\printArray($params);   
-            SIM\printArray($json);            
-            SIM\printArray($errorMessage);
-            SIM\printArray($this);
+            TSJIPPY\printArray("Got error '$errorMessage' while running the '$method' command.");
+            TSJIPPY\printArray($params);   
+            TSJIPPY\printArray($json);            
+            TSJIPPY\printArray($errorMessage);
+            TSJIPPY\printArray($this);
         }
         
         $this->error    = "<div class='error'>$errorMessage</div>";
@@ -509,10 +510,10 @@ class SignalJsonRpc extends AbstractSignal{
      * Default verify with SMS
      * @param bool $voiceVerification The verification should be done over voice, not SMS.
      * @param string $captcha - from https://signalcaptchas.org/registration/generate.html
-     * @return bool|string
+     * 
+     * @return bool|string|WP_Error
      */
-    public function register(string $phone, string $captcha, bool $voiceVerification = false)
-    {
+    public function register(string $phone, string $captcha, bool $voiceVerification = false){
         $voice  = false;
         if($voiceVerification){
             $voice  = 'false';
@@ -535,7 +536,7 @@ class SignalJsonRpc extends AbstractSignal{
     /**
      * Verify the number using the code received via SMS or voice.
      * @param string $code The verification code e.g 123-456
-     * @return bool|string
+     * @return bool|string|WP_Error
      */
     public function verify(string $code){
         $phone              = trim(file_get_contents($this->basePath.'/phone.signal'));
@@ -590,7 +591,7 @@ class SignalJsonRpc extends AbstractSignal{
         $promise->then(
             function ($res){
                 if($res->getStatusCode() != 200){
-                    SIM\printArray("Got ".$res->getStatusCode()." from $this->postUrl");
+                    TSJIPPY\printArray("Got ".$res->getStatusCode()." from $this->postUrl");
                     return false;
                 }
         
@@ -635,7 +636,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         if(!$result || is_wp_error($result)){
             if(is_wp_error($result)){
-                SIM\printArray($result);
+                TSJIPPY\printArray($result);
             }
             return true;
         }
@@ -664,6 +665,8 @@ class SignalJsonRpc extends AbstractSignal{
         $params = [];
 
         if(is_array($recipients)){
+            $result = '';
+
             foreach($recipients as $recipient){
                 $result = $this->send($recipient, $message, $attachments, $timeStamp);
             }
@@ -675,7 +678,7 @@ class SignalJsonRpc extends AbstractSignal{
                 $params['recipient']    = $recipients;
             // invalid formatted phone number
             }elseif(strlen($recipients) < 15){
-                SIM\printArray("Invalid phonenumber '$recipients'");
+                TSJIPPY\printArray("Invalid phonenumber '$recipients'");
 
                 return new WP_Error('Phonenumber invalid', "Invalid phonenumber '$recipients'");
             }else{
@@ -684,7 +687,8 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         // parse any styling
-        extract($this->parseMessageLayout($message));
+        $parsed = $this->parseMessageLayout($message);
+        extract($parsed);
 
         $params["message"]  = $message;
 
@@ -741,10 +745,10 @@ class SignalJsonRpc extends AbstractSignal{
                 
                 return $ownTimeStamp;
             }elseif(!$this->invalidNumber){
-                /* SIM\printArray("Sending Signal Message failed");
-                SIM\printArray($params);
+                /* TSJIPPY\printArray("Sending Signal Message failed");
+                TSJIPPY\printArray($params);
                 if(!empty($result)){
-                    SIM\printArray($result);
+                    TSJIPPY\printArray($result);
                 } */
                 return $result;
             }
@@ -782,7 +786,7 @@ class SignalJsonRpc extends AbstractSignal{
                 return $this->groups;
             }
 
-            $transientGroups    = get_transient('sim-signal-groups');
+            $transientGroups    = get_transient('tsjippy-signal-groups');
 
             if($transientGroups && is_array($transientGroups)){
                 $this->groups   = $transientGroups;
@@ -805,7 +809,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         if(empty($this->error) && !empty($result)){
             $this->groups   = $result;
-            set_transient('sim-signal-groups', $result, WEEK_IN_SECONDS);
+            set_transient('tsjippy-signal-groups', $result, WEEK_IN_SECONDS);
         }
 
         return $this->groups;
@@ -836,7 +840,7 @@ class SignalJsonRpc extends AbstractSignal{
             $param['groupId']   = $recipients;
         }
 
-        //SIM\printArray($param, true);
+        //TSJIPPY\printArray($param, true);
         
         $result = $this->addToCommandQueue('remoteDelete', $param);
 
@@ -845,7 +849,7 @@ class SignalJsonRpc extends AbstractSignal{
 
             return true;
         }else{
-            SIM\printArray($result, true);
+            TSJIPPY\printArray($result, true);
         }
 
         return $result;
@@ -911,7 +915,7 @@ class SignalJsonRpc extends AbstractSignal{
      * @param string    $avatarPath     Path to the new avatar visible by message recipients
      * @param bool      $removeAvatar   Remove the avatar visible by message recipients
      * 
-     * @return bool|string
+     * @return bool|string|WP_Error     Tehe result or an WP Error object
      */
     public function updateProfile(string $name = '', ?string $avatarPath = '', bool $removeAvatar = false){
 
@@ -958,7 +962,7 @@ class SignalJsonRpc extends AbstractSignal{
         $result = $this->listGroups(true, $groupPath);
 
         if(empty($result[0]->groupInviteLink)){
-            SIM\printArray($result, true);
+            TSJIPPY\printArray($result, true);
         }
 
         return $result[0]->groupInviteLink;

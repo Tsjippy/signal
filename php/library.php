@@ -1,10 +1,10 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
-add_action('sim-library-send-book-of-the-day', __NAMESPACE__.'\sendBook', 10, 5);
+add_action('tsjippy-library-send-book-of-the-day', __NAMESPACE__.'\sendBook', 10, 5);
 function sendBook($description, $title, $image, $url, $locations){
-  $recipients		= SIM\getModuleOption(MODULE_SLUG, 'groups');
+  $recipients		= SETTINGS['groups'] ?? [];
 
   $excerptMore 		= apply_filters('excerpt_more', ' [...]');
 

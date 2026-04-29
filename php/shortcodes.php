@@ -1,6 +1,6 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 
 //Add Signal messages overview shortcode

@@ -4,8 +4,8 @@
  * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
  * this file should be run from a service, see install/signal-cli-jsonrpc-daemon.service
 */
-//use SIM;
-use SIM\SIGNAL;
+//use TSJIPPY;
+use TSJIPPY\SIGNAL;
 
 // load wp
 //ob_start();
@@ -24,7 +24,7 @@ $signal = SIGNAL\getSignalInstance($getResult=true);
 
 if(!$signal->socket){
    print("Invalid socket: $signal->error\n");
-   SIM\printArray("Invalid socket: $signal->error\n", true);
+   TSJIPPY\printArray("Invalid socket: $signal->error\n", true);
    return;
 }
 

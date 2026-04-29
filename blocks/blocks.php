@@ -1,15 +1,15 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 // Load the js file to filter all blocks
 add_action( 'enqueue_block_editor_assets', __NAMESPACE__.'\loadBlockAssets');
 function loadBlockAssets() {
     wp_enqueue_script(
-        'sim-signal-block',
-        SIM\pathToUrl(MODULE_PATH.'blocks/signal_options/build/index.js'),
+        'tsjippy-signal-block',
+        TSJIPPY\pathToUrl(PLUGINPATH.'blocks/signal_options/build/index.js'),
         [ 'wp-blocks', 'wp-dom', 'wp-dom-ready', 'wp-edit-post' ],
-        MODULE_VERSION
+        PLUGINVERSION
     );
 }
 

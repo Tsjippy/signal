@@ -1,6 +1,6 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 add_action('init', __NAMESPACE__.'\taskInit');
 function taskInit(){
@@ -18,22 +18,22 @@ function taskInit(){
 }
 
 function checkSignal(){
-    $signal 		= SIM\SIGNAL\getSignalInstance();
+    $signal 		= TSJIPPY\SIGNAL\getSignalInstance();
     $signal->checkPrerequisites();
 }
 
 function scheduleTasks(){
-    SIM\scheduleTask('check_signal_action', 'daily');
+    TSJIPPY\scheduleTask('check_signal_action', 'daily');
 
-    SIM\scheduleTask('clean_signal_log_action', 'daily');
+    TSJIPPY\scheduleTask('clean_signal_log_action', 'daily');
 
-    SIM\scheduleTask('check_signal_numbers_action', 'daily');
+    TSJIPPY\scheduleTask('check_signal_numbers_action', 'daily');
 
-    SIM\scheduleTask('retry_failed_signal_messages_action', 'quarterly');
+    TSJIPPY\scheduleTask('retry_failed_signal_messages_action', 'quarterly');
 
-    $freq   = SIM\getModuleOption(MODULE_SLUG, 'reminder-freq');
+    $freq   = SETTINGS['reminder-freq'] ?? false;
     if($freq){
-        SIM\scheduleTask('signal_number_reminder_action', $freq);
+        TSJIPPY\scheduleTask('signal_number_reminder_action', $freq);
     }
 }
 
@@ -42,13 +42,13 @@ function scheduleTasks(){
  */
 function checkSignalNumbers(){
     // we can send a signal message directly from the server
-	if(!SIM\getModuleOption(MODULE_SLUG, 'local')){
+	if(!SETTINGS['local'] ?? false){
         return;
     }
     
     $signal	= getSignalInstance();
 
-    foreach(SIM\getUserAccounts() as $user){
+    foreach(TSJIPPY\getUserAccounts() as $user){
         $phonenumber    = get_user_meta( $user->ID, 'signal_number', true );
 
         // check if valid signal number
@@ -92,8 +92,8 @@ function signalNumberReminder(){
 }
 
 function cleanSignalLog(){
-    $period     = SIM\getModuleOption(MODULE_SLUG, 'clean-period');
-    $amount     = SIM\getModuleOption(MODULE_SLUG, 'clean-amount');
+    $period     = SETTINGS['clean-period'] ?? false;
+    $amount     = SETTINGS['clean-amount'] ?? false;
 
     $maxDate    = date('Y-m-d', strtotime("-$amount $period"));
 

@@ -1,11 +1,11 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
-add_action('sim-phonenumber-updated', __NAMESPACE__.'\phoneNumberUpdated', 10, 2);
+add_action('tsjippy-phonenumber-updated', __NAMESPACE__.'\phoneNumberUpdated', 10, 2);
 function phoneNumberUpdated($phonenumber, $userId){
 
-    $groupPaths		= SIM\getModuleOption(MODULE_SLUG, 'invgroups');
+    $groupPaths		= SETTINGS['invgroups'] ?? [];
 
     $link			= '';
     if(is_array($groupPaths)){
@@ -18,13 +18,13 @@ function phoneNumberUpdated($phonenumber, $userId){
             }
         }
     }else{
-        $link		= SIM\getModuleOption(MODULE_SLUG, 'group-link');
+        $link		= SETTINGS['group-link'] ?? false;
     }
 
     $valid   = true;
     
     // we send a signal message directly from the server
-	if(SIM\getModuleOption(MODULE_SLUG, 'local')){
+	if(SETTINGS['local'] ?? false){
 		$signal	= getSignalInstance();
 
         // check if valid signal number

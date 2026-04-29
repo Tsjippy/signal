@@ -1,6 +1,6 @@
 <?php
-namespace SIM\SIGNAL;
-use SIM;
+namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 add_action( 'rest_api_init', __NAMESPACE__.'\restApiInit');
 function restApiInit() {
@@ -85,7 +85,7 @@ function savePreferences(){
 	unset($signalPreferences['user-id']);
 	unset($signalPreferences['_wpnonce']);
 
-	do_action('sim_signal_before_pref_save', $userId, $signalPreferences);
+	do_action('tsjippy_signal_before_pref_save', $userId, $signalPreferences);
 
 	update_user_meta($userId, 'signal_preferences', $signalPreferences);
 
