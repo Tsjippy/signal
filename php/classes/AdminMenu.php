@@ -526,9 +526,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         addElement('br', $parent);
         addElement('br', $parent);	
 
-        addElement('label', $parent, [], 'How often should people be reminded to add a signal phonenumber  to the website');
-
-        $this->recurrenceSelector('reminder-freq', $this->settings['reminder-freq'], $parent);
+        $this->recurrenceSelector('reminder-freq', $this->settings['reminder-freq'], 'How often should people be reminded to add a signal phonenumber  to the website', $parent);
 
         if(!empty($signalGroups)){
             $wrapper = addElement('div', $parent, ['class' => 'signal-group-wrapper']);
