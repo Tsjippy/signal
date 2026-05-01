@@ -5,15 +5,15 @@ jobs:
     name: Update changelog
     runs-on: ubuntu-latest
     steps:
-        - uses: actions/checkout@v3
+        - uses: actions/checkout@v6
 
-        - uses: actions/setup-node@v1
+        - uses: actions/setup-node@v6
 
         - name: Update file
           run: python ./.github/workflows/update_changelog.py "${{ github.event.commits[0].message }}"
 
         - name: Commit file
-          uses: test-room-7/action-update-file@v1
+          uses: test-room-7/action-update-file@v2
           with:
               file-path: CHANGELOG.md
               commit-msg: Update changelog with commit message
