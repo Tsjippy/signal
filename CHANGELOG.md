@@ -8,6 +8,7 @@
 - implemented wp_get_environment_type(
 - module to plugin
 - recurrence selector code
+- exclude .vscode from releases
 
 ### Fixed
 - updating signal
