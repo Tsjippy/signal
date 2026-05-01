@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.0.0] - 2026-05-01
+
+
+### Added
 - messaging queue
 
 ### Changed
@@ -18,8 +29,6 @@
 - install on Windows
 - changing avatar
 - install on Windows
-
-### Updated
 
 ## [8.4.5] - 2026-02-05
 
