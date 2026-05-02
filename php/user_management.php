@@ -7,13 +7,6 @@ use TSJIPPY;
 */
 add_filter('tsjippy_user_info_page', __NAMESPACE__.'\userInfoPage', 10, 4);
 function userInfoPage($filteredHtml, $showCurrentUserData, $user){
-
-	$shouldShow	= apply_filters('tsjippy-should-show-vaccination-form', true, $user->ID);
-
-	if(!$shouldShow){
-		return $filteredHtml;
-	}
-
 	//Add an extra tab
 	$filteredHtml['tabs']['Signal']	= "<li class='tablink' id='show-signal-options' data-target='signal_options'>Signal options</li>";
 	
