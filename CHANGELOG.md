@@ -6,6 +6,7 @@
 ### Changed
 - removed the redirection at activation as it is done by the share plugin
 - removed vaccinations
+- use shared github workflows
 
 ### Fixed
 
