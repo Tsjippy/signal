@@ -4,13 +4,18 @@
 ### Added
 
 ### Changed
-- removed the redirection at activation as it is done by the share plugin
-- removed vaccinations
-- use shared github workflows
 
 ### Fixed
 
 ### Updated
+
+## [10.0.1] - 2026-05-03
+
+
+### Changed
+- removed the redirection at activation as it is done by the share plugin
+- removed vaccinations
+- use shared github workflows
 
 ## [10.0.0] - 2026-05-01
 
