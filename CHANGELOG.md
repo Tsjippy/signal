@@ -6,7 +6,6 @@
 ### Changed
 
 ### Fixed
-- admin menu
 
 ### Updated
 
