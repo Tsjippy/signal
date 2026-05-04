@@ -116,6 +116,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $endDate	= $_REQUEST['end-date'];
         }
 
+        ob_start();
+
         $this->messagesHeader($startDate, $endDate, $amount);
         
         $this->processActions();
@@ -150,6 +152,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         }
 
         $receivedTable	= $this->receivedMessagesTable($startDate, $endDate, $amount, $hidden);
+
+        addRawHtml(ob_get_clean(), $parent);
 
         return true;
     }
@@ -717,11 +721,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $this->settings['clean-period']	= $_REQUEST['clean-period'];
             $this->settings['clean-amount']	= $_REQUEST['clean-amount'];
 
-            global $Modules;
-
-            $Modules[PLUGINSLUG]	= $this->settings;
-
-            update_option('tsjippy_modules', $Modules);
+            update_option('tsjippy_signal_settings', $this->settings);
         }elseif($_REQUEST['action'] == 'Reply'){
             $signal	= getSignalInstance();
 
