@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- admin menu
 
 ### Updated
+
+## [10.0.4] - 2026-05-05
+
+
+### Fixed
+- admin menu
 
 ## [10.0.2] - 2026-05-04
 
