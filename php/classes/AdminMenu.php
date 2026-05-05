@@ -519,16 +519,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             <input type='text' name='display-name' value='<?php echo $this->settings['display-name'];?>' style='width:310px'>
         </label>
         <br>
-        <br>
         <label>
             Signal Messenger Avatar (328pxx328px)<br>
         </label>
         <?php 
         addRawHtml(ob_get_clean(), $parent);
         $this->pictureSelector('avatar', 'avatar', $parent);
-
-        addElement('br', $parent);
-        addElement('br', $parent);	
 
         $this->recurrenceSelector('reminder-freq', $this->settings['reminder-freq'], 'How often should people be reminded to add a signal phonenumber  to the website', $parent);
 
@@ -539,7 +535,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             foreach($signalGroups as $group){
                 if(empty($group->name)) continue;
 
-                $label  = addElement('label', $wrapper);
+                $label  = addElement('label', $wrapper, [], $group->name);
                 $attr   = [
                     'type' => 'checkbox', 
                     'name' => 'groups[]', 
@@ -548,8 +544,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
                 if(in_array($group->id, $this->settings['groups'] ?? [])) $attr['checked'] = 'checked';
 
-                addElement('input', $label, $attr);
-                addRawHtml(' ' . $group->name, $label);
+                addElement('input', $label, $attr, '', 'afterBegin');
                 addElement('br', $wrapper);
             }
 
@@ -568,7 +563,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
                 if(in_array($group->id, $this->settings['invgroups'] ?? [])) $attr['checked'] = 'checked';
 
-                addElement('input', $label, $attr);
+                addElement('input', $label, $attr, '', 'afterBegin');
                 addElement('br', $invWrapper);
             }
         }
