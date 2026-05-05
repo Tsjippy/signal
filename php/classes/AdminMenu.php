@@ -42,7 +42,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $signal = getSignalInstance();
 
             if(str_contains(php_uname(), 'Linux')){
-                $signal->createDbTable();
+                $signal->createDbTables();
             }
 
             if(!$signal->checkPrerequisites()){
