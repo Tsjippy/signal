@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- make sure table columns are updated
 
 ### Fixed
 
