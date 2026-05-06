@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- make sure table columns are updated
 
 ### Fixed
 
 ### Updated
+
+## [10.0.5] - 2026-05-06
+
+
+### Changed
+- make sure table columns are updated
 
 ## [10.0.4] - 2026-05-05
 
