@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- replaced sweetalert
 
 ### Fixed
 
