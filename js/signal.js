@@ -6,7 +6,7 @@ document.addEventListener('click', async ev=>{
 
         let response    = await FormSubmit.submitForm(target, 'signal/save_preferences');
         if(response){
-            Main.displayMessage(response, 'success');
+            Main.displayMessage(response);
         }
     }
 });
