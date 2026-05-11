@@ -486,7 +486,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * Shows the options when connected to Signal
      *
      * @param	object	        $signal		The signal object
-     * @param   DOMElement|null $parent     Parent node element
+     * @param   \DOMElement|null $parent     Parent node element
      */
     public function connectedOptions($signal, $parent){
         $url		= admin_url( "admin.php?page={$_GET['page']}&tab={$_GET['tab']}" );
@@ -743,6 +743,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         }
     }
 
+    /**
+     * Display the header for the messages table
+     * @param string $startDate The start date for the message log
+     * @param string $endDate The end date for the message log
+     * @param int $amount The number of messages to display
+     */
     public function messagesHeader($startDate, $endDate, $amount){
         if(!isset($this->settings['clean-period'])){
             $this->settings['clean-period']	= '';
@@ -810,6 +816,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         <?php
     }
 
+    /**
+     * Display a table of sent messages
+     * @param string $startDate The start date for the message log
+     * @param string $endDate The end date for the message log
+     * @param int $amount The number of messages to display
+     * @return bool True if the table is displayed, false otherwise
+     */
     public function sentMessagesTable($startDate, $endDate, $amount){
         global $wpdb;
 
@@ -935,6 +948,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
+    /**
+     * Display a table of received messages
+     * @param string $startDate The start date for the message log
+     * @param string $endDate The end date for the message log
+     * @param int $amount The number of messages to display
+     * @param string $hidden The CSS class for hiding the table
+     * @return bool True if the table is displayed, false otherwise
+     */
     public function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
         global $wpdb;
 

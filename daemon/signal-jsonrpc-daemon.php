@@ -201,13 +201,17 @@ function processMessage($data){
     $signal->addToReceivedMessageLog($data->envelope->source, $message, $data->envelope->timestamp, $groupId, $attachments);
 }
 
+/**
+ * Get an answer for a given message and source
+ * @param   string  $message    The message to get an answer for
+ * @param   string  $source     The source of the message to get an answer for
+ * 
+ * @return  array               The answer for the given message and source, with keys 'message' and 'pictures'
+ */
 function getAnswer($message, $source){
     global $signal;
 
     $lowerMessage = strtolower($message);
-
-    //Change the user to the admin account otherwise get_users will not work
-    wp_set_current_user(1);
 
     // Find the first name
     $name = false;
