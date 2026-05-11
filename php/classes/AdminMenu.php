@@ -10,6 +10,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
+    /**
+     * AdminMenu constructor.
+     * 
+     * @param array $settings The settings for the plugin
+     * @param string $name The name of the plugin
+     */
     public function __construct($settings, $name){
         parent::__construct($settings, $name);
     }
