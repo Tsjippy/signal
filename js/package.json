@@ -4,9 +4,9 @@
   "description": "signal",
   "main": "./signal.js",
   "scripts": {
-    "signal": "webpack --watch --entry ./signal.js --output-path . --output-filename signal.min.js --progress --mode=production --devtool source-map",
-    "admin": "webpack --watch --entry ./admin.js --output-path . --output-filename admin.min.js --progress --mode=production --devtool source-map",
-    "frontend": "webpack --watch --entry ./frontend-content.js --output-path . --output-filename frontend-signal.min.js --progress --mode=production --devtool source-map",
+    "signal": "webpack --entry ./signal.js --output-path . --output-filename signal.min.js --progress --mode=production --devtool source-map",
+    "admin": "webpack --entry ./admin.js --output-path . --output-filename admin.min.js --progress --mode=production --devtool source-map",
+    "frontend": "webpack --entry ./frontend-content.js --output-path . --output-filename frontend-signal.min.js --progress --mode=production --devtool source-map",
     "all": "run-p signal admin frontend"
   },
   "author": "Ewald Harmsen",

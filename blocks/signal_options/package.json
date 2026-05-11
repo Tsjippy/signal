@@ -13,11 +13,6 @@
 		"start": "wp-scripts start src/index.js",
 		"packages-update": "wp-scripts packages-update"
 	},
-	"dependencies": {
-		"@wordpress/block-editor": "^8.0.9",
-		"@wordpress/blocks": "^11.1.4",
-		"@wordpress/i18n": "^4.2.4"
-	},
 	"devDependencies": {
 		"@wordpress/scripts": "^32.0.0"
 	}
