@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- 'signal-admin-display-name' filter
 
 ### Changed
-- removed admin login for cron
 
 ### Fixed
 
 ### Updated
+
+## [10.0.8] - 2026-05-11
+
+
+### Added
+- 'signal-admin-display-name' filter
+
+### Changed
+- removed admin login for cron
 
 ## [10.0.6] - 2026-05-07
 
