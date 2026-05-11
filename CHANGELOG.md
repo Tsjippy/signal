@@ -2,18 +2,13 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- 'signal-admin-display-name' filter
 
 ### Changed
 
 ### Fixed
 
 ### Updated
-
-## [10.0.7] - 2026-05-11
-
-
-### Added
-- 'signal-admin-display-name' filter
 
 ## [10.0.6] - 2026-05-07
 
