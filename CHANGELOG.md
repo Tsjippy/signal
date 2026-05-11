@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- 'signal-admin-display-name' filter
 
 ### Changed
 
