@@ -5,6 +5,7 @@
 - 'signal-admin-display-name' filter
 
 ### Changed
+- removed admin login for cron
 
 ### Fixed
 
