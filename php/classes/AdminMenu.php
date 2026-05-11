@@ -1092,18 +1092,24 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         
                         $hidden	= '';
 
-                        foreach($group as $index=>$message){
+                        foreach($group as $index => $message){
                             $isoDate	= date( 'Y-m-d H:i:s', intval($message['timesent']/1000) );
                             $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
                             $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
 
-                            $sender	= $wpdb->get_results("SELECT * FROM $wpdb->users WHERE ID in (SELECT user_id FROM `{$wpdb->prefix}usermeta` WHERE `meta_value` LIKE '%{$message['sender']}')");
+                            $sender	= $wpdb->get_results(
+                                $wpdb->prepare(
+                                    "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE '%{$message['sender']}')",
+                                    $wpdb->users,
+                                    $wpdb->usermeta
+                                )
+                            );
 
                             if(empty($sender)){
                                 $sender	= $message['sender'];
                             }else{
                                 $sender	= $sender[0];
-                                $sender	= TSJIPPY\USERPAGES\getUserPageLink($sender->ID);
+                                $sender	= apply_filters('signal-admin-display-name', $sender->display_name, $sender);
                             }
 
                             // in case of private message replace the phonenumber in the chat for the name as well
