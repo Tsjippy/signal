@@ -8,15 +8,19 @@ function restApiInit() {
 	register_rest_route( RESTAPIPREFIX, '/notifications', array(
 		'methods' => 'GET',
 		'callback' => __NAMESPACE__.'\botMessages',
-		'permission_callback' => '__return_true',
+		'permission_callback' => function(){
+			return current_user_can('read');
+		},
 		)
 	);
 
-	//Route for first names
+	//Route for first names from external signal message processor
 	register_rest_route( RESTAPIPREFIX, '/firstname', array(
 		'methods'				=> 'GET',
 		'callback'				=> __NAMESPACE__.'\findFirstname',
-		'permission_callback' 	=> '__return_true',
+		'permission_callback' 	=> function(){
+			return current_user_can('read');
+		},
 		)
 	);
 
@@ -27,7 +31,9 @@ function restApiInit() {
 		array(
 			'methods' 				=> \WP_REST_Server::CREATABLE,
 			'callback' 				=> __NAMESPACE__.'\savePreferences',
-			'permission_callback' 	=> '__return_true',
+			'permission_callback' 	=> function(){
+				return current_user_can('read');
+			},
 			'args'					=> array(
 				'user-id'		=> array(
 					'required'	=> true,
