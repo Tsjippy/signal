@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.0.9] - 2026-05-12
+
+
+### Changed
 - permission callback for rest api
 
 ### Fixed
 - daemon
-
-### Updated
 
 ## [10.0.8] - 2026-05-11
 
