@@ -20,7 +20,6 @@ require_once ABSPATH . WPINC . '/functions.php';
 /* Remove the execution time limit */
 set_time_limit(0);
 
-include_once __DIR__.'/../php/__module_menu.php';
 include_once __DIR__.'/../php/classes/SignalJsonRpc.php';
 
 $signal = new SIGNAL\SignalJsonRpc(false, true);
