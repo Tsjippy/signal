@@ -95,7 +95,7 @@ function cleanSignalLog(){
     $period     = SETTINGS['clean-period'] ?? false;
     $amount     = SETTINGS['clean-amount'] ?? false;
 
-    $maxDate    = date('Y-m-d', strtotime("-$amount $period"));
+    $maxDate    = gmdate('Y-m-d', strtotime("-$amount $period"));
 
     $signal     = new Signal();
 

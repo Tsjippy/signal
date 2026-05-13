@@ -112,12 +112,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $amount	= $_REQUEST['amount'];
         }
 
-        $startDate	= date('Y-m-d', strtotime('-3 month'));
+        $startDate	= gmdate('Y-m-d', strtotime('-3 month'));
         if(isset($_REQUEST['start-date'])){
             $startDate	= $_REQUEST['start-date'];
         }
 
-        $endDate	= date('Y-m-d', strtotime('+1 day'));
+        $endDate	= gmdate('Y-m-d', strtotime('+1 day'));
         if(isset($_REQUEST['end-date'])){
             $endDate	= $_REQUEST['end-date'];
         }
@@ -767,7 +767,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Show Messages send between <input type='date' name='start-date' value='<?php echo $startDate;?>' max='<?php echo date('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo $endDate;?>' max='<?php echo date('Y-m-d', strtotime('+1 day')); ?>'>
+                        Show Messages send between <input type='date' name='start-date' value='<?php echo $startDate;?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo $endDate;?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
                     </label>
                     <br>
                     <label>
@@ -786,7 +786,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo date('Y-m-d', strtotime('-1 month'));?>' max='<?php echo date('Y-m-d'); ?>'>
+                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo gmdate('Y-m-d', strtotime('-1 month'));?>' max='<?php echo gmdate('Y-m-d'); ?>'>
                     </label>
                     <br>
                     <input type='submit' name='action' value='Delete'>
@@ -895,7 +895,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 <tbody>
                     <?php
                         foreach($messages as $message){
-                            $isoDate	= date( 'Y-m-d H:i:s', intval($message->time_send/1000) );
+                            $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message->time_send/1000) );
                             $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
                             $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
 
@@ -1114,7 +1114,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         $hidden	= '';
 
                         foreach($group as $index => $message){
-                            $isoDate	= date( 'Y-m-d H:i:s', intval($message['timesent']/1000) );
+                            $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message['timesent']/1000) );
                             $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
                             $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
 
