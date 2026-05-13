@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- date( to gmdate(
 
 ### Fixed
 
