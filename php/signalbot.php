@@ -68,6 +68,13 @@ function sendPostNotification($post){
 	}
 }
 
+/**
+ * Schedule a Signal message to be sent asynchronously
+ *
+ * @param	string		$message		The message
+ * @param	string		$recipient		The recipient
+ * @param	string		$postId			The post ID
+ */
 function asyncSignalMessageSend($message, $recipient, $postId=""){
 	wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
 }
@@ -76,16 +83,18 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * Send a message on Signal
  * 
  * @param	string				$message		The message
- * @param	string|int|WP_User	$recipient		The recipient phone number, or user id or user object
+ * @param	string|int|\WP_User	$recipient		The recipient phone number, or user id or user object
  * @param	array|int			$images			The post id or an array of either filepaths to pictures or base64 encoded images
  * @param	int					$timeStamp		The timestam of a message to reply to
  * @param	string				$quoteAuthor	The name of the author to respond to
  * @param	string				$quoteMessage	The message to respond to
  * @param   bool        		$getResult  	Whether we should return the result, default true
  * 
- * @return	string|False|WP_Error				the result
+ * @return	string|False|\WP_Error				the result
  */
 function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
+	TSJIPPY\printArray("$message, $recipient");
+
 	$phonenumber	= $recipient;
 	
 	// do not send on localhost
@@ -135,10 +144,9 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
  * @param	int			$timeStamp		The timestam of a message to reply to
  * @param	string		$quoteAuthor	The name of the author to respond to
  * @param	string		$quoteMessage	The message to respond to
- * @param	string		$style			Any styling of the message
  * @param   bool        $getResult  	Whether we should return the result, default true
  * 
- * @return	string|False|WP_Error		the result
+ * @return	string|False|\WP_Error		the result
  */
 function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
 	$phonenumber		= $recipient;
@@ -159,6 +167,15 @@ function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $q
 	return $result;
 }
 
+/**
+ * Send a signal message from an external source
+ *
+ * @param	string		$message		The message
+ * @param	string		$phonenumber	The recipient's phone number
+ * @param	string		$image			The image to send
+ *
+ * @return	string|False|\WP_Error		the result
+ */
 function sendSignalFromExternal($message, $phonenumber, $image){
 	if(!empty($image)){
 		if(is_array($image)){
