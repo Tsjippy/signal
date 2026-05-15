@@ -127,6 +127,10 @@ while(1){
 
 TSJIPPY\printArray("The end", true);
 
+/**
+ * Process an incoming message
+ * @param   object  $data   The data of the incoming message
+ */
 function processMessage($data){
     global $signal;
 
@@ -149,7 +153,8 @@ function processMessage($data){
 
     if(isset($data->envelope->dataMessage->attachments)){
         foreach($data->envelope->dataMessage->attachments as $attachment){
-            $path       = "$signal->homeFolder/.local/share/signal-cli/attachments/{$attachment->id}";
+            TSJIPPY\printArray($attachment);
+            $path       = "/home/.local/share/signal-cli/attachments/{$attachment->id}";
 
             $newPath    = "$signal->attachmentsPath/{$attachment->filename}";
 

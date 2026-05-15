@@ -93,6 +93,9 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  * @return	string|False|\WP_Error				the result
  */
 function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
+	TSJIPPY\printArray($message);
+	TSJIPPY\printArray($recipient);
+	
 	if(is_wp_error($message)){
 		TSJIPPY\printArray($message->get_error_message());
 	}

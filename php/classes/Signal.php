@@ -901,23 +901,34 @@ class Signal{
      /**
      * Retrieves the message queue
      *
-     * @return  object   The oldest command in the queue, or a specific command if id is provided
+     * @return  object   The oldest 100 commands in the queue, or a specific command if id is provided
      */
     public function getQueue($id=-1){
         global $wpdb;
 
         if($id == -1){
-            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, time_added ASC LIMIT 1;";
-        } else {
-            $query      = $wpdb->prepare("SELECT * FROM $this->queueTableName WHERE id = %d", $id);
-        }
+            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, time_added ASC LIMIT 100;";
+            $results    = $wpdb->get_results( $query );
 
-        $result         = $wpdb->get_row( $query );
+            foreach($results as &$r){
+                if(isset($r->params)){
+                    $r->params = maybe_unserialize($r->params);
+                }
+            }
+
+            TSJIPPY\printArray($query);
+            TSJIPPY\printArray($results);
+
+            return $results;
+        }
+        
+        $query      = $wpdb->prepare("SELECT * FROM $this->queueTableName WHERE id = %d", $id);
+        $result     = $wpdb->get_row( $query );
 
         if(isset($result->params)){
             $result->params = maybe_unserialize($result->params);
         }
-
+        
         return $result;
     }
 

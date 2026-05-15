@@ -15,6 +15,8 @@ function taskInit(){
     add_action( 'clean_signal_log_action', __NAMESPACE__.'\cleanSignalLog');
 
     add_action( 'signal_number_reminder_action', __NAMESPACE__.'\signalNumberReminder');
+
+    add_action( 'tsjippy_signal_process_queue', __NAMESPACE__.'\retryFailedMessages' );
 }
 
 function checkSignal(){
@@ -29,7 +31,7 @@ function scheduleTasks(){
 
     TSJIPPY\scheduleTask('check_signal_numbers_action', 'daily');
 
-    TSJIPPY\scheduleTask('retry_failed_signal_messages_action', 'quarterly');
+    TSJIPPY\scheduleTask('tsjippy_signal_process_queue', 'quarterly');
 
     $freq   = SETTINGS['reminder-freq'] ?? false;
     if($freq){
@@ -100,4 +102,32 @@ function cleanSignalLog(){
     $signal     = new Signal();
 
     $signal->clearMessageLog($maxDate);
+}
+
+function retryFailedMessages(){
+    $signal	= getSignalInstance();
+
+    // Reset Rate Limit if the time has passed
+    if($signal->rateLimited ){
+        TSJIPPY\printArray($signal->rateLimited );
+
+        if(time() > $signal->rateLimited){
+            $signal->rateLimited = false;
+        } else {
+            TSJIPPY\printArray("Rate limited, skipping retry", true);
+            return;
+        }
+    }
+
+    // Run a maximum of 100 reties to prevent infinite loops in case of a persistent error
+    $commands = $signal->getQueue();
+
+    foreach($commands as $command){
+        if(!empty($command)){
+            $result = $signal->doRequest($command->method, $command->params);
+            $signal->updateQueue($command->id, $result);
+        }
+
+        sleep(1);
+    }
 }
