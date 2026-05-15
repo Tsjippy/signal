@@ -157,7 +157,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $hidden	= '';
         }
 
-        $receivedTable	= $this->receivedMessagesTable($startDate, $endDate, $amount, $hidden);
+       $this->receivedMessagesTable($startDate, $endDate, $amount, $hidden);
 
         addRawHtml(ob_get_clean(), $parent);
 
@@ -191,6 +191,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
             if(is_wp_error($result)){
                 echo "<div class='error'>Message could not be send<br>".$result->get_error_message()."</div>";
+            }elseif(empty($result)){
+                echo "<div class='error'>Message sending timed out</div>";
             }else{
                 echo "<div class='success'>Message succesfully send: $result</div>";
             }
@@ -510,6 +512,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $signalGroups	= $signal->listGroups();
         }
 
+        ob_start();
+
         if(!empty($signal->error)){
             if(str_contains($signal->error, 'Specified account does not exist')){
                 ?>
@@ -524,8 +528,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             
             echo $signal->error;
         }
-
-        ob_start();
         ?>
         <h4>Connection details</h4>
         <p>

@@ -471,12 +471,12 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
     protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
-        TSJIPPY\printArray($this->rateLimited );
+        if($this->rateLimited){
+            TSJIPPY\printArray($this->rateLimited );
+        }
 
         // Reset Rate Limit if the time has passed
         if($this->rateLimited && time() > $this->rateLimited){
-            TSJIPPY\printArray($this->rateLimited );
-
             $this->rateLimited = false;
         }
 

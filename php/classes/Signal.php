@@ -916,9 +916,6 @@ class Signal{
                 }
             }
 
-            TSJIPPY\printArray($query);
-            TSJIPPY\printArray($results);
-
             return $results;
         }
         
