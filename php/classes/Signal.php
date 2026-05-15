@@ -14,37 +14,32 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 // data is stored in $HOME/.local/share/signal-cli
 
 class Signal{
-    public $valid;
-    public $os;
-    public $basePath;
-    public $programPath;
-    public $phoneNumber;
-    public $path;
-    public $daemon;
-    public $osUserId;
-    public $command;
-    public $error;
-    public $attachmentsPath;
-    public $configPath;
-    public $tableName;
-    public $receivedTableName;
-    public $queueTableName;
-    public $totalMessages;
-    private $commandQueue;
+    public string $attachmentsPath;
+    public string $basePath;
+    public string $command;
+    public string $configPath;
+    public bool $daemon;
+    public string $error;
+    public string $os;
+    public string $osUserId;
+    public string $path;
+    public string $phoneNumber;
+    public string $programPath;
+    public string $queueTableName;
+    public string $receivedTableName;
+    public string $tableName;
+    public int $totalMessages;
+    public bool $valid;
+    public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
 
+    /**
+     * Constructor
+     */
     public function __construct(){
         global $wpdb;
 
         require_once( PLUGINPATH  . 'lib/vendor/autoload.php');
 
-        $this->valid            = true;
-        $this->tableName        = $wpdb->prefix.'tsjippy_signal_messages';
-
-        $this->receivedTableName= $wpdb->prefix.'tsjippy_received_signal_messages';
-
-        $this->queueTableName   = $wpdb->prefix.'tsjippy_signal_message_queue';
-
-        $this->os               = 'macOS';
         $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
         if (!is_dir($this->basePath )) {
             wp_mkdir_p($this->basePath);
@@ -55,16 +50,53 @@ class Signal{
             wp_mkdir_p($this->attachmentsPath);
         }
 
+        $this->command          = '';
+
         $this->configPath  = $this->basePath.'/config';
         if (!is_dir($this->configPath )) {
             wp_mkdir_p($this->configPath);
         }
+
+        $this->daemon           = false;
+        $this->error            = '';
+
+        $this->os               = 'macOS';
+
+        if(str_contains(php_uname(), 'Windows')){
+            $this->os               = 'Windows';
+            $this->basePath         = str_replace('\\', '/', $this->basePath);
+        }elseif(str_contains(php_uname(), 'Linux')){
+            $this->os               = 'Linux';
+        }
+
+        $this->osUserId         = "";
 
         $this->programPath      = $this->basePath.'/program';
         if (!is_dir($this->programPath )) {
             wp_mkdir_p($this->programPath);
             TSJIPPY\printArray("Created $this->programPath");
         }
+
+        $this->path             = $this->programPath.'/signal-cli';
+
+        $this->phoneNumber      = '';
+        if(file_exists("$this->configPath/data/accounts.json")){
+            $accountData        = file_get_contents("$this->configPath/data/accounts.json");
+            $accountData        = json_decode($accountData);
+            $this->phoneNumber  = $accountData->accounts[0]->number;
+        }
+
+        $this->queueTableName   = $wpdb->prefix.'tsjippy_signal_message_queue';
+
+        $this->receivedTableName= $wpdb->prefix.'tsjippy_received_signal_messages';
+
+        $this->tableName        = $wpdb->prefix.'tsjippy_signal_messages';
+
+        $this->totalMessages    = 0;
+
+        $this->valid            = true;
+
+        $this->rateLimited      = false;
 
         // check permissions
         $path   = $this->programPath.'/signal-cli';
@@ -83,28 +115,9 @@ class Signal{
             file_put_contents($this->attachmentsPath.'/.htaccess', 'allow from all');
         }
 
-        if(str_contains(php_uname(), 'Windows')){
-            $this->os               = 'Windows';
-            $this->basePath         = str_replace('\\', '/', $this->basePath);
-        }elseif(str_contains(php_uname(), 'Linux')){
-            $this->os               = 'Linux';
-        }
-        $this->phoneNumber      = '';
-        if(file_exists("$this->configPath/data/accounts.json")){
-            $accountData        = file_get_contents("$this->configPath/data/accounts.json");
-            $accountData        = json_decode($accountData);
-            $this->phoneNumber  = $accountData->accounts[0]->number;
-        }
-
-        $this->path             = $this->programPath.'/signal-cli';
-
         if(file_exists("$this->path/bin/signal-cli")){
             $this->path = "$this->path/bin/signal-cli";
         }
-
-        $this->daemon           = false;
-
-        $this->osUserId         = "";
         
         // clean db
         delete_option('tsjippy-signal-messages');
@@ -409,8 +422,7 @@ class Signal{
 
     /**
      * Marks a specific message as deleted in the log
-     *
-     * @param   int     $time_send     The date after which messages should be kept Should be in yyyy-mm-dd format
+     * @param   int     $timeStamp     The timestamp of the message to mark as deleted
      *
      * @return  string                  The message
      */
@@ -432,6 +444,10 @@ class Signal{
 
     /**
      * Parses signal-cli message layout
+     * 
+     * @param   string  $message    The message with signal-cli layout
+     * 
+     * @return  array               An array containing the message with the layout tags stripped and a style array containing the position and type of the layout to apply in signal styling
      */
     protected function parseMessageLayout($message){
         $replaceTags    = [
@@ -610,6 +626,13 @@ class Signal{
         return $curVersion;
     }
 
+    /**
+     * Installs the Signal CLI
+     *
+     * @param   array   $release  The release information
+     *
+     * @return  bool              Whether the installation was successful
+     */
     private function installSignal($release){
         $version    = str_replace('v', '', $release['tag_name']);
 
@@ -691,6 +714,7 @@ class Signal{
             return $this->error;
         } finally {
             if($this->os == 'Linux'){
+                /** @disregard  */
                 unlink($pidFile);
             }
         }
@@ -721,6 +745,7 @@ class Signal{
 
         // move the folder
         $path   = "$folder/signal-cli";
+        $result = false;
         if(file_exists("$folder/signal-cli-$version")){
             $path   = "$folder/signal-cli-$version";
 
@@ -741,10 +766,15 @@ class Signal{
         }else{
             echo "<div class='error'>Failed!<br>Could not move $path to $this->programPath/signal-cli.<br>Check the $folder folder.</div>";
         }
-
-        unlink($pidFile);
     }
 
+    /**
+     * Downloads the Signal CLI
+     *
+     * @param   string  $url  The URL of the Signal CLI to download
+     *
+     * @return  string        The path to the downloaded file
+     */
     private function downloadSignal($url){
         $filename   = basename($url);
         $tempPath   = sys_get_temp_dir().'/'.$filename;

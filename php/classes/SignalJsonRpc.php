@@ -22,31 +22,20 @@ use WP_Error;
 
 class SignalJsonRpc extends AbstractSignal{
     use SendEmailBySignal;
-    
-    public $os;
-    public $basePath;
-    public $programPath;
-    public $phoneNumber;
-    public $path;
-    public $daemon;
-    public $command;
-    public $error;
-    public $attachmentsPath;
-    public $tableName;
-    public $prefix;
-    public $totalMessages;
-    public $groups;
-    public $receivedTableName;
-    public $homeFolder;
-    private $postUrl;
-    public $socket;
-    public $shouldCloseSocket;
-    public $getResult;
-    public $listenTime;
-    public $lastResponse;
-    public $invalidNumber;
-    public $lastRequestTime;
-    public $socketPath;
+    public bool $getResult;
+    public array $groups;
+    public string $homeFolder;
+    public bool $invalidNumber;
+    public int $lastRequestTime;
+    public string $lastResponse;
+    public int $listenTime;
+    private string $postUrl;
+    public string $prefix;
+    public bool $shouldCloseSocket;
+    public mixed $socket;
+    public string $socketPath;
+    public string $tableName;
+    public int $totalMessages;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
@@ -352,6 +341,16 @@ class SignalJsonRpc extends AbstractSignal{
         return $json;
     }
 
+    /**
+     * Check if the response contains an error and handle it
+     *
+     * @param   object      $json       The json response from the daemon
+     * @param   string      $method     The command that was performed
+     * @param   array       $params     The parameters for the command
+     * @param   int         $id         The id of the request
+     *
+     * @return  void
+     */
     protected function checkForErrors($json, $method, $params, $id){
         $this->error    = "";
 
@@ -422,10 +421,22 @@ class SignalJsonRpc extends AbstractSignal{
             (
                 !empty($json->error->data->response->results[0]->type)  &&
                 $json->error->data->response->results[0]->type == 'RATE_LIMIT_FAILURE'
-            )
+            ) ||
+            (
+                !empty($json->error->code)  &&
+                $json->error->code == -5
+            ) 
         ){
             // Store command
             $this->addToCommandQueue($method, $params, 10, false);
+
+            $matches = [];
+            preg_match('/\d{10,}/', $errorMessage, $matches);
+            TSJIPPY\printArray($matches);
+            if(!empty($matches[0])){
+                $this->rateLimited = (int)$matches[0];
+                TSJIPPY\printArray($this->rateLimited );
+            }
         }
         
         // Group ID
@@ -461,8 +472,18 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
     protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
+        TSJIPPY\printArray($this->rateLimited );
+
+        // Reset Rate Limit if the time has passed
+        if($this->rateLimited && time() > $this->rateLimited){
+            $this->rateLimited = false;
+        }
+
         // only add to queue if needed
-        if(empty($this->getQueue())){
+        if(
+            empty($this->getQueue() &&
+            !$this->rateLimited
+        )){
             // do this straight away
             return $this->doRequest($method, $params);
         }
@@ -762,6 +783,14 @@ class SignalJsonRpc extends AbstractSignal{
         return $this->send($groupId, $message, $attachments, $timeStamp, $quoteAuthor, $quoteMessage);
     }
 
+    /**
+     * Mark a message as read
+     *
+     * @param   string  $recipient  The phonenumber
+     * @param   int     $timestamp  The timestamp of the message to mark as read
+     *
+     * @return  bool                 Whether the operation was successful
+     */
     public function markAsRead($recipient, $timestamp){
         $params = [
             "recipient"         => $recipient,
@@ -881,12 +910,28 @@ class SignalJsonRpc extends AbstractSignal{
     }
 
     /**
-     * Dummy function for complicance to signal-dbus
+     * Dummy function to be compliancy with the sendGroupTyping function, as there is no difference between sending a typing indicator to a group or an individual
+     * 
+     * @param   string  $recipient  The phonenumber or group id
+     * @param   int     $timestamp  Optional timestamp of a message to mark as read
+     * @return string               The result
+     * 
+     * 
      */
     public function sendGroupTyping($recipient, $timestamp='', $groupId=''){
         $this->sentTyping($recipient, $timestamp, $groupId);
     }
 
+    /**
+     * Send a reaction to a message
+     *
+     * @param   string  $recipient  The phonenumber or group id
+     * @param   int     $timestamp  The timestamp of the message to react to
+     * @param   string  $groupId    The group id
+     * @param   string  $emoji      The emoji to send
+     *
+     * @return  mixed                The result
+     */
     public function sendMessageReaction($recipient, $timestamp, $groupId='', $emoji=''){
         if(empty($emoji)){
             $emoji  = "🦘";
@@ -957,6 +1002,10 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * gets the invitation link of a specific group
+     * 
+     * @param   string  $groupPath The group id or group name of the group you want the invitation link for
+     * 
+     * @return  string              The invitation link of the group
      */
     public function getGroupInvitationLink($groupPath){
         $result = $this->listGroups(true, $groupPath);
@@ -968,6 +1017,13 @@ class SignalJsonRpc extends AbstractSignal{
         return $result[0]->groupInviteLink;
     }
 
+    /**
+     * Find the group name based on the group id
+     * 
+     * @param   string  $id The group id of the group you want the name of
+     * 
+     * @return  string      The name of the group, or an empty string if not found
+     */
     public function findGroupName($id){
         $groups = (array)$this->listGroups();
 
