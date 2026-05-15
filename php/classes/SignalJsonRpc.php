@@ -24,21 +24,26 @@ class SignalJsonRpc extends AbstractSignal{
     use SendEmailBySignal;
     public bool $getResult;
     public array $groups;
-    public string $homeFolder;
     public bool $invalidNumber;
     public int $lastRequestTime;
     public string $lastResponse;
     public int $listenTime;
     private string $postUrl;
-    public string $prefix;
     public bool $shouldCloseSocket;
     public mixed $socket;
     public string $socketPath;
-    public string $tableName;
-    public int $totalMessages;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
+
+        $this->getResult            = $getResult;
+        $this->groups               = [];
+        $this->invalidNumber        = false;
+        $this->lastRequestTime      = time();
+        $this->lastResponse         = '';
+        $this->listenTime           = 60;
+
+        $this->shouldCloseSocket    = $shouldCloseSocket;
 
         // Check daemon
         $this->daemonIsRunning();
@@ -70,12 +75,6 @@ class SignalJsonRpc extends AbstractSignal{
 
             //TSJIPPY\printArray("$errno: $this->error");
         }
-
-        $this->shouldCloseSocket    = $shouldCloseSocket;
-        $this->getResult            = $getResult;
-        $this->listenTime           = 60;
-        $this->lastResponse         = '';
-        $this->invalidNumber        = false;
     }
 
     /**
@@ -476,6 +475,8 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Reset Rate Limit if the time has passed
         if($this->rateLimited && time() > $this->rateLimited){
+            TSJIPPY\printArray($this->rateLimited );
+
             $this->rateLimited = false;
         }
 
@@ -603,6 +604,8 @@ class SignalJsonRpc extends AbstractSignal{
                 "deviceName"        => $name
             ]
         ];
+
+        // TO DO define postUrl
 
         $promise  = $client->requestAsync(
             "POST",

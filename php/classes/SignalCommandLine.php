@@ -20,32 +20,26 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 
 class SignalCommandLine extends AbstractSignal{
     use SendEmailBySignal;
-    
-    public $valid;
-    public $os;
-    public $basePath;
-    public $programPath;
-    public $phoneNumber;
-    public $path;
-    public $daemon;
-    public $osUserId;
-    public $command;
-    public $error;
-    public $attachmentsPath;
+
+    public object $commandObject;
+
+    /**
+     * Constructor
+     */
 
     public function __construct(){
         parent::__construct();
     }
 
     public function baseCommand(){
-        $this->command = new Command([
+        $this->commandObject = new Command([
             'command' => $this->path,
             // This is required for binary to be able to find libzkgroup.dylib to support Group V2
             'procCwd' => dirname($this->path),
         ]);
 
         if($this->os == 'Windows'){
-            $this->command->useExec  = true;
+            $this->commandObject->useExec  = true;
         }
     }
 
@@ -67,21 +61,21 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->baseCommand();
 
-        $this->command->addArg('-a', $phone);
+        $this->commandObject->addArg('-a', $phone);
 
-        $this->command->addArg('register');
+        $this->commandObject->addArg('register');
 
         if($voiceVerification){
-            $this->command->addArg('--voice', null);
+            $this->commandObject->addArg('--voice', null);
         }
 
         if(!empty($captcha)){
-            $this->command->addArg('--captcha', $captcha);
+            $this->commandObject->addArg('--captcha', $captcha);
         }
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
-        if($this->command->getExitCode()){
+        if($this->commandObject->getExitCode()){
             unlink($this->basePath.'/phone.signal');
         }
 
@@ -98,13 +92,13 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
 
-        $this->command->addArg('unregister', null);
+        $this->commandObject->addArg('unregister', null);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
-        if(!$this->command->getExitCode()){
+        if(!$this->commandObject->getExitCode()){
             unlink($this->basePath.'/phone.signal');
         }
 
@@ -126,9 +120,9 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->baseCommand();
 
-        $this->command->addArg('getUserStatus', $recipients);
+        $this->commandObject->addArg('getUserStatus', $recipients);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -143,13 +137,13 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->baseCommand();
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
 
-        $this->command->addArg('verify', $code);
+        $this->commandObject->addArg('verify', $code);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
-        if($this->command->getExitCode()){
+        if($this->commandObject->getExitCode()){
             unlink($this->basePath.'/phone.signal');
         }
 
@@ -180,16 +174,16 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->baseCommand();
 
-        $this->command->nonBlockingMode = true;
+        $this->commandObject->nonBlockingMode = true;
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
         
-        $this->command->addArg('send', $recipients);
+        $this->commandObject->addArg('send', $recipients);
 
-        $this->command->addArg('-m', $message);
+        $this->commandObject->addArg('-m', $message);
 
         if($groupId){
-            $this->command->addArg('-g', $groupId);
+            $this->commandObject->addArg('-g', $groupId);
         }
 
         if(!empty($attachments)){
@@ -197,10 +191,10 @@ class SignalCommandLine extends AbstractSignal{
                 $attachments    = [$attachments];
             }
             TSJIPPY\printArray($attachments);
-            $this->command->addArg('-a', $attachments);
+            $this->commandObject->addArg('-a', $attachments);
         }
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -222,15 +216,15 @@ class SignalCommandLine extends AbstractSignal{
         // Mark as read
         $this->baseCommand();
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
 
-        $this->command->addArg('sendReceipt', $recipient);
+        $this->commandObject->addArg('sendReceipt', $recipient);
 
-        $this->command->addArg('-t', $timestamp);
+        $this->commandObject->addArg('-t', $timestamp);
 
-        $this->command->addArg('--type', 'read');
+        $this->commandObject->addArg('--type', 'read');
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -242,15 +236,15 @@ class SignalCommandLine extends AbstractSignal{
         // Send typing
         $this->baseCommand();
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
 
-        $this->command->addArg('sendTyping', $recipient);
+        $this->commandObject->addArg('sendTyping', $recipient);
 
         if(!empty($groupId)){
-            $this->command->addArg('-g', $groupId);
+            $this->commandObject->addArg('-g', $groupId);
         }
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -272,19 +266,19 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('updateProfile', null);
+        $this->commandObject->addArg('updateProfile', null);
 
-        $this->command->addArg('--name', $name);
+        $this->commandObject->addArg('--name', $name);
 
         if($avatarPath){
-            $this->command->addArg('--avatar', $avatarPath);
+            $this->commandObject->addArg('--avatar', $avatarPath);
         }
 
         if($removeAvatar){
-            $this->command->addArg('--removeAvatar', null);
+            $this->commandObject->addArg('--removeAvatar', null);
         }
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -305,22 +299,22 @@ class SignalCommandLine extends AbstractSignal{
         }
         $this->baseCommand();
 
-        $this->command->nonBlockingMode = false;
+        $this->commandObject->nonBlockingMode = false;
 
-        $this->command->addArg('link', null);
+        $this->commandObject->addArg('link', null);
 
-        $this->command->addArg('-n', $name);
+        $this->commandObject->addArg('-n', $name);
 
         // TODO: Better response handling
         $randFile = sys_get_temp_dir().'/'.rand() . time() . '.device';
-        $this->command->addArg(" > $randFile 2>&1 &", null, false); // Ugly hack!
+        $this->commandObject->addArg(" > $randFile 2>&1 &", null, false); // Ugly hack!
         sleep(1); // wait for file to get populated
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
-        if($this->command->getExitCode()){
+        if($this->commandObject->getExitCode()){
             $error  = "<div class='error'>";
-                $error  .= $this->command->getError()."<br>";
+                $error  .= $this->commandObject->getError()."<br>";
                 $error  .= "Try to do the linking yourself<br><br>";
                 $error  .= "Open a command line and run this:<br>";
                 $error  .= "<code>$this->path link -n \"$name\"</code><br><br>";
@@ -371,9 +365,9 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('--uri', $uri);
+        $this->commandObject->addArg('--uri', $uri);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -386,11 +380,11 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('-o', 'json');
+        $this->commandObject->addArg('-o', 'json');
 
-        $this->command->addArg('listDevices', null);
+        $this->commandObject->addArg('listDevices', null);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return json_decode($this->parseResult(true));
     }
@@ -404,11 +398,11 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('removeDevice', null);
+        $this->commandObject->addArg('removeDevice', null);
 
-        $this->command->addArg('-d', $deviceId);
+        $this->commandObject->addArg('-d', $deviceId);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -422,9 +416,9 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('updateAccount', null);
+        $this->commandObject->addArg('updateAccount', null);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -442,25 +436,25 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('updateGroup', null);
+        $this->commandObject->addArg('updateGroup', null);
 
         if(!empty($groupId)){
-            $this->command->addArg('-g', $groupId);
+            $this->commandObject->addArg('-g', $groupId);
         }
 
         if($name){
-            $this->command->addArg('-n', $name);
+            $this->commandObject->addArg('-n', $name);
         }
 
         if(!empty($members)){
-            $this->command->addArg('-m', $members);
+            $this->commandObject->addArg('-m', $members);
         }
 
         if(!empty($avatarPath)){
-            $this->command->addArg('-a', $avatarPath);
+            $this->commandObject->addArg('-a', $avatarPath);
         }
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -495,13 +489,13 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('-a', $this->phoneNumber);
+        $this->commandObject->addArg('-a', $this->phoneNumber);
 
-        $this->command->addArg('-o', 'json');
+        $this->commandObject->addArg('-o', 'json');
 
-        $this->command->addArg('listGroups', null);
+        $this->commandObject->addArg('listGroups', null);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return json_decode($this->parseResult(true));
     }
@@ -516,11 +510,11 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('joinGroup', null);
+        $this->commandObject->addArg('joinGroup', null);
 
-        $this->command->addArg('--uri', $uri);
+        $this->commandObject->addArg('--uri', $uri);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -535,11 +529,11 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('quitGroup', null);
+        $this->commandObject->addArg('quitGroup', null);
 
-        $this->command->addArg('-g', $groupId);
+        $this->commandObject->addArg('-g', $groupId);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return $this->parseResult();
     }
@@ -555,33 +549,33 @@ class SignalCommandLine extends AbstractSignal{
     {
         $this->baseCommand();
 
-        $this->command->addArg('-o', 'json');
+        $this->commandObject->addArg('-o', 'json');
 
-        $this->command->addArg('receive', null);
+        $this->commandObject->addArg('receive', null);
 
-        $this->command->addArg('-t', $timeout);
+        $this->commandObject->addArg('-t', $timeout);
 
-        $this->command->execute();
+        $this->commandObject->execute();
 
         return json_decode($this->parseResult(true));
     }
 
     protected function parseResult($returnJson=false){
-        if($this->command->getExitCode()){
+        if($this->commandObject->getExitCode()){
 
-            $errorMessage  = $this->command->getError();
+            $errorMessage  = $this->commandObject->getError();
 
             //TSJIPPY\printArray($errorMessage);
 
             // Captcha required
             if(str_contains($errorMessage, 'CAPTCHA proof required')){
                 // Store command
-                $failedCommands[]    = $this->command->getCommand();
+                $failedCommands[]    = $this->commandObject->getCommand();
 
                 $this->sendCaptchaInstructions($errorMessage);
             }elseif(str_contains($errorMessage, '429 Too Many Requests')){
                 // Store command
-                $failedCommands[]    = $this->command->getCommand();
+                $failedCommands[]    = $this->commandObject->getCommand();
             }elseif(str_contains($errorMessage, 'Unregistered user')){
                 // get phonenumber from the message
                 preg_match('/"(\+\d*)/m', $errorMessage, $matches);
@@ -616,7 +610,7 @@ class SignalCommandLine extends AbstractSignal{
             return $this->error;
         }
 
-        $output = $this->command->getOutput();
+        $output = $this->commandObject->getOutput();
 
         if($returnJson && (empty($output) || json_decode($output) == $output)){
             return json_encode($output);
