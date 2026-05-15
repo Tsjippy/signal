@@ -196,14 +196,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             }
         }
 
-        $phonenumbers	= '';
-        foreach (get_users() as $user) {
-            $phones	= (array)get_user_meta($user->ID, 'phonenumbers', true);
-            foreach($phones as $phone){
-                $phonenumbers	.= "<option value='$phone'>$user->display_name ($phone)</option>";
-            }
-        }
-
         if(isset($_REQUEST['challenge']) && !isset($_REQUEST['captchastring'])){
             ?>
             <form method='get'>
@@ -296,7 +288,28 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
                 <datalist id='groups'>
                     <?php
-                    echo $phonenumbers;
+                    $users			= get_users( [
+                        'meta_query' => array(
+                            array(
+                                'key'     => 'phonenumbers',
+                                'compare' => 'EXISTS'
+                            )
+                        ),
+                        'orderby'	=> 'meta_value',
+                        'order' 	=> 'ASC'
+                    ]);
+
+                    foreach ($users as $user) {
+                        $phones	= (array)get_user_meta($user->ID, 'phonenumbers', true);
+                        foreach($phones as $phone){
+                            ?>
+                            <option value='<?php echo esc_attr($phone);?>'>
+                                <?php echo esc_html($user->display_name ($phone));?>
+                            </option>
+                            <?php
+                        }
+                    }
+                    
                     if(isset($this->settings['local']) && $this->settings['local']){
                         $signal	= getSignalInstance();
 
