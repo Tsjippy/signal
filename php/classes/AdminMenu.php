@@ -1,5 +1,6 @@
 <?php
 namespace TSJIPPY\SIGNAL;
+use TSJIPPY;
 
 use function TSJIPPY\addRawHtml;
 use function TSJIPPY\addElement;
@@ -175,7 +176,20 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
             $result	= $signal->submitRateLimitChallenge($_REQUEST['challenge'], $_REQUEST['captchastring']);
 
-            echo "<div class='success'>Rate challenge succesfully submitted <br>$result</div>";
+            if(!$result){
+                ?>
+                <div class='error'>
+                    Rate challenge could not be submitted
+                </div>
+                <?php
+            }else{
+                TSJIPPY\printArray($result);
+                ?>
+                <div class='success'>
+                    Rate challenge succesfully submitted.
+                </div>
+                <?php
+            }
         }
 
         // check if we need to send a message
@@ -190,18 +204,32 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             }
 
             if(is_wp_error($result)){
-                echo "<div class='error'>Message could not be send<br>".$result->get_error_message()."</div>";
+                TSJIPPY\printArray($result);
+                ?>
+                <div class='error'>
+                    Message could not be send<br>
+                    <?php echo esc_html($result->get_error_message());?>
+                </div>
+                <?php
             }elseif(empty($result)){
-                echo "<div class='error'>Message sending timed out</div>";
+                ?>
+                <div class='error'>
+                    Message sending timed out
+                </div>
+                <?php
             }else{
-                echo "<div class='success'>Message succesfully send: $result</div>";
+                ?>
+                <div class='success'>
+                    Message succesfully send: <?php echo esc_html($result);?>
+                </div>
+                <?php
             }
         }
 
         if(isset($_REQUEST['challenge']) && !isset($_REQUEST['captchastring'])){
             ?>
             <form method='get'>
-                <input type="hidden" class="no-reset" name="page" value="tsjippy_signal">
+                <input type="hidden" class="no-reset" name="page" value="tsjippy-signal">
                 <input type="hidden" class="no-reset" name="tab" value="functions">
 
                 <label>
@@ -210,6 +238,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 </label>
 
                 <h4>Captcha string</h4>
+                Get the captcha from <a href='https://signalcaptchas.org/challenge/generate.html' target=_blank>here</a> then copy the link below
                 <textarea name='captchastring' style='width:100%;' required rows=10></textarea>
 
                 <br>
@@ -218,7 +247,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             </form>
 
             <?php
-            return ob_get_clean();
+            addRawHtml(ob_get_clean(), $parent);
+
+            return true;
         }
 
         $author			= '';
@@ -306,7 +337,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         foreach($phones as $phone){
                             ?>
                             <option value='<?php echo esc_attr($phone);?>'>
-                                <?php echo esc_html($user->display_name ($phone));?>
+                                <?php echo esc_html("$user->display_name ($phone)");?>
                             </option>
                             <?php
                         }
@@ -1211,7 +1242,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                                             <input type='hidden' class='no-reset' name='emoji'>
                                             <input type='submit' name='action' value='Reply'>
                                         </form>
-                                        <a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
+                                        <a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
                                         <?php
                                     }
                                     ?>

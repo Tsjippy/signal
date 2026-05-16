@@ -170,6 +170,8 @@ class Signal{
             params longtext,
             priority int,
             result longtext,
+            retries int NOT NULL DEFAULT 0,
+            waiting boolean NOT NULL DEFAULT false,
             PRIMARY KEY  (id)
 		) $charsetCollate;";
 
@@ -538,7 +540,7 @@ class Signal{
         exec("bash -c 'whoami'", $username);
         $instructions   = $error;
         $instructions   = str_replace('signal-cli', "$this->path --config /home/{$username[0]}/.local/share/signal-cli" , $instructions);
-        $adminUrl       = admin_url("admin.php?page=tsjippy_signal&tab=functions&challenge=");
+        $adminUrl       = admin_url("admin.php?page=tsjippy-signal&main-tab=functions&challenge=");
 
         $to             = get_option('admin_email');
         $subject        = "Signal captcha required";
@@ -546,6 +548,25 @@ class Signal{
         $message        .= "Signal messages are currently not been send from the website as you need to submit a captcha.<br>";
         $message        .= "Use the following instructions to submit the captacha:<br><br>";
         $message        .= "<code>$instructions</code><br>";
+        $message        .= "Submit the challenge and captcha <a href='$adminUrl'>here</a>";
+
+        wp_mail($to, $subject, $message);
+    }
+
+    /**
+     * Send Captcha instructions by e-mail
+     *
+     * @param   string  $token      The token from the error
+     * 
+     * 
+     */
+    function sendRateLimitInstructions($token){
+        $adminUrl       = admin_url("admin.php?page=tsjippy-signal&main-tab=functions&challenge=$token");
+
+        $to             = get_option('admin_email');
+        $subject        = "Signal captcha required";
+        $message        = "Hi admin,<br><br>";
+        $message        .= "Signal messages are currently not been send from the website as you need to submit a captcha.<br>";
         $message        .= "Submit the challenge and captcha <a href='$adminUrl'>here</a>";
 
         wp_mail($to, $subject, $message);
@@ -584,7 +605,7 @@ class Signal{
             }
         }
 
-        if(version_compare('25.0.0.0', $curVersion) > 0){
+        if(version_compare('25.0.0.0', $curVersion) === 1){
             $this->error    .= "Please install Java JDK, at least version 25";
             $this->valid    = false;
         }
@@ -882,7 +903,7 @@ class Signal{
      * 
      * @return  int                 The db row id
      */
-    public function addToQueue($method, $params=[], $priority=10){
+    public function addToQueue($method, $params=[], $priority=10, $waiting=false){
         global $wpdb;
 
         $wpdb->insert(
@@ -891,14 +912,15 @@ class Signal{
                 'time_added'    => time(),
                 'method'       => $method,
                 'params'       => maybe_serialize($params),
-                'priority'     => $priority
+                'priority'     => $priority,
+                'waiting'      => $waiting
             )
         );
 
         return $wpdb->insert_id;
     }
 
-     /**
+    /**
      * Retrieves the message queue
      *
      * @return  object   The oldest 100 commands in the queue, or a specific command if id is provided
@@ -947,16 +969,24 @@ class Signal{
 
     /**
      * Updates a message in the queue with the result of the command
-     * @param   int     $id     The id of the message to update
-     * @param   string  $result The result of the command
+     * @param   object  $command    The command to update, should be the result of getQueue
+     * @param   string  $result     The result of the command
      * 
-     * @return  bool            Whether the message was updated successfully
+     * @return  bool                Whether the message was updated successfully
      */
-    public function updateQueueResult($id, $result){
+    public function updateQueueResult($command, $result){
         global $wpdb;
 
-        $query      = $wpdb->prepare("UPDATE $this->queueTableName SET result = %s WHERE id = %d", maybe_serialize($result), $id);
-
-        return $wpdb->query( $query );
+        // Update the queue tist
+		$wpdb->update(
+			$this->queueTableName,
+			[
+				'result'		=> $result,
+				'retries'		=> $command->retries + 1
+			],
+			[
+				'id'		=> $command->id
+			],
+		);
     }
 }

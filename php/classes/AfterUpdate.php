@@ -11,7 +11,7 @@ class AfterUpdate extends TSJIPPY\AfterPluginUpdate {
 
         TSJIPPY\printArray('Running update actions');
 
-        if(version_compare('10.0.5', $oldVersion)){
+        if(version_compare('10.0.5', $oldVersion) === 1){
             /**
              * Rename tables to tsjippy_
              */
@@ -29,6 +29,15 @@ class AfterUpdate extends TSJIPPY\AfterPluginUpdate {
                 "ALTER TABLE `{$wpdb->prefix}tsjippy_signal_messages`
                 RENAME COLUMN `timesend` to `time_send`;"
             );
+        }
+
+        if(version_compare('10.3.9', $oldVersion) === 1){
+            $signal = getSignalInstance();
+
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            
+            maybe_add_column($signal->queueTableName, 'retries', "ALTER TABLE $signal->queueTableName ADD COLUMN `retries` int NOT NULL DEFAULT 0");
+            maybe_add_column($signal->queueTableName, 'waiting', "ALTER TABLE $signal->queueTableName ADD COLUMN `waiting` boolean NOT NULL DEFAULT false");
         }
     }
 }

@@ -32,6 +32,7 @@ class SignalJsonRpc extends AbstractSignal{
     public bool $shouldCloseSocket;
     public mixed $socket;
     public string $socketPath;
+    public bool $processingQueue;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
@@ -42,6 +43,7 @@ class SignalJsonRpc extends AbstractSignal{
         $this->lastRequestTime      = time();
         $this->lastResponse         = '';
         $this->listenTime           = 60;
+        $this->processingQueue      = false;
 
         $this->shouldCloseSocket    = $shouldCloseSocket;
 
@@ -68,10 +70,10 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         if($errno == 2){
-            echo "<div class='error'>Could not start, is the signal-cli jsonrpc daemon running?</div>";
+            echo "Could not start, is the signal-cli jsonrpc daemon running?";
 
         }elseif(!$this->socket){
-            echo "<div class='error'>Unable to create socket on $this->socketPath</div>";
+            echo "Unable to create socket on $this->socketPath";
 
             //TSJIPPY\printArray("$errno: $this->error");
         }
@@ -408,8 +410,6 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Captcha required
         elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
-            // Store command
-            $this->addToCommandQueue($method, $params, 10, false);
 
             $this->sendCaptchaInstructions($errorMessage);
         }
@@ -426,16 +426,22 @@ class SignalJsonRpc extends AbstractSignal{
                 $json->error->code == -5
             ) 
         ){
-            // Store command
-            $this->addToCommandQueue($method, $params, 10, false);
+            TSJIPPY\printArray($json);
 
             $matches = [];
             preg_match('/\d{10,}/', $errorMessage, $matches);
-            TSJIPPY\printArray($matches);
             if(!empty($matches[0])){
                 $this->rateLimited = (int)$matches[0];
                 TSJIPPY\printArray("Rate limited till $this->rateLimited");
+            }elseif(isset($json->error->data->response->results[0]->retryAfterSeconds)){
+                $this->rateLimited = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
+                
+                $dateString = date('d-m-Y H:i:s', $this->rateLimited);
+                TSJIPPY\printArray($this->rateLimited);
+                TSJIPPY\printArray("Rate limited till $dateString" );
             }
+
+            $this->sendRateLimitInstructions($json->error->data->response->results[0]->token);
         }
         
         // Group ID
@@ -457,7 +463,7 @@ class SignalJsonRpc extends AbstractSignal{
             TSJIPPY\printArray($this);
         }
         
-        $this->error    = "<div class='error'>$errorMessage</div>";
+        $this->error    = $errorMessage;
     }
 
     /**
@@ -490,7 +496,7 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         // Store command
-        $commandId      = $this->addToQueue($method, $params, $priority);
+        $commandId      = $this->addToQueue($method, $params, $priority, $waitForResult);
 
         if(!$waitForResult){
             return $commandId;
@@ -500,6 +506,8 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Wait till the params are replaced by the result
         while(empty($result)){
+            $this->processQueue();
+            
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
@@ -1041,5 +1049,55 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         return '';
+    }
+
+    public function processQueue(){
+        if($this->processingQueue){
+            TSJIPPY\printArray("Already processing queue, skipping", true);
+            return;
+        }
+
+        $this->processingQueue = true;
+
+        // Reset Rate Limit if the time has passed
+        if($this->rateLimited ){
+            TSJIPPY\printArray($this->rateLimited );
+
+            if(time() > $this->rateLimited){
+                $this->rateLimited = false;
+            } else {
+                TSJIPPY\printArray("Rate limited, skipping retry", true);
+                return;
+            }
+        }
+
+        // Run a maximum of 100 reties to prevent infinite loops in case of a persistent error
+        $commands = $this->getQueue();
+
+        foreach($commands as $command){
+            if(!empty($command) && $command->result != 'timed out'){
+                TSJIPPY\printArray($command);
+
+                $result = $this->doRequest($command->method, $command->params);
+
+                // Mark as timed out
+                if($command->retries >= 9){
+                    // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
+                    if(!$command->waiting){
+                        $this->removeFromQueue($command->id);
+                        continue;
+                    }
+                    TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
+                    $result = 'timed out';
+                }
+
+                TSJIPPY\printArray($result);
+                $this->updateQueueResult($command, $result);
+            }
+
+            sleep(1);
+        }
+
+        $this->processingQueue = false;
     }
 }

@@ -107,28 +107,5 @@ function cleanSignalLog(){
 function retryFailedMessages(){
     $signal	= getSignalInstance();
 
-    // Reset Rate Limit if the time has passed
-    if($signal->rateLimited ){
-        TSJIPPY\printArray($signal->rateLimited );
-
-        if(time() > $signal->rateLimited){
-            $signal->rateLimited = false;
-        } else {
-            TSJIPPY\printArray("Rate limited, skipping retry", true);
-            return;
-        }
-    }
-
-    // Run a maximum of 100 reties to prevent infinite loops in case of a persistent error
-    $commands = $signal->getQueue();
-
-    foreach($commands as $command){
-        TSJIPPY\printArray($command);
-        if(!empty($command)){
-            $result = $signal->doRequest($command->method, $command->params);
-            $signal->updateQueue($command->id, $result);
-        }
-
-        sleep(1);
-    }
+    $signal->retryFailedMessages();
 }
