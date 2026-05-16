@@ -5,6 +5,7 @@
 
 ### Changed
 - code shuffle
+- better errors
 
 ### Fixed
 - echo error
