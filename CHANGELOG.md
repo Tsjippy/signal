@@ -4,13 +4,20 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.1.4] - 2026-05-16
+
+
+### Changed
 - code shuffle
 - better errors
 
 ### Fixed
 - echo error
-
-### Updated
 
 ## [10.1.3] - 2026-05-15
 
