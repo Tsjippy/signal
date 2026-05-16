@@ -7,6 +7,7 @@
 - code shuffle
 
 ### Fixed
+- echo error
 
 ### Updated
 
