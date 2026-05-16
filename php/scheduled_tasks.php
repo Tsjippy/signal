@@ -123,6 +123,7 @@ function retryFailedMessages(){
     $commands = $signal->getQueue();
 
     foreach($commands as $command){
+        TSJIPPY\printArray($command);
         if(!empty($command)){
             $result = $signal->doRequest($command->method, $command->params);
             $signal->updateQueue($command->id, $result);

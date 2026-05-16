@@ -94,7 +94,8 @@ function asyncSignalMessageSend($message, $recipient, $postId=""){
  */
 function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){	
 	if(is_wp_error($message)){
-		TSJIPPY\printArray($message->get_error_message());
+		TSJIPPY\printArray("Error is:");
+		TSJIPPY\printArray($message);
 	}
 
 	$phonenumber	= $recipient;

@@ -434,7 +434,7 @@ class SignalJsonRpc extends AbstractSignal{
             TSJIPPY\printArray($matches);
             if(!empty($matches[0])){
                 $this->rateLimited = (int)$matches[0];
-                TSJIPPY\printArray($this->rateLimited );
+                TSJIPPY\printArray("Rate limited till $this->rateLimited");
             }
         }
         
@@ -472,7 +472,7 @@ class SignalJsonRpc extends AbstractSignal{
      */
     protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
         if($this->rateLimited){
-            TSJIPPY\printArray($this->rateLimited );
+            TSJIPPY\printArray("Rate limited till $this->rateLimited");
         }
 
         // Reset Rate Limit if the time has passed
