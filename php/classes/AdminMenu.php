@@ -777,7 +777,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 $groupId	= $_REQUEST['chat'];
             }
 
-            $result	= $signal->sendMessageReaction($_REQUEST['sender'] , $_REQUEST['timesent'], $groupId, $_REQUEST['emoji']  );
+            $result	= $signal->sendReaction($_REQUEST['sender'] , $_REQUEST['timesent'], $groupId, $_REQUEST['emoji']  );
 
             if(is_numeric(str_replace('int64 ', '', $result))){
                 ?>

@@ -176,7 +176,7 @@ function processMessage($data){
         if( isset($data->envelope->dataMessage->mentions)){
             foreach($data->envelope->dataMessage->mentions as $mention){
                 if($mention->number == $signal->phoneNumber){
-                    $signal->sendMessageReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
+                    $signal->sendReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
 
                     $signal->sentTyping($data->envelope->source, '', $groupId);
 
@@ -192,7 +192,7 @@ function processMessage($data){
             }
         }
     }elseif(!isset($data->envelope->dataMessage->groupInfo)){
-        $signal->sendMessageReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
+        $signal->sendReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
 
         $signal->sentTyping($data->envelope->source, $data->envelope->timestamp);
 

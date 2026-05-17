@@ -628,7 +628,7 @@ class SignalCommandLine extends AbstractSignal{
         // to be implemented
     }
 
-    public function sendMessageReaction($recipient, $timestamp, $groupId='', $emoji=''){
+    public function sendReaction($recipient, $timestamp, $groupId='', $emoji=''){
         // to be implemented
     }
 

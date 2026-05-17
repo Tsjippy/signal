@@ -31,6 +31,7 @@ class Signal{
     public int $totalMessages;
     public bool $valid;
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
+    public string   $rateLimitString;
 
     /**
      * Constructor
@@ -97,6 +98,8 @@ class Signal{
         $this->valid            = true;
 
         $this->rateLimited      = false;
+
+        $this->rateLimitString  = '';
 
         // check permissions
         $path   = $this->programPath.'/signal-cli';
@@ -525,7 +528,7 @@ class Signal{
 		}
 
         return [
-            'style'     => $style,
+            'textStyle' => $style,
             'message'   => $message
         ];
     }
@@ -554,6 +557,22 @@ class Signal{
     }
 
     /**
+     * Sets the rate limit expiry time
+     * 
+     * @param   string|false      $epoch  epoch when the reate limit will be lifted or false to reset
+     */
+    public function setRateLimit($epoch){
+        $this->rateLimited      = $epoch;
+        
+        $this->rateLimitString  = '';
+
+        if(is_numeric($epoch)){
+            $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
+        }
+
+    }
+
+    /**
      * Send Captcha instructions by e-mail
      *
      * @param   string  $token      The token from the error
@@ -566,7 +585,7 @@ class Signal{
         $to             = get_option('admin_email');
         $subject        = "Signal captcha required";
         $message        = "Hi admin,<br><br>";
-        $message        .= "Signal messages are currently not been send from the website as you need to submit a captcha.<br>";
+        $message        .= "Signal messages are currently not been send from the website as you need to submit a captcha or wait till {$this->rateLimitString}.<br>";
         $message        .= "Submit the challenge and captcha <a href='$adminUrl'>here</a>";
 
         wp_mail($to, $subject, $message);
@@ -929,8 +948,11 @@ class Signal{
         global $wpdb;
 
         if($id == -1){
-            $query      = "SELECT * FROM $this->queueTableName ORDER BY priority ASC, time_added ASC LIMIT 100;";
-            $results    = $wpdb->get_results( $query );
+            // Get the oldest 100 entries without result
+            $results    = $wpdb->get_results( $wpdb->prepare(
+                "SELECT * FROM %i WHERE result IS NULL ORDER BY priority ASC, time_added ASC LIMIT 100;",
+                $this->queueTableName
+            ) );
 
             foreach($results as &$r){
                 if(isset($r->params)){
@@ -941,8 +963,10 @@ class Signal{
             return $results;
         }
         
-        $query      = $wpdb->prepare("SELECT * FROM $this->queueTableName WHERE id = %d", $id);
-        $result     = $wpdb->get_row( $query );
+        $result     = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM $this->queueTableName WHERE id = %d", 
+            $id
+        ) );
 
         if(isset($result->params)){
             $result->params = maybe_unserialize($result->params);
@@ -970,19 +994,28 @@ class Signal{
     /**
      * Updates a message in the queue with the result of the command
      * @param   object  $command    The command to update, should be the result of getQueue
-     * @param   string  $result     The result of the command
+     * @param   mixed  $result     The result of the command
      * 
      * @return  bool                Whether the message was updated successfully
      */
     public function updateQueueResult($command, $result){
         global $wpdb;
 
+        if(is_wp_error($result)){
+            TSJIPPY\printArray($result, false, false, true);
+            return;
+        }
+
+        if(!is_string($result) && !is_numeric($result)){
+            TSJIPPY\printArray($result, false, false, true);
+        }
+
         // Update the queue tist
 		$wpdb->update(
 			$this->queueTableName,
 			[
-				'result'		=> $result,
-				'retries'		=> $command->retries + 1
+				'result'	=> $result,
+				'retries'   => $command->retries + 1
 			],
 			[
 				'id'		=> $command->id

@@ -102,7 +102,7 @@ abstract class AbstractSignal extends Signal {
 
     abstract public function sendGroupTyping($groupId);
 
-    abstract public function sendMessageReaction($recipient, $timestamp, $groupId='', $emoji='');
+    abstract public function sendReaction($recipient, $timestamp, $groupId='', $emoji='');
 
     /**
      * Update the name and avatar image visible by message recipients for the current users.

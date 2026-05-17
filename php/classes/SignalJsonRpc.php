@@ -431,14 +431,12 @@ class SignalJsonRpc extends AbstractSignal{
             $matches = [];
             preg_match('/\d{10,}/', $errorMessage, $matches);
             if(!empty($matches[0])){
-                $this->rateLimited = (int)$matches[0];
-                TSJIPPY\printArray("Rate limited till $this->rateLimited");
+                $this->setRateLimit((int) $matches[0]);
+                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
             }elseif(isset($json->error->data->response->results[0]->retryAfterSeconds)){
-                $this->rateLimited = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
-                
-                $dateString = date('d-m-Y H:i:s', $this->rateLimited);
-                TSJIPPY\printArray($this->rateLimited);
-                TSJIPPY\printArray("Rate limited till $dateString" );
+                $this->setRateLimit(time() + intval($json->error->data->response->results[0]->retryAfterSeconds));
+    
+                TSJIPPY\printArray("Rate limited till $this->rateLimitString" );
             }
 
             $this->sendRateLimitInstructions($json->error->data->response->results[0]->token);
@@ -478,12 +476,12 @@ class SignalJsonRpc extends AbstractSignal{
      */
     protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
         if($this->rateLimited){
-            TSJIPPY\printArray("Rate limited till $this->rateLimited");
+            TSJIPPY\printArray("Rate limited till $this->rateLimitString");
         }
 
         // Reset Rate Limit if the time has passed
         if($this->rateLimited && time() > $this->rateLimited){
-            $this->rateLimited = false;
+            $this->$this->setRateLimit( false );
         }
 
         // only add to queue if needed
@@ -505,9 +503,10 @@ class SignalJsonRpc extends AbstractSignal{
         $result         = '';
 
         // Wait till the params are replaced by the result
-        while(empty($result)){
-            $this->processQueue();
-            
+        $this->processQueue();
+
+        // Loop till we get an result or an timeout
+        while(empty($result)){            
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
@@ -586,10 +585,10 @@ class SignalJsonRpc extends AbstractSignal{
      * If you want to connect to another signal-cli instance, you can just use this URI.
      * If you want to link to an Android/iOS device, create a QR code with the URI (e.g. with qrencode) and scan that in the Signal app.
      * @param string|null $name Optionally specify a name to describe this new device. By default "cli" will be used
-     * @return string
+     * 
+     * @return string           QR code
      */
-    public function link(string $name = ''): string
-    {
+    public function link(string $name = ''): string{
         $result = $this->doRequest('startLink');
 
         if(!$result){
@@ -673,7 +672,9 @@ class SignalJsonRpc extends AbstractSignal{
             return true;
         }
 
-        if(count($result) == 1){
+        TSJIPPY\printArray($result);
+
+        if(is_array($result) && count($result) == 1){
             return $result[0]->isRegistered;
         }
 
@@ -682,45 +683,47 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * Send a message to another user or group
-     * @param string|array  $recipients     Specify the recipients’ phone number or a group id
+     * @param string|array  $recipient     Specify the recipients’ phone number or a group id
      * @param string        $message        Specify the message, if missing, standard input is used
      * @param string|array  $attachments    Image file path or array of file paths
      * @param int           $timeStamp      The timestamp of a message to reply to
      *
      * @return bool|string
      */
-    public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
-        if(empty($recipients)){
+    public function send($recipient, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $textStyle = ''){
+        if(empty($recipient)){
             return new WP_Error('Signal', 'You should submit at least one recipient');
         }
 
         $params = [];
 
-        if(is_array($recipients)){
+        if(is_array($recipient)){
             $result = '';
 
-            foreach($recipients as $recipient){
-                $result = $this->send($recipient, $message, $attachments, $timeStamp);
+            foreach($recipient as $r){
+                $result = $this->send($r, $message, $attachments, $timeStamp);
             }
 
             return $result;
         }else{
             // first character is a +
-            if(strpos( $recipients , '+' ) === 0){
-                $params['recipient']    = $recipients;
+            if(strpos( $recipient , '+' ) === 0){
+                $params['recipient']    = $recipient;
             // invalid formatted phone number
-            }elseif(strlen($recipients) < 15){
-                TSJIPPY\printArray("Invalid phonenumber '$recipients'");
+            }elseif(strlen($recipient) < 15){
+                TSJIPPY\printArray("Invalid phonenumber '$recipient'");
 
-                return new WP_Error('Phonenumber invalid', "Invalid phonenumber '$recipients'");
+                return new WP_Error('Phonenumber invalid', "Invalid phonenumber '$recipient'");
             }else{
-                $params['groupId']      = $recipients;
+                $params['groupId']      = $recipient;
             }
         }
 
-        // parse any styling
-        $parsed = $this->parseMessageLayout($message);
-        extract($parsed);
+        if(empty($textStyle)){
+            // parse any styling
+            $parsed = $this->parseMessageLayout($message);
+            extract($parsed);
+        }
 
         $params["message"]  = $message;
 
@@ -760,8 +763,8 @@ class SignalJsonRpc extends AbstractSignal{
             $params['quoteMessage']     = $quoteMessage;
         }
 
-        if(!empty($style)){
-            $params['textStyle']   = $style;
+        if(!empty($textStyle)){
+            $params['textStyle']   = $textStyle;
         }
 
         $result   =  $this->addToCommandQueue('send', $params);
@@ -936,23 +939,27 @@ class SignalJsonRpc extends AbstractSignal{
     /**
      * Send a reaction to a message
      *
-     * @param   string  $recipient  The phonenumber or group id
-     * @param   int     $timestamp  The timestamp of the message to react to
-     * @param   string  $groupId    The group id
-     * @param   string  $emoji      The emoji to send
+     * @param   string  $recipient          The phonenumber or group id
+     * @param   int     $targetTimestamp    The timestamp of the message to react to
+     * @param   string  $groupId            The group id
+     * @param   string  $emoji              The emoji to send
      *
-     * @return  mixed                The result
+     * @return  mixed                       The result
      */
-    public function sendMessageReaction($recipient, $timestamp, $groupId='', $emoji=''){
+    public function sendReaction($recipient, $targetTimestamp, $groupId='', $emoji='', $targetAuthor=''){
         if(empty($emoji)){
             $emoji  = "🦘";
+        }
+
+        if(empty($targetAuthor)){
+            $targetAuthor   = $recipient;
         }
 
         $params = [
             "recipient"         => $recipient,
             "emoji"             => $emoji,
-            "targetAuthor"      => $recipient,
-            "targetTimestamp"   => $timestamp
+            "targetAuthor"      => $targetAuthor,
+            "targetTimestamp"   => $targetTimestamp
         ];
 
         if(!empty($groupId)){
@@ -1008,7 +1015,7 @@ class SignalJsonRpc extends AbstractSignal{
             "captcha"   => $captcha
         ];
 
-        return $this->doRequest('updateProfile', $params);
+        return $this->doRequest('submitRateLimitChallenge', $params);
     }
 
     /**
@@ -1053,7 +1060,7 @@ class SignalJsonRpc extends AbstractSignal{
 
     public function processQueue(){
         if($this->processingQueue){
-            TSJIPPY\printArray("Already processing queue, skipping", true);
+            TSJIPPY\printArray("Already processing queue, skipping");
             return;
         }
 
@@ -1063,39 +1070,69 @@ class SignalJsonRpc extends AbstractSignal{
         if($this->rateLimited ){
             TSJIPPY\printArray($this->rateLimited );
 
+            // We are past the rate limit, reset it
             if(time() > $this->rateLimited){
-                $this->rateLimited = false;
+                $this->setRateLimit(false);
             } else {
                 TSJIPPY\printArray("Rate limited, skipping retry", true);
+
+                $this->processingQueue = false;
                 return;
             }
         }
+
+        $functionNames  = [
+            'getUserStatus' => 'isRegistered',
+            'sendReceipt'   => 'markAsRead',
+            'remoteDelete'  => 'deleteMessage'
+        ];
 
         // Run a maximum of 100 reties to prevent infinite loops in case of a persistent error
         $commands = $this->getQueue();
 
         foreach($commands as $command){
-            if(!empty($command) && $command->result != 'timed out'){
-                TSJIPPY\printArray($command);
+            sleep(1);
 
-                $result = $this->doRequest($command->method, $command->params);
-
-                // Mark as timed out
-                if($command->retries >= 9){
-                    // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
-                    if(!$command->waiting){
-                        $this->removeFromQueue($command->id);
-                        continue;
-                    }
-                    TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                    $result = 'timed out';
-                }
-
-                TSJIPPY\printArray($result);
-                $this->updateQueueResult($command, $result);
+            $functionName   = $command->method;
+            if(isset($functionNames[$functionName])){
+                $functionName   = $functionNames[$functionName];
             }
 
-            sleep(1);
+            TSJIPPY\printArray($functionName );
+
+            if(method_exists($this, $functionName)){
+                $result = call_user_func_array(array($this, $functionName), $command->params);
+            }else{
+                TSJIPPY\printArray($command);
+                $result = $this->doRequest($command->method, $command->params);
+            }           
+
+            // Check if rate limited after the command
+            if($this->rateLimited){
+                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
+                continue;
+            }
+
+            // Mark as timed out
+            if($command->retries >= 9){
+                // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
+                if(!$command->waiting){
+                    $this->removeFromQueue($command->id);
+                    continue;
+                }
+                TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
+                $result = 'timed out';
+            }
+
+            if(!empty($result) && !$command->waiting){
+                TSJIPPY\printArray($result);
+
+                $this->removeFromQueue($command->id);
+                continue;
+            }
+
+            TSJIPPY\printArray($result);
+            $this->updateQueueResult($command, $result);
         }
 
         $this->processingQueue = false;
