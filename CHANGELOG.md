@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- rate limit issues
 
 ### Updated
+
+## [10.1.5] - 2026-05-16
+
+
+### Fixed
+- rate limit issues
 
 ## [10.1.4] - 2026-05-16
 
