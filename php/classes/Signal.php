@@ -32,6 +32,7 @@ class Signal{
     public bool $valid;
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
+    public bool $processingQueue;
 
     /**
      * Constructor
@@ -101,6 +102,8 @@ class Signal{
 
         $this->rateLimitString  = '';
 
+        $this->processingQueue  = false;
+
         // check permissions
         $path   = $this->programPath.'/signal-cli';
         if(!is_executable($path)){
@@ -124,6 +127,8 @@ class Signal{
         
         // clean db
         delete_option('tsjippy-signal-messages');
+
+        add_action( "add_option_tsjippy-signal-rate-limit", [$this, 'onRateLimitChange'], 10, 2);
     }
 
     /**
@@ -560,8 +565,9 @@ class Signal{
      * Sets the rate limit expiry time
      * 
      * @param   string|false      $epoch  epoch when the reate limit will be lifted or false to reset
+     * 
      */
-    public function setRateLimit($epoch){
+    public function setRateLimit($epoch, $save = true){
         $this->rateLimited      = $epoch;
         
         $this->rateLimitString  = '';
@@ -570,6 +576,16 @@ class Signal{
             $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
         }
 
+        if($save){
+            add_option('tsjippy-signal-rate-limit', $this->rateLimited);
+        }
+    }
+
+    /**
+     * Runs if the rate limit option has been changed.
+     */
+    private function onRateLimitChange($option, $value){
+        $this->setRateLimit($value, false);
     }
 
     /**
@@ -928,7 +944,7 @@ class Signal{
         $wpdb->insert(
             $this->queueTableName,
             array(
-                'time_added'    => time(),
+                'time_added'   => time(),
                 'method'       => $method,
                 'params'       => maybe_serialize($params),
                 'priority'     => $priority,
@@ -942,31 +958,23 @@ class Signal{
     /**
      * Retrieves the message queue
      *
-     * @return  object   The oldest 100 commands in the queue, or a specific command if id is provided
+     * @return  object   The oldest command in the queue, or a specific command if id is provided
      */
     public function getQueue($id=-1){
         global $wpdb;
 
         if($id == -1){
-            // Get the oldest 100 entries without result
-            $results    = $wpdb->get_results( $wpdb->prepare(
-                "SELECT * FROM %i WHERE result IS NULL ORDER BY priority ASC, time_added ASC LIMIT 100;",
+            // Get the oldest 1 entry without result
+            $result    = $wpdb->get_row( $wpdb->prepare(
+                "SELECT * FROM %i WHERE result IS NULL ORDER BY priority ASC, time_added ASC LIMIT 1;",
                 $this->queueTableName
             ) );
-
-            foreach($results as &$r){
-                if(isset($r->params)){
-                    $r->params = maybe_unserialize($r->params);
-                }
-            }
-
-            return $results;
+        }else{
+            $result     = $wpdb->get_row( $wpdb->prepare(
+                "SELECT * FROM $this->queueTableName WHERE id = %d", 
+                $id
+            ) );
         }
-        
-        $result     = $wpdb->get_row( $wpdb->prepare(
-            "SELECT * FROM $this->queueTableName WHERE id = %d", 
-            $id
-        ) );
 
         if(isset($result->params)){
             $result->params = maybe_unserialize($result->params);
@@ -1021,5 +1029,76 @@ class Signal{
 				'id'		=> $command->id
 			],
 		);
+    }
+
+    public function processQueue(){
+        $functionNames  = [
+            'getUserStatus' => 'isRegistered',
+            'sendReceipt'   => 'markAsRead',
+            'remoteDelete'  => 'deleteMessage'
+        ];
+
+        $startTime  = time();
+        $endTime    = $startTime + HOUR_IN_SECONDS; // This function is called by cron every hour
+
+        $this->processingQueue  = true;
+
+        // Loop until it is time for the next cronjob
+        while(time() < $endTime){
+            sleep(1);
+
+            // Reset Rate Limit if the time has passed
+            if($this->rateLimited ){
+                TSJIPPY\printArray($this->rateLimited );
+
+                // We are past the rate limit, reset it
+                if(time() > $this->rateLimited){
+                    $this->setRateLimit(false);
+                }else{
+                    // no need to run if there is a rate limit
+                    continue;
+                }
+            }
+
+            // Get the oldest command
+            $command    = $this->getQueue();
+
+            $functionName   = $command->method;
+            if(isset($functionNames[$functionName])){
+                $functionName   = $functionNames[$functionName];
+            }
+
+            TSJIPPY\printArray($functionName );
+
+            if(method_exists($this, $functionName)){
+                $result = call_user_func_array(array($this, $functionName), $command->params);
+            }else{
+                TSJIPPY\printArray($command);
+            }
+
+            // Mark as timed out if still no result after 10 times
+            if($command->retries >= 9 && empty($result)){
+                // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
+                if(!$command->waiting){
+                    $this->removeFromQueue($command->id);
+                    continue;
+                }
+                TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
+                $result = 'timed out';
+            }
+
+            // Remove from queue
+            if(!empty($result) && !$command->waiting){
+                TSJIPPY\printArray($result);
+
+                $this->removeFromQueue($command->id);
+                continue;
+            }
+
+            TSJIPPY\printArray($result);
+            $this->updateQueueResult($command, $result);
+        }
+
+        $this->processingQueue  = false;
     }
 }

@@ -16,7 +16,7 @@ function taskInit(){
 
     add_action( 'signal_number_reminder_action', __NAMESPACE__.'\signalNumberReminder');
 
-    add_action( 'tsjippy_signal_process_queue', __NAMESPACE__.'\retryFailedMessages' );
+    add_action( 'tsjippy_signal_process_queue', __NAMESPACE__.'\processQueue' );
 }
 
 function checkSignal(){
@@ -31,7 +31,7 @@ function scheduleTasks(){
 
     TSJIPPY\scheduleTask('check_signal_numbers_action', 'daily');
 
-    TSJIPPY\scheduleTask('tsjippy_signal_process_queue', 'quarterly');
+    TSJIPPY\scheduleTask('tsjippy_signal_process_queue', 'hourly');
 
     $freq   = SETTINGS['reminder-freq'] ?? false;
     if($freq){
@@ -104,8 +104,8 @@ function cleanSignalLog(){
     $signal->clearMessageLog($maxDate);
 }
 
-function retryFailedMessages(){
+function processQueue(){
     $signal	= getSignalInstance();
 
-    $signal->retryFailedMessages();
+    $signal->processQueue();
 }

@@ -32,7 +32,6 @@ class SignalJsonRpc extends AbstractSignal{
     public bool $shouldCloseSocket;
     public mixed $socket;
     public string $socketPath;
-    public bool $processingQueue;
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
@@ -43,7 +42,6 @@ class SignalJsonRpc extends AbstractSignal{
         $this->lastRequestTime      = time();
         $this->lastResponse         = '';
         $this->listenTime           = 60;
-        $this->processingQueue      = false;
 
         $this->shouldCloseSocket    = $shouldCloseSocket;
 
@@ -469,12 +467,10 @@ class SignalJsonRpc extends AbstractSignal{
      * if the queue is empty, do the command straight away, otherwise add it to the queue and wait till it is processed and a result is added to the db
      * @param   string      $method     The command to perform
      * @param   array       $params     The parameters for the command
-     * @param   int         $priority   The priority of the command, lower numbers are processed first, default 10
-     * @param   bool        $waitForResult Whether to wait for the result of the command, default true
      * 
      * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
-    protected function addToCommandQueue($method, $params=[], $priority=1, $waitForResult=true){
+    protected function addToCommandQueue($method, $params=[]){
         if($this->rateLimited){
             TSJIPPY\printArray("Rate limited till $this->rateLimitString");
         }
@@ -486,30 +482,41 @@ class SignalJsonRpc extends AbstractSignal{
 
         // only add to queue if needed
         if(
-            empty($this->getQueue()) &&
-            !$this->rateLimited
+            $this->processingQueue  ||         // We are processing the queue
+            (    
+                empty($this->getQueue()) &&     // the queue is empty
+                !$this->rateLimited &&          // we are not rate limited
+                $this->getResult                // we want a result
+            )
         ){
             // do this straight away
             return $this->doRequest($method, $params);
         }
 
+        $priority       = 10;
+        $waitForResult  = false;
+        if($this->getResult){
+            $priority       = 1;
+            $waitForResult  = true;
+        }
+
         // Store command
         $commandId      = $this->addToQueue($method, $params, $priority, $waitForResult);
 
-        if(!$waitForResult){
+        if(!$this->getResult){
             return $commandId;
         }
 
-        $result         = '';
-
         // Wait till the params are replaced by the result
-        $this->processQueue();
+        $result         = '';
 
         // Loop till we get an result or an timeout
         while(empty($result)){            
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
+
+            TSJIPPY\printArray($result);
         }
 
         $this->removeFromQueue($commandId);
@@ -1056,85 +1063,5 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         return '';
-    }
-
-    public function processQueue(){
-        if($this->processingQueue){
-            TSJIPPY\printArray("Already processing queue, skipping");
-            return;
-        }
-
-        $this->processingQueue = true;
-
-        // Reset Rate Limit if the time has passed
-        if($this->rateLimited ){
-            TSJIPPY\printArray($this->rateLimited );
-
-            // We are past the rate limit, reset it
-            if(time() > $this->rateLimited){
-                $this->setRateLimit(false);
-            } else {
-                TSJIPPY\printArray("Rate limited, skipping retry", true);
-
-                $this->processingQueue = false;
-                return;
-            }
-        }
-
-        $functionNames  = [
-            'getUserStatus' => 'isRegistered',
-            'sendReceipt'   => 'markAsRead',
-            'remoteDelete'  => 'deleteMessage'
-        ];
-
-        // Run a maximum of 100 reties to prevent infinite loops in case of a persistent error
-        $commands = $this->getQueue();
-
-        foreach($commands as $command){
-            sleep(1);
-
-            $functionName   = $command->method;
-            if(isset($functionNames[$functionName])){
-                $functionName   = $functionNames[$functionName];
-            }
-
-            TSJIPPY\printArray($functionName );
-
-            if(method_exists($this, $functionName)){
-                $result = call_user_func_array(array($this, $functionName), $command->params);
-            }else{
-                TSJIPPY\printArray($command);
-                $result = $this->doRequest($command->method, $command->params);
-            }           
-
-            // Check if rate limited after the command
-            if($this->rateLimited){
-                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
-                continue;
-            }
-
-            // Mark as timed out
-            if($command->retries >= 9){
-                // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
-                if(!$command->waiting){
-                    $this->removeFromQueue($command->id);
-                    continue;
-                }
-                TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                $result = 'timed out';
-            }
-
-            if(!empty($result) && !$command->waiting){
-                TSJIPPY\printArray($result);
-
-                $this->removeFromQueue($command->id);
-                continue;
-            }
-
-            TSJIPPY\printArray($result);
-            $this->updateQueueResult($command, $result);
-        }
-
-        $this->processingQueue = false;
     }
 }
