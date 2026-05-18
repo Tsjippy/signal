@@ -1014,18 +1014,25 @@ class Signal{
             return;
         }
 
-        if(!is_string($result) && !is_numeric($result)){
+        if(!is_string($result) && !is_numeric($result) && !is_bool($result)){
             TSJIPPY\printArray($result);
             TSJIPPY\printArray(gettype($result));
         }
 
+        $data   = [
+            'retries'   => $command->retries + 1
+        ];
+    
+        if(!empty($result)){
+            $data['result']	= $result;
+        }
+
+        TSJIPPY\printArray($data);
+
         // Update the queue tist
 		$wpdb->update(
 			$this->queueTableName,
-			[
-				'result'	=> $result,
-				'retries'   => $command->retries + 1
-			],
+			$data,
 			[
 				'id'		=> $command->id
 			],
@@ -1033,6 +1040,8 @@ class Signal{
     }
 
     public function processQueue(){
+        TSJIPPY\printArray('Processing queue');
+
         $functionNames  = [
             'getUserStatus' => 'isRegistered',
             'sendReceipt'   => 'markAsRead',
@@ -1064,19 +1073,30 @@ class Signal{
             // Get the oldest command
             $command    = $this->getQueue();
 
+            TSJIPPY\printArray($command);
+
             if(empty($command)){
                 continue;
             }
+
+            TSJIPPY\printArray($command);
 
             $functionName   = $command->method;
             if(isset($functionNames[$functionName])){
                 $functionName   = $functionNames[$functionName];
             }
 
-            TSJIPPY\printArray($functionName );
+            TSJIPPY\printArray($functionName);
 
             if(method_exists($this, $functionName)){
+                if($functionName == 'send' && isset($command->params['groupId'])){
+                    $command->params['recipient']    = $command->params['groupId'];
+
+                    unset($command->params['groupId']);
+                }
+                TSJIPPY\printArray('Calling the function');
                 $result = call_user_func_array(array($this, $functionName), $command->params);
+                TSJIPPY\printArray($result);
             }else{
                 TSJIPPY\printArray($command);
             }
@@ -1100,7 +1120,6 @@ class Signal{
                 continue;
             }
 
-            TSJIPPY\printArray($result);
             $this->updateQueueResult($command, $result);
         }
 

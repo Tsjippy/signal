@@ -482,12 +482,12 @@ class SignalJsonRpc extends AbstractSignal{
 
         // only add to queue if needed
         if(
-            $this->processingQueue  ||         // We are processing the queue
-            (    
+            $this->processingQueue  //||         // We are processing the queue
+            /* (    
                 empty($this->getQueue()) &&     // the queue is empty
                 !$this->rateLimited &&          // we are not rate limited
                 $this->getResult                // we want a result
-            )
+            ) */
         ){
             // do this straight away
             return $this->doRequest($method, $params);
@@ -511,12 +511,15 @@ class SignalJsonRpc extends AbstractSignal{
         $result         = '';
 
         // Loop till we get an result or an timeout
-        while(empty($result)){            
+        $i = 0;
+        while(empty($result) && $i < 5){            
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
 
             TSJIPPY\printArray($result);
+
+            $i++;
         }
 
         $this->removeFromQueue($commandId);
