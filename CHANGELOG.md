@@ -7,6 +7,7 @@
 ### Changed
 
 ### Fixed
+- command queue processig
 
 ### Updated
 
