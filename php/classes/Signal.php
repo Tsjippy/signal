@@ -98,9 +98,9 @@ class Signal{
 
         $this->valid            = true;
 
-        $this->rateLimited      = false;
+        $this->rateLimited      = get_option('tsjippy-signal-rate-limit');
 
-        $this->rateLimitString  = '';
+        $this->setRateLimit($this->rateLimited, false);
 
         $this->processingQueue  = false;
 
@@ -1011,7 +1011,7 @@ class Signal{
 
         if(is_wp_error($result)){
             TSJIPPY\printArray($result, false, false, true);
-            return;
+            $result = $result->get_error_message();
         }
 
         if(!is_string($result) && !is_numeric($result) && !is_bool($result)){
@@ -1029,7 +1029,7 @@ class Signal{
 
         TSJIPPY\printArray($data);
 
-        // Update the queue tist
+        // Update the queue 
 		$wpdb->update(
 			$this->queueTableName,
 			$data,

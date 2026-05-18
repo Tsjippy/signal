@@ -522,6 +522,8 @@ class SignalJsonRpc extends AbstractSignal{
             $i++;
         }
 
+        TSJIPPY\printArray($result);
+
         $this->removeFromQueue($commandId);
 
         return $result;
@@ -1025,7 +1027,15 @@ class SignalJsonRpc extends AbstractSignal{
             "captcha"   => $captcha
         ];
 
-        return $this->doRequest('submitRateLimitChallenge', $params);
+        $result = $this->doRequest('submitRateLimitChallenge', $params);
+
+        if(!$result){
+            return false;
+        }
+
+        TSJIPPY\printArray($result);
+
+        $this->setRateLimit(false);
     }
 
     /**

@@ -183,7 +183,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 </div>
                 <?php
             }else{
-                TSJIPPY\printArray($result);
                 ?>
                 <div class='success'>
                     Rate challenge succesfully submitted.
