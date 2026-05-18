@@ -584,7 +584,7 @@ class Signal{
     /**
      * Runs if the rate limit option has been changed.
      */
-    private function onRateLimitChange($option, $value){
+    public function onRateLimitChange($option, $value){
         $this->setRateLimit($value, false);
     }
 
@@ -1015,7 +1015,8 @@ class Signal{
         }
 
         if(!is_string($result) && !is_numeric($result)){
-            TSJIPPY\printArray($result, false, false, true);
+            TSJIPPY\printArray($result);
+            TSJIPPY\printArray(gettype($result));
         }
 
         // Update the queue tist
@@ -1062,6 +1063,10 @@ class Signal{
 
             // Get the oldest command
             $command    = $this->getQueue();
+
+            if(empty($command)){
+                continue;
+            }
 
             $functionName   = $command->method;
             if(isset($functionNames[$functionName])){
