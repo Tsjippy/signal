@@ -5,6 +5,7 @@
 - ratelimit function
 
 ### Changed
+- do no continue when no queue
 
 ### Fixed
 - command queue processig
