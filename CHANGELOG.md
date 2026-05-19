@@ -8,6 +8,7 @@
 ### Changed
 - do no continue when no queue
 - do not update result if no result
+- improved command queue processing
 
 ### Fixed
 - command queue processig
