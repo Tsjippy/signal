@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.1.6] - 2026-05-19
+
+
+### Added
 - ratelimit function
 - get rate limit status from db
 
@@ -12,8 +23,6 @@
 
 ### Fixed
 - command queue processig
-
-### Updated
 
 ## [10.1.5] - 2026-05-16
 
