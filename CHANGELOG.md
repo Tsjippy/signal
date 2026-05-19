@@ -3,6 +3,7 @@
 
 ### Added
 - ratelimit function
+- get rate limit status from db
 
 ### Changed
 - do no continue when no queue
