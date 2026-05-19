@@ -14,25 +14,25 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 // data is stored in $HOME/.local/share/signal-cli
 
 class Signal{
-    public string $attachmentsPath;
-    public string $basePath;
-    public string $command;
-    public string $configPath;
-    public bool $daemon;
-    public string $error;
-    public string $os;
-    public string $osUserId;
-    public string $path;
-    public string $phoneNumber;
-    public string $programPath;
-    public string $queueTableName;
-    public string $receivedTableName;
-    public string $tableName;
-    public int $totalMessages;
-    public bool $valid;
+    public string   $attachmentsPath;
+    public string   $basePath;
+    public string   $command;
+    public string   $configPath;
+    public bool     $daemon;
+    public string   $error;
+    public string   $os;
+    public string   $osUserId;
+    public string   $path;
+    public string   $phoneNumber;
+    public string   $programPath;
+    public string   $queueTableName;
+    public string   $receivedTableName;
+    public string   $tableName;
+    public int      $totalMessages;
+    public bool     $valid;
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
-    public bool $processingQueue;
+    public bool     $processingQueue;
 
     /**
      * Constructor
@@ -127,8 +127,6 @@ class Signal{
         
         // clean db
         delete_option('tsjippy-signal-messages');
-
-        add_action( "add_option_tsjippy-signal-rate-limit", [$this, 'onRateLimitChange'], 10, 2);
     }
 
     /**
@@ -543,7 +541,7 @@ class Signal{
      *
      * @param   string  $error  The error returned from a signal actions
      */
-    function sendCaptchaInstructions($error){
+    public function sendCaptchaInstructions($error){
         $username       = [];
         exec("bash -c 'whoami'", $username);
         $instructions   = $error;
@@ -568,24 +566,27 @@ class Signal{
      * 
      */
     public function setRateLimit($epoch, $save = true){
-        $this->rateLimited      = $epoch;
-        
         $this->rateLimitString  = '';
 
+        // Conver to seconds and check if in the past
         if(is_numeric($epoch)){
-            $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
+            // Convert to seconds
+            if($epoch && strlen((string)$epoch) > 11 ){
+                $epoch = $epoch / 1000;
+            }
+
+            if(time() >= $epoch){
+                $epoch  = false;
+            }else{
+                $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
+            }
         }
+
+        $this->rateLimited      = $epoch;
 
         if($save){
-            add_option('tsjippy-signal-rate-limit', $this->rateLimited);
+            update_option('tsjippy-signal-rate-limit', $this->rateLimited);
         }
-    }
-
-    /**
-     * Runs if the rate limit option has been changed.
-     */
-    public function onRateLimitChange($option, $value){
-        $this->setRateLimit($value, false);
     }
 
     /**
@@ -1042,24 +1043,30 @@ class Signal{
     public function processQueue(){
         TSJIPPY\printArray('Processing queue');
 
+        $this->processingQueue     = true;
+
+
+        // Mark the start of this option
+        $startTime = time();
+        update_option('tsjippy-signal-processing-queue', $startTime);
+
         $functionNames  = [
             'getUserStatus' => 'isRegistered',
             'sendReceipt'   => 'markAsRead',
             'remoteDelete'  => 'deleteMessage'
         ];
 
-        $startTime  = time();
-        $endTime    = $startTime + HOUR_IN_SECONDS; // This function is called by cron every hour
+        // Loop until a new cronjob has started
+        while(get_option('tsjippy-signal-processing-queue') == $startTime){
+            TSJIPPY\printArray($startTime);
 
-        $this->processingQueue  = true;
-
-        // Loop until it is time for the next cronjob
-        while(time() < $endTime){
             sleep(1);
 
             // Reset Rate Limit if the time has passed
+            $this->rateLimited      = get_option('tsjippy-signal-rate-limit');  // reload to see if it has changed
             if($this->rateLimited ){
                 TSJIPPY\printArray($this->rateLimited );
+                TSJIPPY\printArray("Rate Limited till $this->rateLimitString");
 
                 // We are past the rate limit, reset it
                 if(time() > $this->rateLimited){
@@ -1073,7 +1080,10 @@ class Signal{
             // Get the oldest command
             $command    = $this->getQueue();
 
-            TSJIPPY\printArray($command);
+            if(!is_array($command->params)){
+                $this->removeFromQueue($command->id);
+                continue;
+            }
 
             if(empty($command)){
                 continue;
@@ -1123,6 +1133,8 @@ class Signal{
             $this->updateQueueResult($command, $result);
         }
 
-        $this->processingQueue  = false;
+        $this->processingQueue     = false;
+
+        TSJIPPY\printArray('Finished processing queue, as anothe job has taken over');
     }
 }

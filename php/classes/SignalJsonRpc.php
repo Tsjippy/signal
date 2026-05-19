@@ -477,18 +477,11 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Reset Rate Limit if the time has passed
         if($this->rateLimited && time() > $this->rateLimited){
-            $this->$this->setRateLimit( false );
+            $this->setRateLimit( false );
         }
 
         // only add to queue if needed
-        if(
-            $this->processingQueue  //||         // We are processing the queue
-            /* (    
-                empty($this->getQueue()) &&     // the queue is empty
-                !$this->rateLimited &&          // we are not rate limited
-                $this->getResult                // we want a result
-            ) */
-        ){
+        if( $this->processingQueue ){
             // do this straight away
             return $this->doRequest($method, $params);
         }
@@ -503,8 +496,13 @@ class SignalJsonRpc extends AbstractSignal{
         // Store command
         $commandId      = $this->addToQueue($method, $params, $priority, $waitForResult);
 
+        // Do not wait for the result
         if(!$this->getResult){
             return $commandId;
+        }
+
+        if($this->rateLimited){
+            return 'rate limited';
         }
 
         // Wait till the params are replaced by the result
@@ -516,7 +514,7 @@ class SignalJsonRpc extends AbstractSignal{
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
-
+            TSJIPPY\printArray("Command result:");
             TSJIPPY\printArray($result);
 
             $i++;
