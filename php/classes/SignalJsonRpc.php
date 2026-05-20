@@ -431,15 +431,17 @@ class SignalJsonRpc extends AbstractSignal{
             preg_match('/\d{10,}/', $errorMessage, $matches);
             if(!empty($matches[0])){
                 $rateLimitedTill    = intval($matches[0]);
+                $token              = $json->error->data->response->results[0]->token;
             }elseif(isset($json->error->data->response->results[0]->retryAfterSeconds)){
                 $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
+                $token              = $json->error->data->response->results[0]->token;
             }
 
             // Only update if this is higher than the current value
             if($rateLimitedTill > $this->getRateLimited()){
                 // Send rate limit instruction if this is the first time we encouter the issue
                 if(!$this->rateLimited){
-                    $this->sendRateLimitInstructions($json->error->data->response->results[0]->token);
+                    $this->sendRateLimitInstructions($token);
                 }
 
                 $this->setRateLimit($rateLimitedTill);
