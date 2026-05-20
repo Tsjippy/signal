@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- admin urls
 
 ### Updated
+
+## [10.1.8] - 2026-05-20
+
+
+### Fixed
+- admin urls
 
 ## [10.1.7] - 2026-05-20
 
