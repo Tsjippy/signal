@@ -21,7 +21,7 @@ function sendPostNotification($post){
 	$signalMessageType	= get_post_meta($post->ID, 'signal_message_type', true);
 	$signalUrl			= get_post_meta($post->ID, 'signal_url', true);
 	$signalExtraMessage	= get_post_meta($post->ID, 'signal_extra_message', true);
-	$recipients		= get_post_meta($post->ID, 'signal_groups', true);
+	$recipients			= get_post_meta($post->ID, 'signal_groups', true);
 
 	delete_post_meta($post->ID, 'send_signal');
 	delete_metadata( 'post', $post->ID, 'signal_groups');
@@ -29,14 +29,14 @@ function sendPostNotification($post){
 	delete_post_meta($post->ID, 'signal_url');
 	delete_post_meta($post->ID, 'signal_extra_message');
 
+	$excerpt			= do_shortcode($post->post_content);
 	if($signalMessageType == 'all'){
-		$excerpt	= $post->post_content;
 
 		if(!empty($signalUrl)){
 			$excerpt .=	"...\n\nView it on the web:\n".get_permalink($post->ID);
 		}
 	}else{
-		$excerpt	= wp_trim_words(do_shortcode($post->post_content), 20);
+		$excerpt	= wp_trim_words($excerpt, 20);
 		
 		//Only add read more if the excerpt is not the whole content
 		if($excerpt != strip_tags($post->post_content)){

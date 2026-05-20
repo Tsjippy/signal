@@ -490,7 +490,7 @@ class Signal{
 
 		// we found some layout in the text
 		if($result){
-			foreach($matches[0] as $index=>$match){
+			foreach($matches[0] as $index => $match){
 				$capture		= $match[0];
 				$typeIndicator	= $matches[1][$index][0];
 				$strWithoutType	= $matches[2][$index][0];
@@ -519,16 +519,18 @@ class Signal{
 					continue;
 				}
 
-                $start      = mb_strpos($message, $capture);
+                $start          = mb_strpos($message, $capture);
                 
-                if($start){
-                    $length	    = mb_strlen($strWithoutType);
-                    
-                    $style[]	= "$start:$length:$type";
-                    
-                    // replace without layout
-                    $message	= str_replace($capture, $strWithoutType, $message);
+                if($start === false){
+                    continue;
                 }
+
+                $length	    = mb_strlen($strWithoutType);
+                
+                $style[]	= "$start:$length:$type";
+                
+                // replace without layout
+                $message	= str_replace($capture, $strWithoutType, $message);
 			}
 		}
 
