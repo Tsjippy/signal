@@ -2,15 +2,22 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.1.7] - 2026-05-20
+
+
+### Added
 - post processing after queue
 
 ### Changed
 - code shuffle
 - get token in 2 formats
-
-### Fixed
-
-### Updated
 
 ## [10.1.6] - 2026-05-19
 
