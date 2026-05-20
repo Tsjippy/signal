@@ -43,7 +43,7 @@ abstract class AbstractSignal extends Signal {
      * @param   string          $recipient Number to check.
      * @return  string
      */
-    abstract public function isRegistered($recipient);
+    abstract public function getUserStatus($recipient);
 
     /**
      * List Groups
@@ -80,7 +80,7 @@ abstract class AbstractSignal extends Signal {
      *
      * @return bool|string
      */
-    abstract public function markAsRead($recipient, $timestamp);
+    abstract public function sendReceipt($recipient, $timestamp);
 
     /**
      * Deletes a message
@@ -88,7 +88,7 @@ abstract class AbstractSignal extends Signal {
      * @param   int             $targetSentTimestamp    The original timestamp
      * @param   string|array    $recipients             The original recipient(s)
      */
-    abstract public function deleteMessage($targetSentTimestamp, $recipients);
+    abstract public function remoteDelete($targetSentTimestamp, $recipients);
 
     /**
      * Sends a typing indicator to number

@@ -54,14 +54,14 @@ function checkSignalNumbers(){
         $phonenumber    = get_user_meta( $user->ID, 'signal_number', true );
 
         // check if valid signal number
-        if(empty($phonenumber) || !$signal->isRegistered($phonenumber)){
+        if(empty($phonenumber) || !$signal->getUserStatus($phonenumber)){
             // remove the stored signal number
             delete_user_meta( $user->ID, 'signal_number');
 
             // loop over all phonenumbers to find the one connected with signal
             foreach(get_user_meta( $user->ID, 'phonenumbers', true ) as $phonenumber){
                 // store if registered
-                if($signal->isRegistered($phonenumber)){
+                if($signal->getUserStatus($phonenumber)){
                     update_user_meta( $user->ID, 'signal_number', $phonenumber );
 
                     // go to the next user

@@ -28,7 +28,7 @@ function phoneNumberUpdated($phonenumber, $userId){
 		$signal	= getSignalInstance();
 
         // check if valid signal number
-        if($signal->isRegistered($phonenumber)){
+        if($signal->getUserStatus($phonenumber)){
             // Mark this number as the signal number
             update_user_meta( $userId, 'signal_number', $phonenumber );
         }else{

@@ -686,7 +686,7 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  array|bool              If more than one recipient returns an array of results, if only one returns a boolean true or false
      */
-    public function isRegistered($recipient){       
+    public function getUserStatus($recipient){       
         if(!is_array($recipient)){
             $recipient  = [$recipient];
         }
@@ -707,7 +707,7 @@ class SignalJsonRpc extends AbstractSignal{
         TSJIPPY\printArray($result);
 
         if(is_array($result) && count($result) == 1){
-            return $result[0]->isRegistered;
+            return $result[0]->getUserStatus;
         }
 
         return $result;
@@ -817,7 +817,7 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  bool                 Whether the operation was successful
      */
-    public function markAsRead($recipient, $timestamp){
+    public function sendReceipt($recipient, $timestamp){
         $params = [
             "recipient"         => $recipient,
             "targetTimestamp"   => $timestamp,
@@ -876,11 +876,11 @@ class SignalJsonRpc extends AbstractSignal{
      * @param   int             $timestamp    The original timestamp
      * @param   string|array    $recipients   The original recipient(s)
      */
-    public function deleteMessage($timestamp, $recipients){
+    public function remoteDelete($timestamp, $recipients){
 
         if(is_array($recipients)){
             foreach($recipients as $recipient){
-                $this->deleteMessage($timestamp, $recipient);
+                $this->remoteDelete($timestamp, $recipient);
             }
         }
 
@@ -919,7 +919,7 @@ class SignalJsonRpc extends AbstractSignal{
     public function sentTyping($recipient, $timestamp='', $groupId=''){
         if(!empty($timestamp)){
             // Mark as read
-            $this->markAsRead($recipient, $timestamp);
+            $this->sendReceipt($recipient, $timestamp);
         }
 
         $params = [

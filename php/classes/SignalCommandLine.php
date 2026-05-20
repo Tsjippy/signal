@@ -112,7 +112,7 @@ class SignalCommandLine extends AbstractSignal{
      * @return string|string
      */
     
-    public function isRegistered($recipients)
+    public function getUserStatus($recipients)
     {
         if(!is_array($recipients)){
             $recipients    = [$recipients];
@@ -212,7 +212,7 @@ class SignalCommandLine extends AbstractSignal{
         return $this->send($groupId, $message, $attachments, $timeStamp, $quoteAuthor, $quoteMessage);
     }
 
-    public function markAsRead($recipient, $timestamp){
+    public function sendReceipt($recipient, $timestamp){
         // Mark as read
         $this->baseCommand();
 
@@ -231,7 +231,7 @@ class SignalCommandLine extends AbstractSignal{
 
     public function sentTyping($recipient, $timestamp='', $groupId=''){
         // Mark as read
-        $this->markAsRead($recipient, $timestamp);
+        $this->sendReceipt($recipient, $timestamp);
 
         // Send typing
         $this->baseCommand();
@@ -624,7 +624,7 @@ class SignalCommandLine extends AbstractSignal{
      * @param   int             $targetSentTimestamp    The original timestamp
      * @param   string|array    $recipients             The original recipient(s)
      */
-    public function deleteMessage($targetSentTimestamp, $recipients){
+    public function remoteDelete($targetSentTimestamp, $recipients){
         // to be implemented
     }
 

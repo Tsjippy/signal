@@ -56,7 +56,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 echo "<div class='error'>";
                     echo "Signal-cli is not working properly, please check the error log for more details.<br>$signal->error";
                 echo "</div>";
-            }elseif($signal->phoneNumber && $signal->isRegistered($signal->phoneNumber)){
+            }elseif($signal->phoneNumber && $signal->getUserStatus($signal->phoneNumber)){
                 $this->connectedOptions($signal, $parent);
             }else{
                 $this->notConnectedOptions();
@@ -731,7 +731,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $signal	= getSignalInstance();
 
             if(isset($_REQUEST['time_send'])){
-                $result		= $signal->deleteMessage($_REQUEST['time_send'], $_REQUEST['recipients']);
+                $result		= $signal->remoteDelete($_REQUEST['time_send'], $_REQUEST['recipients']);
 
                 if(	
                     $result !== true ||

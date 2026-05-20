@@ -1078,12 +1078,6 @@ class Signal{
         $startTime = time();
         update_option('tsjippy-signal-processing-queue', $startTime);
 
-        $functionNames  = [
-            'getUserStatus' => 'isRegistered',
-            'sendReceipt'   => 'markAsRead',
-            'remoteDelete'  => 'deleteMessage'
-        ];
-
         // Loop until a new cronjob has started
         while(true){
             $dbStartTime    = $wpdb->get_var(
@@ -1116,34 +1110,27 @@ class Signal{
             // Get the oldest command
             $command    = $this->getQueue();
 
-            if(!is_array($command->params)){
-                $this->removeFromQueue($command->id);
-                continue;
-            }
-
             // Nothing in the queue
             if(empty($command)){
                 sleep(1);
                 continue;
             }
 
-            TSJIPPY\printArray($command);
-
-            $functionName   = $command->method;
-            if(isset($functionNames[$functionName])){
-                $functionName   = $functionNames[$functionName];
+            if(!is_array($command->params)){
+                $this->removeFromQueue($command->id);
+                continue;
             }
 
-            TSJIPPY\printArray($functionName);
+            TSJIPPY\printArray($command);
 
-            if(method_exists($this, $functionName)){
-                if($functionName == 'send' && isset($command->params['groupId'])){
+            if(method_exists($this, $command->method)){
+                if($command->method == 'send' && isset($command->params['groupId'])){
                     $command->params['recipient']    = $command->params['groupId'];
 
                     unset($command->params['groupId']);
                 }
                 TSJIPPY\printArray('Calling the function');
-                $result = call_user_func_array(array($this, $functionName), $command->params);
+                $result = call_user_func_array(array($this, $command->method), $command->params);
                 TSJIPPY\printArray($result);
             }else{
                 TSJIPPY\printArray($command);
@@ -1154,6 +1141,7 @@ class Signal{
                 // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
                 if(!$command->waiting){
                     $this->removeFromQueue($command->id);
+                    sleep(20);
                     continue;
                 }
                 TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
@@ -1163,13 +1151,13 @@ class Signal{
             // We got a result
             if(!empty($result)){
                 // Add to the message log
-                if($functionName == 'send' && !empty($result->timestamp)){
+                if($command->method == 'send' && !empty($result->timestamp)){
                     $this->addToMessageLog($command->params['recipient'], $command->params['message' ], $result->timestamp);
         
                 }
                 
                 // Delete a message
-                elseif($functionName == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
+                elseif($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
                     $this->markAsDeleted($command->param['targetTimestamp']);
                 }
                 
