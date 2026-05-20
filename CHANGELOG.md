@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- rate limit when null
 
 ### Updated
 
