@@ -498,7 +498,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     public function registerForm(){
         ob_start();
         ?>
-        <form method='post' action='<?php echo admin_url( "admin.php?page={$_GET['page']}&tab={$_GET['tab']}" );?>'>
+        <form method='post' action='<?php echo admin_url( "admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}" );?>'>
             <h4>Register with Signal</h4>
             <br>
             <label>
@@ -534,7 +534,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param   \DOMElement|null $parent     Parent node element
      */
     public function connectedOptions($signal, $parent){
-        $url		= admin_url( "admin.php?page={$_GET['page']}&tab={$_GET['tab']}" );
+        $url		= admin_url( "admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}" );
 
         if(isset($_GET['force'])){
             $signalGroups	= $signal->listGroups(false, false, true);
@@ -626,7 +626,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     public function notConnectedOptions(){
         $url		= admin_url( "admin.php?page={$_GET['page']}" );
         if(!empty($_GET['tab'])){
-            $url	.= "&tab={$_GET['tab']}";
+            $url	.= "&main-tab={$_GET['main-tab']}";
         }
 
         ?>
@@ -903,7 +903,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             <?php
 
             if($signal->totalMessages > $amount){
-                $url		= admin_url("admin.php?page=tsjippy_signal&tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
+                $url		= admin_url("admin.php?page=tsjippy_signal&main-tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
                 $totalPages	= ceil($signal->totalMessages/$amount);
                 
                 if($page != 1){
@@ -1104,7 +1104,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             <?php
 
             if($signal->totalMessages > $amount){
-                $url		= admin_url("admin.php?page=tsjippy_signal&tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
+                $url		= admin_url("admin.php?page=tsjippy_signal&main-tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
                 $totalPages	= ceil($signal->totalMessages/$amount);
                 
                 if($page != 1){

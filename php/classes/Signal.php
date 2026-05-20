@@ -1096,7 +1096,7 @@ class Signal{
                 break;
             }
 
-            sleep(1);
+            sleep(2);
 
             // Reset Rate Limit if the time has passed // reload to see if it has changed
             if( $this->getRateLimited() ){
