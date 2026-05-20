@@ -426,18 +426,25 @@ class SignalJsonRpc extends AbstractSignal{
         ){
             TSJIPPY\printArray($json);
 
-            $matches = [];
+            $matches            = [];
+            $rateLimitedTill    = 0;
             preg_match('/\d{10,}/', $errorMessage, $matches);
             if(!empty($matches[0])){
-                $this->setRateLimit((int) $matches[0]);
-                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
+                $rateLimitedTill    = intval($matches[0]);
             }elseif(isset($json->error->data->response->results[0]->retryAfterSeconds)){
-                $this->setRateLimit(time() + intval($json->error->data->response->results[0]->retryAfterSeconds));
-    
-                TSJIPPY\printArray("Rate limited till $this->rateLimitString" );
+                $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
             }
 
-            $this->sendRateLimitInstructions($json->error->data->response->results[0]->token);
+            // Only update if this is higher than the current value
+            if($rateLimitedTill > $this->getRateLimited()){
+                // Send rate limit instruction if this is the first time we encouter the issue
+                if(!$this->rateLimited){
+                    $this->sendRateLimitInstructions($json->error->data->response->results[0]->token);
+                }
+
+                $this->setRateLimit($rateLimitedTill);
+                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
+            }
         }
         
         // Group ID
@@ -471,13 +478,8 @@ class SignalJsonRpc extends AbstractSignal{
      * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
     protected function addToCommandQueue($method, $params=[]){
-        if($this->rateLimited){
+        if($this->getRateLimited()){
             TSJIPPY\printArray("Rate limited till $this->rateLimitString");
-        }
-
-        // Reset Rate Limit if the time has passed
-        if($this->rateLimited && time() > $this->rateLimited){
-            $this->setRateLimit( false );
         }
 
         // only add to queue if needed
@@ -520,9 +522,27 @@ class SignalJsonRpc extends AbstractSignal{
             $i++;
         }
 
-        TSJIPPY\printArray($result);
+        // Make sure we do not wait for the result anymore but keep in queue
+        if(in_array($method, ['send', 'remoteDelete', 'sendReceipt', 'sendReaction', 'updateProfile'])){
+            if($waitForResult){
+                global $wpdb;
 
-        $this->removeFromQueue($commandId);
+                $wpdb->update(
+                    $this->queueTableName,
+                    [
+                        'waiting' => false
+                    ],
+                    array(
+                        'id'		=> $commandId
+                    ),
+                );
+            }
+        }
+        
+        // Remove from queue, no point in keeping it
+        else{
+            $this->removeFromQueue($commandId);
+        }
 
         return $result;
     }
@@ -777,27 +797,7 @@ class SignalJsonRpc extends AbstractSignal{
             $params['textStyle']   = $textStyle;
         }
 
-        $result   =  $this->addToCommandQueue('send', $params);
-
-        if($this->getResult){
-
-            if(!empty($result->timestamp)){
-                $ownTimeStamp = $result->timestamp;
-            }
-
-            if(is_numeric($ownTimeStamp)){
-                $this->addToMessageLog($recipients, $message, $ownTimeStamp);
-                
-                return $ownTimeStamp;
-            }elseif(!$this->invalidNumber){
-                /* TSJIPPY\printArray("Sending Signal Message failed");
-                TSJIPPY\printArray($params);
-                if(!empty($result)){
-                    TSJIPPY\printArray($result);
-                } */
-                return $result;
-            }
-        }
+        return $this->addToCommandQueue('send', $params);
     }
 
     /**
@@ -871,19 +871,19 @@ class SignalJsonRpc extends AbstractSignal{
     /**
      * Deletes a message
      *
-     * @param   int             $targetSentTimestamp    The original timestamp
-     * @param   string|array    $recipients             The original recipient(s)
+     * @param   int             $timestamp    The original timestamp
+     * @param   string|array    $recipients   The original recipient(s)
      */
-    public function deleteMessage($targetSentTimestamp, $recipients){
+    public function deleteMessage($timestamp, $recipients){
 
         if(is_array($recipients)){
             foreach($recipients as $recipient){
-                $this->deleteMessage($targetSentTimestamp, $recipient);
+                $this->deleteMessage($timestamp, $recipient);
             }
         }
 
         $param = [
-            "targetTimestamp"   => intval($targetSentTimestamp)
+            "targetTimestamp"   => intval($timestamp)
         ];
 
         $firstCharacter = mb_substr($recipients, 0, 1);
@@ -898,8 +898,6 @@ class SignalJsonRpc extends AbstractSignal{
         $result = $this->addToCommandQueue('remoteDelete', $param);
 
         if(isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
-            $this->markAsDeleted($targetSentTimestamp);
-
             return true;
         }else{
             TSJIPPY\printArray($result, true);

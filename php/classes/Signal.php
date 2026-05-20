@@ -520,13 +520,15 @@ class Signal{
 				}
 
                 $start      = mb_strpos($message, $capture);
-
-				$length	    = mb_strlen($strWithoutType);
-				
-				$style[]	= "$start:$length:$type";
-				
-				// replace without layout
-				$message	= str_replace($capture, $strWithoutType, $message);
+                
+                if($start){
+                    $length	    = mb_strlen($strWithoutType);
+                    
+                    $style[]	= "$start:$length:$type";
+                    
+                    // replace without layout
+                    $message	= str_replace($capture, $strWithoutType, $message);
+                }
 			}
 		}
 
@@ -587,6 +589,27 @@ class Signal{
         if($save){
             update_option('tsjippy-signal-rate-limit', $this->rateLimited);
         }
+    }
+
+    /**
+     * Get uncached rate limited value
+     */
+    public function getRateLimited(){
+        global $wpdb;
+
+        $rateLimited    = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT option_value FROM %i WHERE `option_name`=%s",
+                $wpdb->options,
+                'tsjippy-signal-rate-limit' 
+            )
+        );
+
+        if($rateLimited != $this->rateLimited){
+            $this->setRateLimit($rateLimited, false);
+        }
+
+        return $rateLimited == null ? false : $rateLimited;
     }
 
     /**
@@ -1041,10 +1064,11 @@ class Signal{
     }
 
     public function processQueue(){
+        global $wpdb;
+
         TSJIPPY\printArray('Processing queue');
 
         $this->processingQueue     = true;
-
 
         // Mark the start of this option
         $startTime = time();
@@ -1057,14 +1081,23 @@ class Signal{
         ];
 
         // Loop until a new cronjob has started
-        while(get_option('tsjippy-signal-processing-queue') == $startTime){
-            TSJIPPY\printArray($startTime);
+        while(true){
+            $dbStartTime    = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT option_value FROM %i WHERE `option_name`=%s",
+                    $wpdb->options,
+                    'tsjippy-signal-processing-queue' 
+                )
+            );
+
+            if($dbStartTime != $startTime){
+                break;
+            }
 
             sleep(1);
 
-            // Reset Rate Limit if the time has passed
-            $this->rateLimited      = get_option('tsjippy-signal-rate-limit');  // reload to see if it has changed
-            if($this->rateLimited ){
+            // Reset Rate Limit if the time has passed // reload to see if it has changed
+            if( $this->getRateLimited() ){
                 TSJIPPY\printArray($this->rateLimited );
                 TSJIPPY\printArray("Rate Limited till $this->rateLimitString");
 
@@ -1122,12 +1155,26 @@ class Signal{
                 $result = 'timed out';
             }
 
-            // Remove from queue
-            if(!empty($result) && !$command->waiting){
-                TSJIPPY\printArray($result);
+            // We got a result
+            if(!empty($result)){
+                // Add to the message log
+                if($functionName == 'send' && !empty($result->timestamp)){
+                    $this->addToMessageLog($command->params['recipient'], $command->params['message' ], $result->timestamp);
+        
+                }
+                
+                // Delete a message
+                elseif($functionName == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
+                    $this->markAsDeleted($command->param['targetTimestamp']);
+                }
+                
+                // Remove from the queue as none is waiting for the result
+                if( !$command->waiting){
+                    TSJIPPY\printArray($result);
 
-                $this->removeFromQueue($command->id);
-                continue;
+                    $this->removeFromQueue($command->id);
+                    continue;
+                }
             }
 
             $this->updateQueueResult($command, $result);
@@ -1135,6 +1182,6 @@ class Signal{
 
         $this->processingQueue     = false;
 
-        TSJIPPY\printArray('Finished processing queue, as anothe job has taken over');
+        TSJIPPY\printArray('Finished processing queue, as another job has taken over');
     }
 }
