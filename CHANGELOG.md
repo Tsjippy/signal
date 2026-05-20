@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- renmae functions to matching signal-cli command names
 
 ### Fixed
 - rate limit when null
