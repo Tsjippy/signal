@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- admin urls
 
 ### Updated
 
