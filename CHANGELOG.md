@@ -6,6 +6,7 @@
 
 ### Changed
 - code shuffle
+- get token in 2 formats
 
 ### Fixed
 
