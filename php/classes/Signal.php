@@ -584,6 +584,8 @@ class Signal{
             }else{
                 $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
             }
+        }else{
+            $epoch  = false;
         }
 
         $this->rateLimited      = $epoch;
