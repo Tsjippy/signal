@@ -1096,8 +1096,6 @@ class Signal{
                 break;
             }
 
-            sleep(2);
-
             // Reset Rate Limit if the time has passed // reload to see if it has changed
             if( $this->getRateLimited() ){
                 TSJIPPY\printArray($this->rateLimited );
@@ -1108,6 +1106,7 @@ class Signal{
                     $this->setRateLimit(false);
                 }else{
                     // no need to run if there is a rate limit
+                    sleep(60);
                     continue;
                 }
             }
@@ -1120,7 +1119,9 @@ class Signal{
                 continue;
             }
 
+            // Nothing in the queue
             if(empty($command)){
+                sleep(1);
                 continue;
             }
 
@@ -1175,11 +1176,14 @@ class Signal{
                     TSJIPPY\printArray($result);
 
                     $this->removeFromQueue($command->id);
+                    
+                    sleep(20);
                     continue;
                 }
             }
 
             $this->updateQueueResult($command, $result);
+            sleep(20);
         }
 
         $this->processingQueue     = false;
