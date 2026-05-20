@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.1.9] - 2026-05-20
+
+
+### Changed
 - renmae functions to matching signal-cli command names
 
 ### Fixed
 - rate limit when null
-
-### Updated
 
 ## [10.1.8] - 2026-05-20
 
