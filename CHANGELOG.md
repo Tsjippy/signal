@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- getUserStatus command
 
 ### Updated
 
