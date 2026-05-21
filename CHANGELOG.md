@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- Ai model response
 
 ### Changed
 
 ### Fixed
-- getUserStatus command
 
 ### Updated
+
+## [10.2.0] - 2026-05-21
+
+
+### Added
+- Ai model response
+
+### Fixed
+- getUserStatus command
 
 ## [10.1.9] - 2026-05-20
 
