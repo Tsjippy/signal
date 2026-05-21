@@ -518,31 +518,15 @@ class SignalJsonRpc extends AbstractSignal{
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
-            TSJIPPY\printArray("Command result:");
-            TSJIPPY\printArray($result);
 
             $i++;
         }
 
-        // Make sure we do not wait for the result anymore but keep in queue
-        if(in_array($method, ['send', 'remoteDelete', 'sendReceipt', 'sendReaction', 'updateProfile'])){
-            if($waitForResult){
-                global $wpdb;
-
-                $wpdb->update(
-                    $this->queueTableName,
-                    [
-                        'waiting' => false
-                    ],
-                    array(
-                        'id'		=> $commandId
-                    ),
-                );
-            }
-        }
-        
-        // Remove from queue, no point in keeping it
-        else{
+        // Remove from queue, no point in keeping it for some commands
+        if(
+            empty($result) && 
+            !in_array($method, ['send', 'remoteDelete', 'sendReceipt', 'sendReaction', 'updateProfile'])
+        ){
             $this->removeFromQueue($commandId);
         }
 
@@ -707,7 +691,9 @@ class SignalJsonRpc extends AbstractSignal{
         TSJIPPY\printArray($result);
 
         if(is_array($result) && count($result) == 1){
-            return $result[0]->getUserStatus;
+            return $result[0]->isRegistered;
+        }else{
+            TSJIPPY\printArray($result);
         }
 
         return $result;
@@ -1030,8 +1016,6 @@ class SignalJsonRpc extends AbstractSignal{
         if(!$result){
             return false;
         }
-
-        TSJIPPY\printArray($result);
 
         $this->setRateLimit(false);
     }

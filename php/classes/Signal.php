@@ -1042,9 +1042,10 @@ class Signal{
             $result = $result->get_error_message();
         }
 
-        if(!is_string($result) && !is_numeric($result) && !is_bool($result)){
+        // the result should be a string not an object
+        if(is_object($result)){
+            TSJIPPY\printArray($command);
             TSJIPPY\printArray($result);
-            TSJIPPY\printArray(gettype($result));
         }
 
         $data   = [
@@ -1138,12 +1139,6 @@ class Signal{
 
             // Mark as timed out if still no result after 10 times
             if($command->retries >= 9 && empty($result)){
-                // Remove from queue if not waiting for result, otherwise mark as timed out and remove when the result is retrieved
-                if(!$command->waiting){
-                    $this->removeFromQueue($command->id);
-                    sleep(20);
-                    continue;
-                }
                 TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
                 $result = 'timed out';
             }
@@ -1161,8 +1156,8 @@ class Signal{
                     $this->markAsDeleted($command->param['targetTimestamp']);
                 }
                 
-                // Remove from the queue as none is waiting for the result
-                if( !$command->waiting){
+                // Remove from the queue as none is waiting for the result or to much time has passed since adding it
+                if( !$command->waiting || time() - $command->time_added > 25){
                     TSJIPPY\printArray($result);
 
                     $this->removeFromQueue($command->id);
@@ -1173,6 +1168,7 @@ class Signal{
             }
 
             $this->updateQueueResult($command, $result);
+            
             sleep(20);
         }
 
