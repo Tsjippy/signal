@@ -1056,8 +1056,6 @@ class Signal{
             $data['result']	= $result;
         }
 
-        TSJIPPY\printArray($data);
-
         // Update the queue 
 		$wpdb->update(
 			$this->queueTableName,

@@ -7,11 +7,11 @@ namespace TSJIPPY\SIGNAL;
  * Version:      		10.1.9
  * Author:       		Ewald Harmsen
  * AuthorURI:			harmseninnigeria.nl
- * Requires at least:	6.3
+ * Requires at least:	7.0
  * Requires PHP: 		8.3
- * Tested up to: 		6.9
+ * Tested up to: 		7.0
  * Plugin URI:			https://github.com/Tsjippy/signal
- * Tested:				6.9
+ * Tested:				7.0
  * TextDomain:			tsjippy
  * Requires Plugins:	tsjippy-shared-functionality
  * License: GPLv2 or later

@@ -6,6 +6,9 @@
 */
 //use TSJIPPY;
 use TSJIPPY\SIGNAL;
+use WordPress\AiClient\Messages\DTO\UserMessage;
+use WordPress\AiClient\Messages\DTO\ModelMessage;
+use WordPress\AiClient\Messages\DTO\MessagePart;
 
 // load wp
 //ob_start();
@@ -273,6 +276,8 @@ function getAnswer($message, $source){
             $response   .= $name.', ';
         }
         $response .= "I am so sorry to hear you need help. I am afraid I am not a good councelor";
+    }else{
+        $response = addAiResponse($message, $source);
     }
 
     $response   = [
@@ -291,4 +296,73 @@ function getAnswer($message, $source){
     return $response;
 }
 
+/**
+ * Parses an incoming Signal messages with AI
+ * 
+ * @param   string  $message        The incoming message
+ * @param   string  $phoneNumber    The sender phonenumber
+ * 
+ * @return  string                  The answer
+ */
+function addAiResponse( $message, $phoneNumber){
+    TSJIPPY\printArray($message);
+    TSJIPPY\printArray($phoneNumber);
 
+    global $signal;
+
+    $connectors = [];
+    foreach(wp_get_connectors() as $name => $connector){
+        if($connector['plugin']['is_active']()){
+            $connectors[$name] = $connector;
+        }
+    }
+
+    if(empty($connectors)){
+        return '';
+    }
+
+    try {
+        // Get message history of last hour
+        $received   = $signal->getReceivedMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
+
+        $sent       = $signal->getSentMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
+
+        $messages   = array_merge($received, $sent);
+
+        // Sort on time
+        usort($messages, function($a, $b) {
+            if ($a->timesend == $b->timesend) {
+                return 0;
+            }
+
+            return ($a->timesend < $b->timesend) ? -1 : 1;
+        });
+
+        $history    = [];
+
+        foreach($messages as $msg){
+            if($msg->sender == null){
+                $history[]  = new ModelMessage( [ new MessagePart( $msg->message ) ] );
+            }else{
+                $history[]  = new UserMessage( [ new MessagePart( $msg->message ) ] );
+            }
+        }
+
+        $result = wp_ai_client_prompt($message)
+            ->with_history(...$history)
+            ->generate_text();
+
+        if ( is_wp_error( $result ) ) {
+            // Handle error.
+              return '';
+        }
+
+        $modelName              = array_keys($connectors)[0];
+        return "I am not sure what to answer so I asked $modelName.\n\nHere is what it said:\n$result";
+    } catch (\Exception $e) {
+        // Code to handle any other general Exception
+        TSJIPPY\printArray("Caught a general exception: " . $e->getMessage());
+    }
+
+    return '';
+}

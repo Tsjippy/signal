@@ -21,4 +21,3 @@ function afterPdf($cellText, $pdf, $x, $y, $cellWidth){
     }
 
 }
-
