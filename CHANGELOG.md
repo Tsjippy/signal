@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- path not found bug
 
 ### Updated
 
