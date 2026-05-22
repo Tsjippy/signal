@@ -8,6 +8,7 @@
 ### Fixed
 - path not found bug
 - named param bug
+- quoteTimestamp named parameter
 
 ### Updated
 
