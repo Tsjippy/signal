@@ -7,6 +7,7 @@
 
 ### Fixed
 - path not found bug
+- named param bug
 
 ### Updated
 
