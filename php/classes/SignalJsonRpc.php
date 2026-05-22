@@ -688,8 +688,6 @@ class SignalJsonRpc extends AbstractSignal{
             return true;
         }
 
-        TSJIPPY\printArray($result);
-
         if(is_array($result) && count($result) == 1){
             return $result[0]->isRegistered;
         }else{
@@ -785,7 +783,20 @@ class SignalJsonRpc extends AbstractSignal{
             $params['textStyle']   = $textStyle;
         }
 
-        return $this->addToCommandQueue('send', $params);
+        $result = $this->addToCommandQueue('send', $params);
+
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
+        if(isset($result->timestamp)){
+            return $result->timestamp;
+        }else{
+            TSJIPPY\printArray($result);
+        }
     }
 
     /**
@@ -810,7 +821,18 @@ class SignalJsonRpc extends AbstractSignal{
             "type"              => $type
         ];
         
-        return $this->addToCommandQueue('sendReceipt', $params);
+        $result = $this->addToCommandQueue('sendReceipt', $params);
+
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
+        TSJIPPY\printArray($result);
+        
+        return $result;
     }
 
     /**
@@ -848,10 +870,15 @@ class SignalJsonRpc extends AbstractSignal{
         
         $result = $this->doRequest('listGroups', $params);
 
-        if(empty($this->error) && !empty($result)){
-            $this->groups   = $result;
-            set_transient('tsjippy-signal-groups', $result, WEEK_IN_SECONDS);
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
         }
+
+        $this->groups   = $result;
+        set_transient('tsjippy-signal-groups', $result, WEEK_IN_SECONDS);
 
         return $this->groups;
     }
@@ -885,6 +912,13 @@ class SignalJsonRpc extends AbstractSignal{
         
         $result = $this->addToCommandQueue('remoteDelete', $param);
 
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
         if(isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
             return true;
         }else{
@@ -916,7 +950,18 @@ class SignalJsonRpc extends AbstractSignal{
             $params["groupId"] = $groupId;
         }
 
-        return $this->addToCommandQueue('sendTyping', $params);
+        $result = $this->addToCommandQueue('sendTyping', $params);
+
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
+        TSJIPPY\printArray($result);
+        
+        return $result;
     }
 
     /**
@@ -929,7 +974,7 @@ class SignalJsonRpc extends AbstractSignal{
      * 
      */
     public function sendGroupTyping($recipient, $timestamp='', $groupId=''){
-        $this->sentTyping($recipient, $timestamp, $groupId);
+        return $this->sentTyping($recipient, $timestamp, $groupId);
     }
 
     /**
@@ -962,7 +1007,18 @@ class SignalJsonRpc extends AbstractSignal{
             $params['groupId']  = $groupId;
         }
 
-        return $this->addToCommandQueue('sendReaction', $params);
+        $result = $this->addToCommandQueue('sendReaction', $params);
+
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
+        TSJIPPY\printArray($result);
+        
+        return $result;
     }
 
     /**
@@ -994,6 +1050,15 @@ class SignalJsonRpc extends AbstractSignal{
 
         $result = $this->addToCommandQueue('updateProfile', $params);
 
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
+
+        TSJIPPY\printArray($result);
+        
         return $result;
     }
 
@@ -1029,6 +1094,13 @@ class SignalJsonRpc extends AbstractSignal{
      */
     public function getGroupInvitationLink($groupPath){
         $result = $this->listGroups(true, $groupPath);
+
+        if(!$result || is_wp_error($result)){
+            if(is_wp_error($result)){
+                TSJIPPY\printArray($result);
+            }
+            return true;
+        }
 
         if(empty($result[0]->groupInviteLink)){
             TSJIPPY\printArray($result, true);

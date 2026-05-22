@@ -1046,24 +1046,25 @@ class Signal{
         if(is_object($result)){
             TSJIPPY\printArray($command);
             TSJIPPY\printArray($result);
-        }
+        }else{
 
-        $data   = [
-            'retries'   => $command->retries + 1
-        ];
-    
-        if(!empty($result)){
-            $data['result']	= $result;
-        }
+            $data   = [
+                'retries'   => $command->retries + 1
+            ];
+        
+            if(!empty($result)){
+                $data['result']	= $result;
+            }
 
-        // Update the queue 
-		$wpdb->update(
-			$this->queueTableName,
-			$data,
-			[
-				'id'		=> $command->id
-			],
-		);
+            // Update the queue 
+            $wpdb->update(
+                $this->queueTableName,
+                $data,
+                [
+                    'id'		=> $command->id
+                ],
+            );
+        }
     }
 
     public function processQueue(){
