@@ -4,7 +4,10 @@ use TSJIPPY;
 
 add_action('tsjippy_frontend_post_after_content', __NAMESPACE__.'\afterContent');
 function afterContent($frontendContend){
-    $hidden	= 'hidden';
+    $hidden	        = 'hidden';
+    $checked        = '';
+    $messageType	= '';
+
     if(
         $frontendContend->fullrights &&                             // we have publish rights
         (
@@ -28,7 +31,7 @@ function afterContent($frontendContend){
     <div id="signal-message" class="frontend-form">
         <h4>Signal</h4>
         <label>
-            <input type='checkbox' name='send-signal' value='1' <?php echo $checked; ?>>
+            <input type='checkbox' name='send-signal' value='1' <?php echo esc_attr($checked); ?>>
             Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish';?>
         </label>
 

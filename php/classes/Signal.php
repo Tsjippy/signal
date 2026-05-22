@@ -106,7 +106,7 @@ class Signal{
 
         // check permissions
         $path   = $this->programPath.'/signal-cli';
-        if(!is_executable($path)){
+        if(!is_executable($path) && function_exists('chmod')){
             chmod($path, 0555);
         }
 
