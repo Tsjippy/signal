@@ -1128,7 +1128,7 @@ class Signal{
 
                     unset($command->params['groupId']);
                 }
-                TSJIPPY\printArray('Calling the function');
+                TSJIPPY\printArray("Calling the function $command->method");
                 $result = call_user_func_array(array($this, $command->method), $command->params);
                 TSJIPPY\printArray($result);
             }else{

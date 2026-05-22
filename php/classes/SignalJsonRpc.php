@@ -799,14 +799,14 @@ class SignalJsonRpc extends AbstractSignal{
      * Mark a message as read
      *
      * @param   string  $recipient  The phonenumber
-     * @param   int     $timestamp  The timestamp of the message to mark as read
+     * @param   int     $targetTimestamp  The timestamp of the message to mark as read
      *
      * @return  bool                 Whether the operation was successful
      */
-    public function sendReceipt($recipient, $timestamp){
+    public function sendReceipt($recipient, $targetTimestamp){
         $params = [
             "recipient"         => $recipient,
-            "targetTimestamp"   => $timestamp,
+            "targetTimestamp"   => $targetTimestamp,
             "type"              => "read"
         ];
         
