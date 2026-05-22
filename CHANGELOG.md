@@ -10,6 +10,7 @@
 - named param bug
 - quoteTimestamp named parameter
 - getResultsFromDb bug
+- only try to update result if result is not an object
 
 ### Updated
 
