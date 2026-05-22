@@ -190,7 +190,7 @@ class SignalJsonRpc extends AbstractSignal{
         $signalResults  = get_option('tsjippy-signal-results', []);
 
         // the id is not found in the db
-        if(!!isset($signalResults[$id])){
+        if(!isset($signalResults[$id])){
             return false;
         }
 
