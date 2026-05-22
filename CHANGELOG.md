@@ -9,6 +9,7 @@
 - path not found bug
 - named param bug
 - quoteTimestamp named parameter
+- getResultsFromDb bug
 
 ### Updated
 
