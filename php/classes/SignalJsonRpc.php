@@ -701,14 +701,14 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * Send a message to another user or group
-     * @param string|array  $recipient     Specify the recipients’ phone number or a group id
+     * @param string|array  $recipient      Specify the recipients’ phone number or a group id
      * @param string        $message        Specify the message, if missing, standard input is used
      * @param string|array  $attachments    Image file path or array of file paths
-     * @param int           $timeStamp      The timestamp of a message to reply to
+     * @param int           $quoteTimestamp The timestamp of a message to reply to
      *
      * @return bool|string
      */
-    public function send($recipient, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $textStyle = ''){
+    public function send($recipient, string $message, $attachments = [], int $quoteTimestamp=0, $quoteAuthor='', $quoteMessage='', $textStyle = ''){
         if(empty($recipient)){
             return new WP_Error('Signal', 'You should submit at least one recipient');
         }
@@ -719,7 +719,7 @@ class SignalJsonRpc extends AbstractSignal{
             $result = '';
 
             foreach($recipient as $r){
-                $result = $this->send($r, $message, $attachments, $timeStamp);
+                $result = $this->send($r, $message, $attachments, $quoteTimestamp);
             }
 
             return $result;
@@ -774,7 +774,7 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         if(!empty($timeStamp) && !empty($quoteAuthor) && !empty($quoteMessage)){
-            $params['quoteTimestamp']   = $timeStamp;
+            $params['quoteTimestamp']   = $quoteTimestamp;
        
             $params['quoteAuthor']      = $quoteAuthor;
         
@@ -803,11 +803,11 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  bool                 Whether the operation was successful
      */
-    public function sendReceipt($recipient, $targetTimestamp){
+    public function sendReceipt($recipient, $targetTimestamp, $type="read"){
         $params = [
             "recipient"         => $recipient,
             "targetTimestamp"   => $targetTimestamp,
-            "type"              => "read"
+            "type"              => $type
         ];
         
         return $this->addToCommandQueue('sendReceipt', $params);
