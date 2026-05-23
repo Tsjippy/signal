@@ -88,7 +88,7 @@ class SignalJsonRpc extends AbstractSignal{
     public function doRequest($method, $params=[]){
         $this->lastRequestTime = time();
 
-        if($this->shouldCloseSocket){
+        if($this->shouldCloseSocket && str_contains(php_uname(), 'Linux')){
             $this->socket   = stream_socket_client("unix:////$this->socketPath" , $errno, $this->error);
         }
 
@@ -794,9 +794,11 @@ class SignalJsonRpc extends AbstractSignal{
 
         if(isset($result->timestamp)){
             return $result->timestamp;
-        }else{
+        }elseif(!is_numeric($result)){
             TSJIPPY\printArray($result);
         }
+
+        return $result;
     }
 
     /**

@@ -1070,6 +1070,10 @@ class Signal{
     public function processQueue(){
         global $wpdb;
 
+        if(wp_get_environment_type() === 'local') {
+            return; // no point in doing this
+        }
+
         //TSJIPPY\printArray('Processing queue');
 
         $this->processingQueue     = true;
