@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- dev problems
 
 ### Updated
+
+## [10.2.3] - 2026-05-23
+
+
+### Fixed
+- dev problems
 
 ## [10.2.2] - 2026-05-23
 
