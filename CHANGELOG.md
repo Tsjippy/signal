@@ -6,14 +6,19 @@
 ### Changed
 
 ### Fixed
+
+### Updated
+
+## [10.2.2] - 2026-05-23
+
+
+### Fixed
 - path not found bug
 - named param bug
 - quoteTimestamp named parameter
 - getResultsFromDb bug
 - only try to update result if result is not an object
 -  send reaction result
-
-### Updated
 
 ## [10.2.1] - 2026-05-22
 
