@@ -1070,7 +1070,7 @@ class Signal{
     public function processQueue(){
         global $wpdb;
 
-        TSJIPPY\printArray('Processing queue');
+        //TSJIPPY\printArray('Processing queue');
 
         $this->processingQueue     = true;
 
@@ -1173,6 +1173,6 @@ class Signal{
 
         $this->processingQueue     = false;
 
-        TSJIPPY\printArray('Finished processing queue, as another job has taken over');
+        //TSJIPPY\printArray('Finished processing queue, as another job has taken over');
     }
 }

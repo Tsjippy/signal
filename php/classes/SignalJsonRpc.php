@@ -1017,6 +1017,10 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         TSJIPPY\printArray($result);
+
+        if(isset($result->results[0]->type)){
+            return $result->results[0]->type;
+        }
         
         return $result;
     }
