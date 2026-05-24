@@ -42,44 +42,55 @@ class Signal{
 
         require_once( PLUGINPATH  . 'lib/vendor/autoload.php');
 
+        /**
+         * Folder containing the signal-cli executable and its data
+         */
         $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
         if (!is_dir($this->basePath )) {
             wp_mkdir_p($this->basePath);
         }
 
+        /**
+         * Folder where all received files are stored
+         */
         $this->attachmentsPath  = $this->basePath.'/attachments';
         if (!is_dir($this->attachmentsPath )) {
             wp_mkdir_p($this->attachmentsPath);
         }
 
-        $this->command          = '';
-
+        /**
+         * Folder where the signal-cli config is stored i.e. the linked account
+         */
         $this->configPath  = $this->basePath.'/config';
         if (!is_dir($this->configPath )) {
             wp_mkdir_p($this->configPath);
         }
 
+        /**
+         * Folder where the signal-cli executable is stored
+         */
+        $this->programPath      = $this->basePath.'/program';
+        if (!is_dir($this->programPath )) {
+            wp_mkdir_p($this->programPath);
+        }
+
+        $this->command          = '';
         $this->daemon           = false;
         $this->error            = '';
-
+        $this->path             = $this->programPath.'/signal-cli';
         $this->os               = 'macOS';
 
         if(str_contains(php_uname(), 'Windows')){
             $this->os               = 'Windows';
+
             $this->basePath         = str_replace('\\', '/', $this->basePath);
+
+            $this->path             = $this->programPath.'/bin/signal-cli.bat';
         }elseif(str_contains(php_uname(), 'Linux')){
             $this->os               = 'Linux';
         }
 
         $this->osUserId         = "";
-
-        $this->programPath      = $this->basePath.'/program';
-        if (!is_dir($this->programPath )) {
-            wp_mkdir_p($this->programPath);
-            TSJIPPY\printArray("Created $this->programPath");
-        }
-
-        $this->path             = $this->programPath.'/signal-cli';
 
         $this->phoneNumber      = '';
         if(file_exists("$this->configPath/data/accounts.json")){
@@ -641,7 +652,14 @@ class Signal{
     public function checkPrerequisites(){
         $this->error   = '';
 
-        $curVersion = str_replace('javac ', '', shell_exec('javac -version'));
+        /**
+         * Find the current JAVA Version
+         */
+        $curVersion     = shell_exec('javac -version');
+
+        if(!empty($result)){
+            $curVersion = str_replace('javac ', '', $curVersion);
+        }
 
         if(empty($curVersion) && $this->os == 'Windows'){
             // Try to find the path for java in case javac is not in the PATH variable
@@ -649,12 +667,12 @@ class Signal{
             $subs       = scandir($basePath);
             rsort($subs);
 
-            // FInd latest version of java and set the path to that
+            // Find latest version of java and set the path to that
             foreach($subs as $sub){
                 if(str_contains($sub, 'jdk') || str_contains($sub, 'openjdk')){
                     $javaPath   = "$basePath/$sub/bin";
                     putenv("PATH=$javaPath");
-                    $curVersion = str_replace('javac ', '', shell_exec('javac -version'));
+                    $curVersion = trim(str_replace('javac ', '', shell_exec('javac -version')));
 
                     if(!empty($curVersion)){
                         break;
@@ -673,21 +691,14 @@ class Signal{
             $this->valid    = false;
         }
 
+        /**
+         * Find the current Signal-cli Version
+         */
         $github         = new TSJIPPY\GITHUB\Github();
         $release        = $github->getLatestRelease('AsamK', 'signal-cli', true);
 
         if(is_wp_error($release)){
             return false;
-        }
-
-        $command         = '"' . $this->path . '" --version';
-        $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($command)));
-
-        if(empty($curVersion)){
-            var_dump(shell_exec("$command 2>&1"));
-            echo "$command did not return any result<br>";
-        }else{
-            echo "Current Signal version is <b>$curVersion</b><br>";
         }
 
         if(!file_exists($this->path)){
@@ -697,10 +708,22 @@ class Signal{
                 $this->error    .= "Please install signal-cli<br>";
                 $this->valid    = false;
             }
-        }elseif($curVersion  != $release['tag_name']){
-            echo "<strong>Updating Signal to version ".$release['tag_name']."</strong> <br>";
+        }else{
+            $command         = '"' . $this->path . '" --version';
+            $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($command)));
 
-            $this->installSignal($release);
+            if(empty($curVersion)){
+                var_dump(shell_exec("$command 2>&1"));
+                echo "$command did not return any result<br>";
+            }else{
+                echo "Current Signal version is <b>$curVersion</b><br>";
+            }
+
+            if($curVersion  != $release['tag_name']){
+                echo "<strong>Updating Signal to version ".$release['tag_name']."</strong> <br>";
+
+                $this->installSignal($release);
+            }
         }
 
         if(!empty($this->error)){
@@ -735,7 +758,16 @@ class Signal{
 
             if(!empty($release['assets']) && is_array($release['assets'])){
                 foreach($release['assets'] as $asset){
-                    if(str_contains($asset['browser_download_url'], $this->os) && isset($asset['size']) && $asset['size'] > 10000000){
+                    if(
+                        (
+                            (
+                                $this->os == 'Linux' &&
+                                str_contains($asset['browser_download_url'], $this->os) 
+                            ) ||
+                            !str_contains($asset['browser_download_url'], 'Linux') 
+                        ) && 
+                        isset($asset['size']) && $asset['size'] > 10000000
+                    ){
                         $url    = $asset['browser_download_url'];
                         break;
                     }
@@ -777,19 +809,25 @@ class Signal{
             // unzip the tar
             $folder = str_replace('.tar.gz', '', $tempPath);
 
-            if(file_exists($folder)){
-                if($this->os == 'Windows'){
-                    // remove the folder
-                    exec("rmdir \"$folder\" /s /q");
-                }else{
-                    exec("rm -R $folder");
+            // Unzip if needed
+            if(
+                !file_exists($folder.'/'.basename($folder).'/bin/signal-cli') && // it does not include this file (on Windows)
+                !file_exists($folder.'/signal-cli')                              // / it does not include this file (on Linux) 
+            ){
+                if( file_exists($folder) ){
+                    if($this->os == 'Windows'){
+                        // remove the folder
+                        exec("rmdir \"$folder\" /s /q");
+                    }else{
+                        exec("rm -R $folder");
+                    }
                 }
+
+                echo "Unzipping .tar archive to $folder<br>";
+
+                $phar = new \PharData($fileName);
+                $phar->extractTo($folder); // extract all files
             }
-
-            echo "Unzipping .tar archive to $folder<br>";
-
-            $phar = new \PharData($fileName);
-            $phar->extractTo($folder); // extract all files
         } catch (\Exception $e) {
             echo "<div class='error'>".$e->getMessage().'</div>';
 
@@ -833,11 +871,16 @@ class Signal{
         if(file_exists("$folder/signal-cli-$version")){
             $path   = "$folder/signal-cli-$version";
 
-            if (!is_dir(dirname($this->path))) {
-                mkdir(dirname($this->path), 0777, true);
+            if (!is_dir(dirname($this->programPath))) {
+                mkdir(dirname($this->programPath), 0777, true);
             }
 
-            $result = rename($path, $this->path );
+            if($this->os == 'Windows'){
+                $result = $this->copyfolder($path.'/', $this->programPath);
+            }else{
+                $result = rename($path, $this->programPath );
+            }
+
         }elseif(file_exists("$folder/signal-cli")){
             $result = rename("$folder/signal-cli", "$this->path" );
         }else{
@@ -850,6 +893,41 @@ class Signal{
         }else{
             echo "<div class='error'>Failed!<br>Could not move $path to $this->programPath/signal-cli.<br>Check the $folder folder.</div>";
         }
+    }
+
+    private function copyfolder ($from, $to, $ext="*") {
+        // (A1) SOURCE FOLDER CHECK
+        if (!is_dir($from)) { 
+            TSJIPPY\printArray("$from does not exist"); 
+        }
+
+        // (A2) CREATE DESTINATION FOLDER
+        if (!is_dir($to)) {
+            if (!mkdir($to)) { 
+                TSJIPPY\printArray("Failed to create $to"); 
+            };
+        }
+
+        // (A3) GET ALL FILES + FOLDERS IN SOURCE
+        $all = glob("$from$ext", GLOB_MARK);
+        print_r($all);
+
+        // (A4) COPY FILES + RECURSIVE INTERNAL FOLDERS
+        if (count($all) > 0) { 
+            foreach ($all as $a) {
+                $ff = basename($a); // CURRENT FILE/FOLDER
+
+                if (is_dir($a)) {
+                    $this->copyfolder("$a", "$to/$ff/");
+                } else {
+                    if (!copy($a, "$to$ff")) { 
+                        TSJIPPY\printArray("Error copying $a to $to$ff"); 
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1125,7 +1203,7 @@ class Signal{
                 continue;
             }
 
-            TSJIPPY\printArray($command);
+            //TSJIPPY\printArray($command);
 
             if(method_exists($this, $command->method)){
                 if($command->method == 'send' && isset($command->params['groupId'])){
@@ -1133,9 +1211,9 @@ class Signal{
 
                     unset($command->params['groupId']);
                 }
-                TSJIPPY\printArray("Calling the function $command->method");
+                //TSJIPPY\printArray("Calling the function $command->method");
                 $result = call_user_func_array(array($this, $command->method), $command->params);
-                TSJIPPY\printArray($result);
+                //TSJIPPY\printArray($result);
             }else{
                 TSJIPPY\printArray($command);
             }

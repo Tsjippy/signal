@@ -751,14 +751,26 @@ class SignalJsonRpc extends AbstractSignal{
             foreach($attachments as $index => $attachment){
                 // Check if the attachment is a file
                 if(!file_exists($attachment)){
+                    TSJIPPY\printArray($attachment);
+
+                    $image  = false;
+
                     // Not a file, check if it is a base64 encoded string
                     if (strpos($attachment, 'data:image/') === 0) {
                         list($type, $base64String) = explode(';base64,', $attachment, 2);
-                    }
-                    $binaryData = base64_decode($base64String);
+                        
+                        if(!empty($base64String)){
+                            $binaryData = base64_decode($base64String);
+                        }
 
-                    $image = imagecreatefromstring($binaryData);
+                        if($binaryData){
+                            $image = imagecreatefromstring($binaryData);
+                        }
+                    }
+
                     if ($image === false) {
+                        TSJIPPY\printArray($image);
+
                         unset($attachments[$index]);
                     }else{
                         imagedestroy($image);
