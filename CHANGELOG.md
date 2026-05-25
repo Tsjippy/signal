@@ -5,6 +5,7 @@
 
 ### Changed
 - html to domelements
+- html tp dpm elements in admin menu
 
 ### Fixed
 
