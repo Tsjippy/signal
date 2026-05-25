@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.2.4] - 2026-05-25
+
+
+### Changed
 - ony update signal-cli after 5 days
 
 ### Fixed
 - windows install
-
-### Updated
 
 ## [10.2.3] - 2026-05-23
 
