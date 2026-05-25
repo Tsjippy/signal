@@ -57,23 +57,32 @@ class SignalJsonRpc extends AbstractSignal{
             //TSJIPPY\printArray( "Please chick the file permisions to $this->socketPath");
         }
 
-        $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
-        
-        if($errno == 111){
-            // remove the old socket file
-            unlink($this->socketPath);
+        // Windows not supported for now
+        try {
+            if($this->os != 'Windows'){
 
-            // try again
-            $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
-        }
+                $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
+                
+                if($errno == 111){
+                    // remove the old socket file
+                    unlink($this->socketPath);
 
-        if($errno == 2){
-            echo "Could not start, is the signal-cli jsonrpc daemon running?";
+                    // try again
+                    $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
+                }
 
-        }elseif(!$this->socket){
-            echo "Unable to create socket on $this->socketPath";
+                if($errno == 2){
+                    echo "Could not start, is the signal-cli jsonrpc daemon running?";
 
-            //TSJIPPY\printArray("$errno: $this->error");
+                }elseif(!$this->socket){
+                    echo "Unable to create socket on $this->socketPath";
+
+                    //TSJIPPY\printArray("$errno: $this->error");
+                }
+            }
+        } catch (\ErrorException $e) {
+            echo "Socket Connection Failed: " . $e->getMessage();
+            // Use $e->getCode() to get system level error codes
         }
     }
 
