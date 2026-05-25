@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- windows install
 
 ### Updated
 
