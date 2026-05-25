@@ -173,31 +173,67 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
-    public function functions($parent){
-        wp_enqueue_script('smiley');
-	
-        ob_start();
+    private function rateChallenge($parent){
+        // no challenge var set
+        if(empty($_REQUEST['challenge'])){
+            return false;
+        }
 
-        // check if we need to send a message
-        if(!empty($_REQUEST['challenge']) && !empty($_REQUEST['captchastring'])){
+        // captcha token submitted, run action and show functions form
+        if(!empty($_REQUEST['captchastring'])){
             $signal	= getSignalInstance();
 
             $result	= $signal->submitRateLimitChallenge($_REQUEST['challenge'], $_REQUEST['captchastring']);
 
             if(!$result){
-                ?>
-                <div class='error'>
-                    Rate challenge could not be submitted
-                </div>
-                <?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Rate challenge could not be submitted');
             }else{
-                ?>
-                <div class='success'>
-                    Rate challenge succesfully submitted.
-                </div>
-                <?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Rate challenge succesfully submitted');
             }
+
+            return false;
         }
+
+        /**
+         * Show rate challenge form
+         */
+        else{
+            $form   = TSJIPPY\addElement('form', $parent, ['method' => 'get']);
+
+            TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "page", 'value' => "tsjippy-signal"]);
+            TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "tab", 'value' => "functions"]);
+
+            $label  = TSJIPPY\addElement('label', $form);
+            TSJIPPY\addElement('h4', $label, [], 'Challenge string');
+
+            TSJIPPY\addElement('input', $label, ['type' => "text", 'name' => "challenge", 'value' => sanitize_text_field($_REQUEST['challenge']), 'style' => "width:100%", 'required' => "required"]);
+
+            $label  = TSJIPPY\addElement('label', $form, [], 'Get the captcha from ');
+            TSJIPPY\addElement('h4', $label, [], 'Captcha string', 'afterBegin');
+
+            TSJIPPY\addElement('a', $label, ['href' => "https://signalcaptchas.org/challenge/generate.html", 'target' => "_blank"], 'here');
+
+            /** @disregard P1013 */
+            $label->insertAdjacentText('beforeEnd', ' then copy the link below');
+
+            TSJIPPY\addElement('textarea', $form, ['name' => "captchastring", 'style' => "width:100%;", 'required' => "required"]);
+
+            TSJIPPY\addElement('br', $form);
+
+            TSJIPPY\addElement('button', $form, ['type' => "submit"], 'Submit');
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public function functions($parent){
+        if($this->rateChallenge($parent)){
+            return true;
+        }
+
+        wp_enqueue_script('smiley');
 
         // check if we need to send a message
         if(!empty($_REQUEST['message']) && !empty($_REQUEST['recipient'])){
@@ -212,51 +248,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
             if(is_wp_error($result)){
                 TSJIPPY\printArray($result);
-                ?>
-                <div class='error'>
-                    Message could not be send<br>
-                    <?php echo esc_html($result->get_error_message());?>
-                </div>
-                <?php
+
+                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Message could not be send'.esc_html($result->get_error_message()));
             }elseif(empty($result)){
-                ?>
-                <div class='error'>
-                    Message sending timed out
-                </div>
-                <?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Message sending timed out');
             }else{
-                ?>
-                <div class='success'>
-                    Message succesfully send: <?php echo esc_html($result);?>
-                </div>
-                <?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Message succesfully send'.esc_html($result));
             }
-        }
-
-        if(isset($_REQUEST['challenge']) && !isset($_REQUEST['captchastring'])){
-            ?>
-            <form method='get'>
-                <input type="hidden" class="no-reset" name="page" value="tsjippy-signal">
-                <input type="hidden" class="no-reset" name="tab" value="functions">
-
-                <label>
-                    <h4>Challenge string</h4>
-                    <input type='text' name='challenge' value='<?php echo $_REQUEST['challenge'];?>' style='width:100%;' required>
-                </label>
-
-                <h4>Captcha string</h4>
-                Get the captcha from <a href='https://signalcaptchas.org/challenge/generate.html' target=_blank>here</a> then copy the link below
-                <textarea name='captchastring' style='width:100%;' required rows=10></textarea>
-
-                <br>
-
-                <button>Submit</button>
-            </form>
-
-            <?php
-            addRawHtml(ob_get_clean(), $parent);
-
-            return true;
         }
 
         $author			= '';
@@ -280,108 +278,131 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $chat	= $_GET['recipient'];
         }
 
+        $form   = TSJIPPY\addElement('form', $parent, ['method' => 'post']);
+
+        TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'timestamp', 'value' => $timeStamp]);
+
+        TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'author', 'value' => $author]);
+
+        TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'prevmessage', 'value' => $prevMessage]);
+
+        $label  = TSJIPPY\addElement('label', $form);
+
+        TSJIPPY\addElement('h4', $label, [], 'Message to be send');
+
+        /** @disregard P1013 */
+        $label->insertAdjacentText('beforeEnd', 'You can do basic formatting as listed below:');
+
+        TSJIPPY\addElement('br', $label);
+
+        ob_start();
         ?>
-        <form method='post'>
-            <input type='hidden' class='no-reset' name='timestamp' 	value='<?php echo $timeStamp;?>'>
-            <input type='hidden' class='no-reset' name='author' 		value='<?php echo $author;?>'>
-            <input type='hidden' class='no-reset' name='prevmessage' value='<?php echo $prevMessage;?>'>
-
-            <label>
-                <h4>Message to be send</h4>
-                You can do basic formatting as listed below:<br>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Example</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>BOLD</td>
-                            <td>&lt;b&gt;Some <b>bold</b> text&lt;/b&gt;</td>
-                        </tr>
-                        <tr>
-                            <td>ITALIC</td>
-                            <td>&lt;i&gt;Some <i>italic</i> text&lt;/i&gt;</td>
-                        </tr>
-                        <tr>
-                            <td>SPOILER</td>
-                            <td>&lt;spoiler&gt;Some spoiler text&lt;/spoiler&gt;</td>
-                        </tr>
-                        <tr>
-                            <td>STRIKETHROUGH</td>
-                            <td>&lt;ss&gt;Some <s>striketrhough</s> text&lt;/ss&gt;</td>
-                        </tr>
-                        <tr>
-                            <td>MONOSPACE</td>
-                            <td>&lt;tt&gt;Some <tt>monospace</tt> text&lt;/tt&gt;</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <textarea name='message' style='width: calc(100% - 50px);' required></textarea>
-                <button type='button' class='trigger' data-target='[name="message"]'>emoji</button>
-            </label>
-            <label>
-                <h4>Recipient</h4>
-                <input type='text' name='recipient' list='groups' style='width: calc(100% - 50px);' placeholder="Type a name or groupname to select" required value='<?php echo $chat;?>'>
-
-                <datalist id='groups'>
-                    <?php
-                    $users			= get_users( [
-                        'meta_query' => array(
-                            array(
-                                'key'     => 'phonenumbers',
-                                'compare' => 'EXISTS'
-                            )
-                        ),
-                        'orderby'	=> 'meta_value',
-                        'order' 	=> 'ASC'
-                    ]);
-
-                    foreach ($users as $user) {
-                        $phones	= (array)get_user_meta($user->ID, 'phonenumbers', true);
-                        foreach($phones as $phone){
-                            ?>
-                            <option value='<?php echo esc_attr($phone);?>'>
-                                <?php echo esc_html("$user->display_name ($phone)");?>
-                            </option>
-                            <?php
-                        }
-                    }
-                    
-                    if(isset($this->settings['local']) && $this->settings['local']){
-                        $signal	= getSignalInstance();
-
-                        $groups	= $signal->listGroups();
-
-                        foreach((array)$groups as $group){
-                            if(empty($group->name)){
-                                continue;
-                            }
-                            echo "<option value='$group->id'>$group->name</option>";
-                        }
-                    }else{
-                        if(empty($this->settings['groups'])){
-                            $groups	= [''];
-                        }else{
-                            $groups	= $this->settings['groups'];
-                        }
-                        foreach((array)$groups as $group){
-                            echo "<option value='$group'>$group</option>";
-                        }
-                    }
-                    ?>
-                </datalist>
-            </label>
-            <button>Send message</button>
-        </form>
-        <br>
-        <br>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>BOLD</td>
+                    <td>&lt;b&gt;Some <b>bold</b> text&lt;/b&gt;</td>
+                </tr>
+                <tr>
+                    <td>ITALIC</td>
+                    <td>&lt;i&gt;Some <i>italic</i> text&lt;/i&gt;</td>
+                </tr>
+                <tr>
+                    <td>SPOILER</td>
+                    <td>&lt;spoiler&gt;Some spoiler text&lt;/spoiler&gt;</td>
+                </tr>
+                <tr>
+                    <td>STRIKETHROUGH</td>
+                    <td>&lt;ss&gt;Some <s>striketrhough</s> text&lt;/ss&gt;</td>
+                </tr>
+                <tr>
+                    <td>MONOSPACE</td>
+                    <td>&lt;tt&gt;Some <tt>monospace</tt> text&lt;/tt&gt;</td>
+                </tr>
+            </tbody>
+        </table>
 
         <?php
 
-        addRawHtml(ob_get_clean(), $parent);
+        TSJIPPY\addRawHtml(ob_get_clean(), $label);
+
+        TSJIPPY\addElement('textarea', $label, ['name' => 'message', 'style' => 'width: calc(100% - 50px);', 'required' => 'required']);
+
+        TSJIPPY\addElement('button', $label, ['type' => 'button', 'class' => 'trigger', 'data-target' => '[name="message"]'], 'Emoji');
+
+        TSJIPPY\addElement('br', $form);
+
+        $label  = TSJIPPY\addElement('label', $form);
+
+        TSJIPPY\addElement('h4', $label, [], 'Recipient');
+
+        TSJIPPY\addElement(
+            'input', 
+            $label, 
+            [
+                'type'          => 'text', 
+                'name'          => 'recipient', 
+                'list'          => 'groups', 
+                'style'         => 'width: calc(100% - 50px);', 
+                'required'      => 'required', 
+                'placeholder'   => "Type a name or groupname to select",
+                'value'         => $chat
+            ]
+        );
+
+        $users			= get_users( [
+            'meta_query' => array(
+                array(
+                    'key'     => 'phonenumbers',
+                    'compare' => 'EXISTS'
+                )
+            ),
+            'orderby'	=> 'meta_value',
+            'order' 	=> 'ASC'
+        ]);            
+
+        $dataList   = TSJIPPY\addElement('datalist', $label, ['id' => "groups"]);
+        foreach ($users as $user) {
+            $phones	= (array)get_user_meta($user->ID, 'phonenumbers', true);
+
+            foreach($phones as $phone){
+                TSJIPPY\addElement('option', $dataList, ['value' => $phone], "{$user->display_name} ({$phone})");
+            }
+        } 
+                    
+        if(isset($this->settings['local']) && $this->settings['local']){
+            $signal	= getSignalInstance();
+
+            $groups	= $signal->listGroups();
+
+            foreach((array)$groups as $group){
+                if(empty($group->name)){
+                    continue;
+                }
+
+                TSJIPPY\addElement('option', $dataList, ['value' => $group->id], $group->name);
+            }
+        }else{
+            if(empty($this->settings['groups'])){
+                $groups	= [''];
+            }else{
+                $groups	= $this->settings['groups'];
+            }
+            foreach((array)$groups as $group){
+                TSJIPPY\addElement('option', $dataList, ['value' => $group], $group);
+            }
+        }
+
+        TSJIPPY\addElement('button', $label, [], 'Send message');  
+
+        TSJIPPY\addElement('br', $form);
+        TSJIPPY\addElement('br', $form);
 
         return true;
     }
@@ -583,6 +604,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         </label>
         <?php 
         addRawHtml(ob_get_clean(), $parent);
+
         $this->pictureSelector('avatar', 'avatar', $parent);
 
         $this->recurrenceSelector('reminder-freq', $this->settings['reminder-freq'], 'How often should people be reminded to add a signal phonenumber  to the website', $parent);
