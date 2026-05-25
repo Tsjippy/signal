@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- ony update signal-cli after 5 days
 
 ### Fixed
 - windows install
