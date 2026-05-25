@@ -714,13 +714,18 @@ class Signal{
 
             if(empty($curVersion)){
                 var_dump(shell_exec("$command 2>&1"));
-                echo "$command did not return any result<br>";
+                echo esc_html($command)." did not return any result<br>";
             }else{
-                echo "Current Signal version is <b>$curVersion</b><br>";
+                echo "Current Signal version is <b>".esc_attr($curVersion)."</b><br>";
             }
 
-            if($curVersion  != $release['tag_name']){
-                echo "<strong>Updating Signal to version ".$release['tag_name']."</strong> <br>";
+            /**
+             * Check if an update is available and at least 5 days old
+              */
+            $publishDate    = strtotime($release['published_at']);
+
+            if($curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()){
+                echo "<strong>Updating Signal to version ".esc_attr($release['tag_name'])."</strong> <br>";
 
                 $this->installSignal($release);
             }
@@ -776,8 +781,8 @@ class Signal{
 
             $tempPath   = $this->downloadSignal($url);
 
-            echo "URL: $url<br>";
-            echo "Destination: $tempPath<br>";
+            echo "URL: ".esc_url($url)."<br>";
+            echo "Destination: ".esc_attr($tempPath)."<br>";
             echo "Download finished<br>";
 
             // Unzip the gz

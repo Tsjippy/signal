@@ -52,10 +52,18 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 $signal->createDbTables();
             }
 
-            if(!$signal->checkPrerequisites()){
-                echo "<div class='error'>";
-                    echo "Signal-cli is not working properly, please check the error log for more details.<br>$signal->error";
-                echo "</div>";
+            $passed     = $signal->checkPrerequisites();
+            addRawHtml(ob_get_clean(), $parent);
+
+            ob_start();
+
+            if(!$passed){
+                ?>
+                <div class='error'>
+                    Signal-cli is not working properly, please check the error log for more details.<br>
+                    <?php echo esc_html($signal->error); ?>
+                </div>
+                <?php
             }elseif($signal->phoneNumber && $signal->getUserStatus($signal->phoneNumber)){
                 $this->connectedOptions($signal, $parent);
             }else{
