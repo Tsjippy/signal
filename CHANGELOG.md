@@ -4,13 +4,20 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.2.5] - 2026-05-25
+
+
+### Changed
 - html to domelements
 - html tp dpm elements in admin menu
 
 ### Fixed
 - no rpc on windows
-
-### Updated
 
 ## [10.2.4] - 2026-05-25
 
