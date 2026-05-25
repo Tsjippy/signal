@@ -8,6 +8,7 @@
 - html tp dpm elements in admin menu
 
 ### Fixed
+- no rpc on windows
 
 ### Updated
 
