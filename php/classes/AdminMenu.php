@@ -106,14 +106,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
-    public function data($parent=''){
-        $local	= false;
-        if(isset($this->settings['local']) && $this->settings['local']){
-            $local	= true;
-        }
-
-        if(!$local){
-            return '';
+    public function data($parent){
+        if(!isset($this->settings['local']) || !$this->settings['local']){
+            return false;
         }
 
         $amount	= 100;
@@ -131,11 +126,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $endDate	= $_REQUEST['end-date'];
         }
 
-        ob_start();
-
-        $this->messagesHeader($startDate, $endDate, $amount);
+        $this->messagesHeader($startDate, $endDate, $amount, $parent);
         
-        $this->processActions();
+        $this->processActions($parent);
 
         $tablinkWrapper = addElement('div', $parent, ['class' => 'tablink-wrapper']);
 
@@ -159,16 +152,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             addElement('button', $tablinkWrapper, $attributes, $text);
         }
 
-        $sentTable  = $this->sentMessagesTable($startDate, $endDate, $amount);
+        $sentTable  = $this->sentMessagesTable($startDate, $endDate, $amount, $parent);
 
         $hidden	= 'hidden';
         if(empty($sentTable)){
             $hidden	= '';
         }
 
-       $this->receivedMessagesTable($startDate, $endDate, $amount, $hidden);
-
-        addRawHtml(ob_get_clean(), $parent);
+        $this->receivedMessagesTable($startDate, $endDate, $amount, $parent, $hidden);
 
         return true;
     }
@@ -717,7 +708,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         <?php
     }
 
-    public function processActions(){
+    public function processActions($parent){
         /**
          * Download a backup of the configuration
          */
@@ -769,28 +760,17 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         is_string($result) && !is_numeric(str_replace('int64 ', '', $result))
                     )
                 ){
-                    echo "<div class='error'>$result</div>";
+                    TSJIPPY\addElement('div', $parent, ['class' => 'error'], $result);
                 }else{
-                    ?><div class='success'>
-                        Succesfully removed the message
-                    </div>
-                    <?php
+                    TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Succesfully removed the message');
                 }
             }else{
                 $result		= $signal->clearMessageLog($_REQUEST['delete-date']);
 
                 if($result === false){
-                    ?>
-                    <div class='error'>
-                        Something went wrong
-                    </div>
-                    <?php
+                    TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Something went wrong');
                 }else{
-                    ?>
-                    <div class='success'>
-                        Succesfully removed $result messages
-                    </div>
-                    <?php
+                    TSJIPPY\addElement('div', $parent, ['class' => 'success'], "Succesfully removed $result messages");
                 }
             }
         }elseif($_REQUEST['action'] == 'Save'){
@@ -809,11 +789,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $result	= $signal->sendReaction($_REQUEST['sender'] , $_REQUEST['timesent'], $groupId, $_REQUEST['emoji']  );
 
             if(is_numeric(str_replace('int64 ', '', $result))){
-                ?>
-                <div class='success'>Reaction sent succesfully</div>
-                <?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Reaction sent succesfully');
             }else{
-                ?><div class='error'>Reaction sent not succesfull</div><?php
+                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Reaction sent not succesfull');
             }
         }
     }
@@ -824,7 +802,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param string $endDate The end date for the message log
      * @param int $amount The number of messages to display
      */
-    public function messagesHeader($startDate, $endDate, $amount){
+    public function messagesHeader($startDate, $endDate, $amount, $parent){
         if(!isset($this->settings['clean-period'])){
             $this->settings['clean-period']	= '';
         }
@@ -832,6 +810,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $this->settings['clean-amount']	= '';
         }
 
+        ob_start();
         ?>
         <div class='flex-container'>
             <div class='flex'>
@@ -889,6 +868,40 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             </div>
         </div>
         <?php
+
+        addRawHtml(ob_get_clean(), $parent);
+    }
+
+    /**
+     * Adds the navigator for the messages tables
+     */
+    private function addNavigator($startDate, $endDate, $amount, $parent, $signal, $page){
+        if($signal->totalMessages < $amount){
+            return;
+        }
+
+        $url		= admin_url("admin.php?page=tsjippy_signal&main-tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
+        $totalPages	= ceil($signal->totalMessages / $amount);
+        
+        if($page != 1){
+            $prev	= $page - 1;
+            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url.$prev)], '< Previous');
+        }
+
+        for ($x = 1; $x <= $totalPages; $x++) {
+            $wrapEl = $parent;
+            if($page == $x){
+                $wrapEl = TSJIPPY\addElement('strong', $parent);
+            }
+
+            TSJIPPY\addElement('a', $wrapEl, ['href' => esc_url($url.$x)], " $x ");
+        }
+
+        if($page != $totalPages){
+            $next	= $page + 1;
+
+            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url.$next)], "Next >");
+        }
     }
 
     /**
@@ -898,15 +911,15 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param int $amount The number of messages to display
      * @return bool True if the table is displayed, false otherwise
      */
-    public function sentMessagesTable($startDate, $endDate, $amount){
+    public function sentMessagesTable($startDate, $endDate, $amount, $parent){
         global $wpdb;
-
+        
         $page	= 1;
         if(isset($_REQUEST['nr'])){
             $page	= $_REQUEST['nr'];
         }
 
-        $signal	= getSignalInstance();
+        $signal	    = getSignalInstance();
         $messages	= $signal->getSentMessageLog($amount, $page, strtotime($startDate), strtotime($endDate));
 
         if(empty($messages)){
@@ -929,97 +942,79 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 white-space: break-spaces;
             }
         </style>
-        <div class='send-signal-messages tabcontent <?php if(!empty($_GET['second-tab']) && $_GET['second-tab']=='received'){echo ' hidden';}?>' id='sent'>
-            <?php
 
-            if($signal->totalMessages > $amount){
-                $url		= admin_url("admin.php?page=tsjippy_signal&main-tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
-                $totalPages	= ceil($signal->totalMessages/$amount);
-                
-                if($page != 1){
-                    $prev	= $page-1;
-                    echo "<a href='$url$prev'>< Previous</a>   ";
-                }
+        <?php
 
-                for ($x = 1; $x <= $totalPages; $x++) {
-                    if($page == $x){
-                        echo "<strong>";
+        $attributes	= [
+            'class' => 'send-signal-messages tabcontent',
+            'id'    => 'sent'
+        ];
+
+        if(!empty($_GET['second-tab']) && $_GET['second-tab'] == 'received'){
+            $attributes['class']	.= ' hidden';
+        }
+
+        $div    = TSJIPPY\addElement('div', $parent, $attributes);
+
+        /**
+         * Page navigator
+         */
+        $this->addNavigator($startDate, $endDate, $amount, $div, $signal, $page);
+
+        $table      = TSJIPPY\addElement('table', $div, ['class' => 'signal-table tsjippy table']);
+        $thead      = TSJIPPY\addElement('thead', $table);
+        $tbody      = TSJIPPY\addElement('tbody', $table);
+
+        foreach(['Date', 'Time', 'Recipient', 'Message', 'Actions'] as $header){
+            TSJIPPY\addElement('th', $thead, [], $header);
+        }
+
+        foreach($messages as $message){
+            $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message->time_send/1000) );
+            $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
+            $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
+
+            $recipient	= '';
+            if($message->recipient[0] === '+'){
+                $recipient	= $wpdb->get_var("SELECT display_name FROM $wpdb->users WHERE ID in (SELECT user_id FROM `{$wpdb->prefix}usermeta` WHERE `meta_value` LIKE '%$message->recipient%')");
+            }else{
+                $signal->listGroups();
+                if(gettype($signal->groups) == 'array'){
+                    foreach($signal->groups as $group){
+                        if($group->id == $message->recipient){
+                            $recipient	= $group->name;
+                            break;
+                        }
                     }
-                    echo "   <a href='$url$x'>$x</a>   ";
-                    if($page == $x){
-                        echo "</strong>";
-                    }
-                }
-
-                if($page != $totalPages){
-                    $next	= $page + 1;
-                    echo "   <a href='$url$next'>Next ></a>";
                 }
             }
 
-            ?>
+            $tr = TSJIPPY\addElement('tr', $tbody);
+            
+            TSJIPPY\addElement('td', $tr, ['class' => 'date'], $date);
+            TSJIPPY\addElement('td', $tr, ['class' => 'time'], $time);
+            TSJIPPY\addElement('td', $tr, ['class' => 'recipient'], $recipient);
+            TSJIPPY\addElement('td', $tr, ['class' => 'message'], $message->message);
+            
+            $delete = TSJIPPY\addElement('td', $tr);
+            if($message->status == 'deleted'){
+                /**
+                 * @disregard 
+                 */
+                $delete->append("Already Deleted");
+            }else{
+                $form   = TSJIPPY\addElement('form', $delete, ['method' => 'post']);
 
-            <table class='signal-table tsjippy table'>
-                <thead>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Recipient</th>
-                    <th>Message</th>
-                    <th>Actions</th>
-                </thead>
-                <tbody>
-                    <?php
-                        foreach($messages as $message){
-                            $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message->time_send/1000) );
-                            $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
-                            $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
+                TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'time_send', 'value' => $message->time_send]);
 
-                            $recipient	= '';
-                            if($message->recipient[0] === '+'){
-                                $recipient	= $wpdb->get_var("SELECT display_name FROM $wpdb->users WHERE ID in (SELECT user_id FROM `{$wpdb->prefix}usermeta` WHERE `meta_value` LIKE '%$message->recipient%')");
-                            }else{
-                                $signal->listGroups();
-                                if(gettype($signal->groups) == 'array'){
-                                    foreach($signal->groups as $group){
-                                        if($group->id == $message->recipient){
-                                            $recipient	= $group->name;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
+                TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'id', 'value' => $message->id]);
 
-                            ?>
-                            <tr>
-                                <td class='date'><?php echo $date;?></td>
-                                <td class='time'><?php echo $time?></td>
-                                <td class='recipient'><?php echo $recipient;?></td>
-                                <td class='message'><?php echo $message->message;?></td>
-                                <td class='delete'>
-                                    <?php
-                                    if($message->status == 'deleted'){
-                                        echo "Already Deleted";
-                                    }else{
-                                        ?>
-                                        <form method='post'>
-                                            <input type="hidden" class="no-reset" name="time_send" value="<?php echo $message->time_send;?>" />
-                                            <input type="hidden" class="no-reset" name="id" value="<?php echo $message->id;?>" />
-                                            <input type="hidden" class="no-reset" name="recipients" value="<?php echo $message->recipient;?>" />
-                                            <input type='submit' name='action' value='Delete'>
-                                        </form>
-                                        <?php
-                                    }
-                                    ?>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                    ?>
-                </tbody>
-            </table>
-        </div>
+                TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'recipients', 'value' => $message->recipient]);
 
-        <?php
+                TSJIPPY\addElement('input', $form, ['type' => 'submit', 'name' => 'action', 'value' => 'Delete']);
+            }
+        }
+   
         return true;
     }
 
@@ -1031,7 +1026,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param string $hidden The CSS class for hiding the table
      * @return bool True if the table is displayed, false otherwise
      */
-    public function receivedMessagesTable($startDate, $endDate, $amount, $hidden='hidden'){
+    public function receivedMessagesTable($startDate, $endDate, $amount, $parent, $hidden='hidden'){
         global $wpdb;
 
         if(!empty($_GET['second-tab']) && $_GET['second-tab'] == 'received'){
@@ -1043,7 +1038,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $page	= $_REQUEST['nr'];
         }
 
-        $signal	= getSignalInstance();
+        $signal	    = getSignalInstance();
         $messages	= $signal->getReceivedMessageLog($amount, $page, strtotime($startDate), strtotime($endDate));
 
         if(empty($messages)){
@@ -1067,6 +1062,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 'attachments'	=> $message->attachments
             ];
         }
+
+        ob_start();
 
         ?>
         <style>
@@ -1130,162 +1127,151 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 ev.target.closest('form').submit();
             });
         </script>
-        <div class='send-signal-messages tabcontent <?php echo $hidden;?>' id='received'>
-            <?php
-
-            if($signal->totalMessages > $amount){
-                $url		= admin_url("admin.php?page=tsjippy_signal&main-tab=data&amount=$amount&start-date=$startDate&end-date=$endDate&nr=");
-                $totalPages	= ceil($signal->totalMessages/$amount);
-                
-                if($page != 1){
-                    $prev	= $page-1;
-                    echo "<a href='$url$prev'>< Previous</a>   ";
-                }
-
-                for ($x = 1; $x <= $totalPages; $x++) {
-                    if($page == $x){
-                        echo "<strong>";
-                    }
-                    echo "   <a href='$url$x'>$x</a>   ";
-                    if($page == $x){
-                        echo "</strong>";
-                    }
-                }
-
-                if($page != $totalPages){
-                    $next	= $page + 1;
-                    echo "   <a href='$url$next'>Next ></a>";
-                }
-            }
-
-            ?>
-
-            <table class='signal-table tsjippy table'>
-                <thead>
-                    <th>Chat</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Sender</th>
-                    <th>Message</th>
-                    <th>Attachments</th>
-                    <th>Actions</th>
-                </thead>
-                <tbody>
-                    <?php
-                    foreach($groupedMessages as $chat=>$group){
-                        if(empty($group)){
-                            continue;
-                        }
-
-                        if(!str_contains($chat, '+')){
-                            $chatName	= $signal->findGroupName($chat );
-                            if(empty($chatName)){
-                                $chatName	= 'Unknow group';
-                            }
-                        }else{
-                            $chatName	= $chat;
-                        }
-                        
-                        $hidden	= '';
-
-                        foreach($group as $index => $message){
-                            $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message['timesent']/1000) );
-                            $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
-                            $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
-
-                            $sender	= $wpdb->get_results(
-                                $wpdb->prepare(
-                                    "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE '%{$message['sender']}')",
-                                    $wpdb->users,
-                                    $wpdb->usermeta
-                                )
-                            );
-
-                            if(empty($sender)){
-                                $sender	= $message['sender'];
-                            }else{
-                                $sender	= $sender[0];
-                                $sender	= apply_filters('signal-admin-display-name', $sender->display_name, $sender);
-                            }
-
-                            // in case of private message replace the phonenumber in the chat for the name as well
-                            if($message['sender'] == $chat){
-                                $chatName = $sender;
-                            }
-
-                            ?>
-                            <tr class=<?php echo $hidden;?>>
-                                <?php
-                                if($index === 0){
-                                    if(count($group) > 1 ){
-                                        $rowSpan	= "data-rowspan='".count($group)."'";
-                                        $span		= "<span class='expand' style='color:#b22222;cursor: pointer;font-size: x-large;float: right;'>+</span>";
-                                    }else{
-                                        $rowSpan	= '';
-                                        $span		= '';
-                                    }
-                                    
-                                    ?>
-                                    <td class='chat' <?php echo $rowSpan;?>><?php echo $chatName.'   '.$span;?></td>
-                                    <?php
-
-                                    $hidden	= 'hidden';
-                                }
-                                ?>
-                                <td class='date'><?php echo $date;?></td>
-                                <td class='time'><?php echo $time?></td>
-                                <td class='sender'><?php echo $sender;?></td>
-                                <td class='message'><?php echo $message['message'];?></td>
-                                <td class='attachments'>
-                                    <?php
-                                    $attachments	= (array)maybe_unserialize($message['attachments']);
-                                    foreach($attachments as $attachment){
-                                        if(!file_exists($attachment)){
-                                            continue;
-                                        }
-
-                                        $url	= TSJIPPY\pathToUrl($attachment);
-                                        if(@is_array(getimagesize($attachment))){
-                                            echo "<a href='$url'><img src='$url' alt='picture' loading='lazy' style='height:150px;'></a>";
-                                        } else {
-                                            echo "<a href='$url'>".basename($attachment)."</a>";
-                                        }
-                                    }
-                                    ?>
-                                </td>
-                                <td class='reply'>
-                                    <?php
-                                    if($message['status'] == 'replied'){
-                                        echo "Already Replied";
-                                    }else{
-                                        $msg	= urlencode($message['message']);
-                                        $author	= urlencode($message['sender']);
-                                        $chat	= urlencode($chat);
-                                        ?>
-                                        <button type="button" class="trigger" data-target="[name='emoji']" data-replace=1 title='Send an emoji reaction'>emoji</button>
-                                        <form method='post' class='hidden'>
-                                            <input type="hidden" class="no-reset" name="timesent" value="<?php echo $message['timesent'];?>" />
-                                            <input type="hidden" class="no-reset" name="id" value="<?php echo $message['id'];?>" />
-                                            <input type="hidden" class="no-reset" name="sender" value="<?php echo $message['sender'];?>" />
-                                            <input type="hidden" class="no-reset" name="chat" value="<?php echo $chat;?>" />
-                                            <input type='hidden' class='no-reset' name='emoji'>
-                                            <input type='submit' name='action' value='Reply'>
-                                        </form>
-                                        <a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
-                                        <?php
-                                    }
-                                    ?>
-                                </td>
-                            </tr>
-                            <?php
-                        }
-                    }
-                    ?>
-                </tbody>
-            </table>
-        </div>
 
         <?php
+
+        $class  = "send-signal-messages tabcontent $hidden";
+
+        $div    = TSJIPPY\addElement('div', $parent, ['class' => $class, 'id' => 'received']);
+
+        /**
+         * Page navigator
+         */
+        $this->addNavigator($startDate, $endDate, $amount, $div, $signal, $page);
+
+        $table  = TSJIPPY\addElement('table', $div, ['class' => 'signal-table tsjippy table']);
+        $thead  = TSJIPPY\addElement('thead', $table);
+        $tbody  = TSJIPPY\addElement('tbody', $table);
+
+        foreach(['Chat', 'Date', 'Time', 'Recipient', 'Sender', 'Message', 'Attachments', 'Actions'] as $header){
+            TSJIPPY\addElement('th', $thead, [], $header);
+        }
+
+        foreach($groupedMessages as $chat=>$group){
+            if(empty($group)){
+                continue;
+            }
+
+            if(!str_contains($chat, '+')){
+                $chatName	= $signal->findGroupName($chat );
+                if(empty($chatName)){
+                    $chatName	= 'Unknow group';
+                }
+            }else{
+                $chatName	= $chat;
+            }
+
+            foreach($group as $index => $message){
+                $isoDate	= gmdate( 'Y-m-d H:i:s', intval($message['timesent']/1000) );
+                $date		= get_date_from_gmt( $isoDate, DATEFORMAT);
+                $time		= get_date_from_gmt( $isoDate, TIMEFORMAT);
+
+                $sender	= $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE '%{$message['sender']}')",
+                        $wpdb->users,
+                        $wpdb->usermeta
+                    )
+                );
+
+                if(empty($sender)){
+                    $sender	= $message['sender'];
+                }else{
+                    $sender	= $sender[0];
+                    $sender	= apply_filters('signal-admin-display-name', $sender->display_name, $sender);
+                }
+
+                // in case of private message replace the phonenumber in the chat for the name as well
+                if($message['sender'] == $chat){
+                    $chatName = $sender;
+                }
+
+                $attributes     = [];
+
+                if(!empty($hidden)){
+                    $attributes['class']	= 'hidden';
+                }
+
+                $tr     = TSJIPPY\addElement('tr', $tbody, $attributes);
+
+                if($index === 0){
+                    $attributes = ['class => chat'];
+
+                    if(count($group) > 1 ){
+                        $attributes['data-rowspan'] = count($group);
+                    }
+
+                    $td     = TSJIPPY\addElement('td', $tr, $attributes, $chatName);
+                    if(count($group) > 1 ){
+                        TSJIPPY\addElement('span', $td, ['class' => 'expand', 'style' => 'color:#b22222; cursor: pointer; font-size: x-large;float: right;'], "+");
+                    }
+
+                    $hidden	= 'hidden';
+                }
+
+                TSJIPPY\addElement('td', $tr, ['class' => 'date'], $date);
+                TSJIPPY\addElement('td', $tr, ['class' => 'time'], $time);
+                TSJIPPY\addElement('td', $tr, ['class' => 'sender'], $sender);
+                TSJIPPY\addElement('td', $tr, ['class' => 'message'], $message['message']);
+
+                $td = TSJIPPY\addElement('td', $tr, ['class' => 'attachments']);
+                $attachments	= (array)maybe_unserialize($message['attachments']);
+                foreach($attachments as $attachment){
+                    if(!file_exists($attachment)){
+                        continue;
+                    }
+
+                    $url	= TSJIPPY\pathToUrl($attachment);
+                    $size	= getimagesize($attachment);
+                    if($size && is_array($size)){
+                        $a  = TSJIPPY\addElement('a', $td, ['href' => $url]);
+                        TSJIPPY\addElement('img', $a, ['src' => $url, 'alt' => 'picture', 'loading' => 'lazy', 'style' => 'height:150px;']);
+
+                    } else {
+                        TSJIPPY\addElement('a', $td, ['href' => $url], basename($attachment));
+                    }
+                }
+
+                $td = TSJIPPY\addElement('td', $tr, ['class' => 'reply']);
+
+                if($message['status'] == 'replied'){
+                    /** @disregard */
+                    $td->append( "Already Replied");
+                }else{
+                    $msg	= urlencode($message['message']);
+                    $author	= urlencode($message['sender']);
+                    $chat	= urlencode($chat);
+
+                    TSJIPPY\addElement(
+                        'button',
+                        $td,
+                        [
+                            'type' => "button",
+                            'class' => "trigger",
+                            'data-target=' => "[name='emoji']",
+                            'data-replace' => 1,
+                            'title' => 'Send an emoji reaction'
+                        ],
+                        'emoji'
+                    );
+
+                    $form	= TSJIPPY\addElement('form', $td, ['method' => 'post', 'class' => 'hidden']);
+
+                    TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'timesent', 'value' => $message['timesent'] ?? '']);
+                    TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'id', 'value' => $message['id'] ?? 0]);
+                    TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'sender', 'value' => $message['sender'] ?? '']);
+                    TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'chat', 'value' => urlencode($chat)]);
+                    TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'emoji']);
+                    TSJIPPY\addElement('input', $form, ['type' => 'submit', 'name' => 'action', 'value' => 'Reply']);
+                    ?>
+
+                    <a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
+                    <?php
+                }
+            }
+        }
+
+
         return true;
     }
 }
