@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- java version check
 
 ### Updated
 
