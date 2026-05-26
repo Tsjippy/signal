@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- java version check
 
 ### Updated
+
+## [10.2.6] - 2026-05-26
+
+
+### Fixed
+- java version check
 
 ## [10.2.5] - 2026-05-25
 
