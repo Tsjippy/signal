@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- no jsonrpc on windows
 
 ### Fixed
 
