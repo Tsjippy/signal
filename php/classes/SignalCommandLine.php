@@ -38,6 +38,8 @@ class SignalCommandLine extends AbstractSignal{
             'procCwd' => dirname($this->path),
         ]);
 
+        $this->commandObject->addArg('-c', $this->configPath);
+
         if($this->os == 'Windows'){
             $this->commandObject->useExec  = true;
         }
@@ -602,7 +604,7 @@ class SignalCommandLine extends AbstractSignal{
                 TSJIPPY\printArray($this->command);
             }
             
-            $this->error    = "<div class='error'>$errorMessage</div>";
+            $this->error    = $errorMessage;
             if($returnJson){
                 return json_encode($this->error);
             }
@@ -612,6 +614,10 @@ class SignalCommandLine extends AbstractSignal{
 
         $output = $this->commandObject->getOutput();
 
+        $lines  = explode("\n", $output);
+
+        $output = end($lines);
+        
         if($returnJson && (empty($output) || json_decode($output) == $output)){
             return json_encode($output);
         }

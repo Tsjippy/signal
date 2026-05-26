@@ -991,7 +991,7 @@ class Signal{
 
         $command->execute();
 
-        $result = $command->getOutput();
+        $result             = $command->getOutput();
         if(empty($result)){
             $this->daemon   = false;
         }else{
@@ -1167,6 +1167,9 @@ class Signal{
 
         // Loop until a new cronjob has started
         while(true){
+            /**
+             * Check if we if should terminate
+             */
             $dbStartTime    = $wpdb->get_var(
                 $wpdb->prepare(
                     "SELECT option_value FROM %i WHERE `option_name`=%s",
@@ -1179,9 +1182,10 @@ class Signal{
                 break;
             }
 
-            // Reset Rate Limit if the time has passed // reload to see if it has changed
+            /**
+             * Check Rate limit
+             */
             if( $this->getRateLimited() ){
-                TSJIPPY\printArray($this->rateLimited );
                 TSJIPPY\printArray("Rate Limited till $this->rateLimitString");
 
                 // We are past the rate limit, reset it
@@ -1244,8 +1248,6 @@ class Signal{
                 
                 // Remove from the queue as none is waiting for the result or to much time has passed since adding it
                 if( !$command->waiting || time() - $command->time_added > 25){
-                    TSJIPPY\printArray($result);
-
                     $this->removeFromQueue($command->id);
                     
                     sleep(20);

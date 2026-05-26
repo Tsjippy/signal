@@ -35,6 +35,10 @@ class SignalJsonRpc extends AbstractSignal{
 
     public function __construct($shouldCloseSocket=true, $getResult=true){
         parent::__construct();
+        
+        if($this->os == 'Windows'){
+            return;
+        }
 
         $this->getResult            = $getResult;
         $this->groups               = [];
@@ -59,26 +63,23 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Windows not supported for now
         try {
-            if($this->os != 'Windows'){
+            $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
+            
+            if($errno == 111){
+                // remove the old socket file
+                unlink($this->socketPath);
 
+                // try again
                 $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
-                
-                if($errno == 111){
-                    // remove the old socket file
-                    unlink($this->socketPath);
+            }
 
-                    // try again
-                    $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
-                }
+            if($errno == 2){
+                echo "Could not start, is the signal-cli jsonrpc daemon running?";
 
-                if($errno == 2){
-                    echo "Could not start, is the signal-cli jsonrpc daemon running?";
+            }elseif(!$this->socket){
+                echo "Unable to create socket on $this->socketPath";
 
-                }elseif(!$this->socket){
-                    echo "Unable to create socket on $this->socketPath";
-
-                    //TSJIPPY\printArray("$errno: $this->error");
-                }
+                //TSJIPPY\printArray("$errno: $this->error");
             }
         } catch (\ErrorException $e) {
             echo "Socket Connection Failed: " . $e->getMessage();
@@ -377,53 +378,52 @@ class SignalJsonRpc extends AbstractSignal{
             return;
         }
 
-        $errorMessage  = $json->error->message;
+        $this->error    = $json->error->message;
 
         // unregistered number or user
-        if(
-            isset($json->error->data->response->results[0]->type) && 
-            $json->error->data->response->results[0]->type == 'UNREGISTERED_FAILURE'
-        ){
+        if( $json->error->data->response->results[0]->type ?? '' == 'UNREGISTERED_FAILURE'){
             $this->invalidNumber = true;
 
             // Remove the indicator that the invalid number is an valid number
             if(isset($json->error->data->response->results[0]->recipientAddress->number)){
+                $number = $json->error->data->response->results[0]->recipientAddress->number;
                 //TSJIPPY\printArray("Deleting Signal number: ".$json->error->data->response->results[0]->recipientAddress->number);
                 //TSJIPPY\printArray($json);
 
                 // delete the signal meta key
                 $users = get_users(array(
                     'meta_key'     => 'signal_number',
-                    'meta_value'   => $json->error->data->response->results[0]->recipientAddress->number,
+                    'meta_value'   => $number,
                     'meta_compare' => '=',
                 ));
         
                 foreach($users as $user){
                     delete_user_meta($user->ID, 'signal_number');
 
-                    TSJIPPY\printArray("Deleting Signal number {$json->error->data->response->results[0]->recipientAddress->number} for $user->display_name with id $user->ID as it is not valid anymore");
+                    TSJIPPY\printArray("Deleting Signal number $number for $user->display_name with id $user->ID as it is not valid anymore");
                 }
             }else{
                 TSJIPPY\printArray($json->error->data->response->results);
             }
+
+            $this->error    = "Invalid number $number";
         }
 
         // The connected number is not registered on the Signal Servers
-        elseif(str_contains($errorMessage, 'Specified account does not exist')){
+        elseif(str_contains($this->error , 'Specified account does not exist')){
             $this->invalidNumber = true;
 
             TSJIPPY\printArray("The connected number is not registered on the Signal Servers, please register the number first");
         }
 
         // Captcha required
-        elseif(str_contains($errorMessage, 'CAPTCHA proof required')){
-
-            $this->sendCaptchaInstructions($errorMessage);
+        elseif(str_contains($this->error, 'CAPTCHA proof required')){
+            $this->sendCaptchaInstructions($this->error);
         }
         
         // Rate Limit
         elseif(
-            str_contains($errorMessage, '429 Too Many Requests') || 
+            str_contains($this->error, '429 Too Many Requests') || 
             (
                 !empty($json->error->data->response->results[0]->type)  &&
                 $json->error->data->response->results[0]->type == 'RATE_LIMIT_FAILURE'
@@ -437,7 +437,7 @@ class SignalJsonRpc extends AbstractSignal{
 
             $matches            = [];
             $rateLimitedTill    = 0;
-            preg_match('/\d{10,}/', $errorMessage, $matches);
+            preg_match('/\d{10,}/', $this->error, $matches);
             if(!empty($matches[0])){
                 $rateLimitedTill    = intval($matches[0]);
                 $token              = $json->error->data->response->results[0]->token;
@@ -459,25 +459,23 @@ class SignalJsonRpc extends AbstractSignal{
         }
         
         // Group ID
-        elseif(str_contains($errorMessage, 'Invalid group id')){
-            TSJIPPY\printArray($errorMessage);
+        elseif(str_contains($this->error, 'Invalid group id')){
+            TSJIPPY\printArray($this->error);
         }
         
         // Timed Out
-        elseif(str_contains($errorMessage, 'Did not receive a reply.')){
-            TSJIPPY\printArray($errorMessage); 
+        elseif(str_contains($this->error, 'Did not receive a reply.')){
+            TSJIPPY\printArray($this->error); 
         }
         
         // Unknown
         else{
-            TSJIPPY\printArray("Got error '$errorMessage' while running the '$method' command.");
+            TSJIPPY\printArray("Got error '$this->error' while running the '$method' command.");
             TSJIPPY\printArray($params);   
             TSJIPPY\printArray($json);            
-            TSJIPPY\printArray($errorMessage);
+            TSJIPPY\printArray($this->error);
             TSJIPPY\printArray($this);
         }
-        
-        $this->error    = $errorMessage;
     }
 
     /**
