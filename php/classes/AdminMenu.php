@@ -192,7 +192,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $form   = TSJIPPY\addElement('form', $parent, ['method' => 'get']);
 
             TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "page", 'value' => "tsjippy-signal"]);
-            TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "tab", 'value' => "functions"]);
+            TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "main-tab", 'value' => "functions"]);
 
             $label  = TSJIPPY\addElement('label', $form);
             TSJIPPY\addElement('h4', $label, [], 'Challenge string');
@@ -547,7 +547,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return ob_get_clean();
     }
 
-     /**
+    /**
      * Shows the options when connected to Signal
      *
      * @param	object	        $signal		The signal object
@@ -1130,9 +1130,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         <?php
 
-        $class  = "send-signal-messages tabcontent $hidden";
-
-        $div    = TSJIPPY\addElement('div', $parent, ['class' => $class, 'id' => 'received']);
+        $div    = TSJIPPY\addElement('div', $parent, ['class' => "send-signal-messages tabcontent $hidden", 'id' => 'received']);
 
         /**
          * Page navigator
@@ -1145,6 +1143,10 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         foreach(['Chat', 'Date', 'Time', 'Recipient', 'Sender', 'Message', 'Attachments', 'Actions'] as $header){
             TSJIPPY\addElement('th', $thead, [], $header);
+        }
+
+        if(empty($groupedMessages)){
+            TSJIPPY\addElement('p', $tbody, [], 'No messages found.');
         }
 
         foreach($groupedMessages as $chat=>$group){
@@ -1195,7 +1197,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 $tr     = TSJIPPY\addElement('tr', $tbody, $attributes);
 
                 if($index === 0){
-                    $attributes = ['class => chat'];
+                    $attributes = ['class' => 'chat'];
 
                     if(count($group) > 1 ){
                         $attributes['data-rowspan'] = count($group);
@@ -1246,11 +1248,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         'button',
                         $td,
                         [
-                            'type' => "button",
-                            'class' => "trigger",
-                            'data-target=' => "[name='emoji']",
-                            'data-replace' => 1,
-                            'title' => 'Send an emoji reaction'
+                            'type'          => "button",
+                            'class'         => "trigger",
+                            'data-target'   => "[name='emoji']",
+                            'data-replace'  => 1,
+                            'title'         => 'Send an emoji reaction'
                         ],
                         'emoji'
                     );
@@ -1263,10 +1265,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'chat', 'value' => urlencode($chat)]);
                     TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'emoji']);
                     TSJIPPY\addElement('input', $form, ['type' => 'submit', 'name' => 'action', 'value' => 'Reply']);
-                    ?>
 
-                    <a class='button small' href='<?php echo admin_url( "admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" );?>'>Reply</a>
-                    <?php
+                    TSJIPPY\addElement('a', $td, ['href' => admin_url( "admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author" ), 'class' => 'button small'], 'Reply');
                 }
             }
         }

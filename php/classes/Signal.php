@@ -657,7 +657,7 @@ class Signal{
          */
         $curVersion     = shell_exec('javac -version');
 
-        if(!empty($result)){
+        if(!empty($curVersion)){
             $curVersion = str_replace('javac ', '', $curVersion);
         }
 
@@ -687,7 +687,7 @@ class Signal{
         }
 
         if(version_compare('25.0.0.0', $curVersion) === 1){
-            $this->error    .= "Please install Java JDK, at least version 25";
+            $this->error    .= "Please install Java JDK, at least version 25. Current version is $curVersion";
             $this->valid    = false;
         }
 
