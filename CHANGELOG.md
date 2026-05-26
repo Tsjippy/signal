@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- no jsonrpc on windows
 
 ### Fixed
 
 ### Updated
+
+## [10.2.8] - 2026-05-26
+
+
+### Changed
+- no jsonrpc on windows
 
 ## [10.2.7] - 2026-05-26
 
