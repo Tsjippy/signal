@@ -59,13 +59,17 @@ function checkSignalNumbers(){
             delete_user_meta( $user->ID, 'signal_number');
 
             // loop over all phonenumbers to find the one connected with signal
-            foreach(get_user_meta( $user->ID, 'phonenumbers', true ) as $phonenumber){
-                // store if registered
-                if($signal->getUserStatus($phonenumber)){
-                    update_user_meta( $user->ID, 'signal_number', $phonenumber );
+            $phoneNumbers   = get_user_meta( $user->ID, 'phonenumbers', true );
 
-                    // go to the next user
-                    continue 2;
+            if(!empty($phoneNumbers)){
+                foreach($phoneNumbers as $phonenumber){
+                    // store if registered
+                    if($signal->getUserStatus($phonenumber)){
+                        update_user_meta( $user->ID, 'signal_number', $phonenumber );
+
+                        // go to the next user
+                        continue 2;
+                    }
                 }
             }
         }

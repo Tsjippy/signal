@@ -699,6 +699,8 @@ class SignalJsonRpc extends AbstractSignal{
 
         if(is_array($result) && count($result) == 1){
             return $result[0]->isRegistered;
+        }elseif($result == true){
+            return $result;
         }else{
             TSJIPPY\printArray($result);
         }
