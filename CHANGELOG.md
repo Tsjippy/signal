@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- phonenumber bug
 
 ### Updated
+
+## [10.2.7] - 2026-05-26
+
+
+### Fixed
+- phonenumber bug
 
 ## [10.2.6] - 2026-05-26
 
