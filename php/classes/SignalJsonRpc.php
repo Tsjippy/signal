@@ -152,8 +152,14 @@ class SignalJsonRpc extends AbstractSignal{
 
             if(!is_object($response) || empty($response->result)){
                 if(!$this->invalidNumber){
-                    TSJIPPY\printArray("Got faulty result");
-                    TSJIPPY\printArray($response);
+                    TSJIPPY\printArray(
+                        [
+                            'message'   => "Got faulty result", 
+                            'method'    => $method,
+                            'params'    => $params,
+                            'response'  => $response
+                        ]
+                    );
                 }
 
                 return false;
@@ -364,8 +370,13 @@ class SignalJsonRpc extends AbstractSignal{
         $this->error    = "";
 
         if(!$json){
-            TSJIPPY\printArray("Getting response for command $method timed out");
-            TSJIPPY\printArray($params);
+            TSJIPPY\printArray(
+                [
+                    'message'   => "Getting response for command $method timed out",
+                    'method'    => $method,
+                    'params'    => $params
+                ]
+            );
 
             $signalResults              = get_option('tsjippy-signal-results', []);
             if(isset($signalResults[$id])){
@@ -381,7 +392,7 @@ class SignalJsonRpc extends AbstractSignal{
         $this->error    = $json->error->message;
 
         // unregistered number or user
-        if( $json->error->data->response->results[0]->type ?? '' == 'UNREGISTERED_FAILURE'){
+        if( ($json->error->data->response->results[0]->type ?? '') == 'UNREGISTERED_FAILURE'){
             $this->invalidNumber = true;
 
             // Remove the indicator that the invalid number is an valid number
@@ -425,6 +436,10 @@ class SignalJsonRpc extends AbstractSignal{
         elseif(
             str_contains($this->error, '429 Too Many Requests') || 
             (
+                !empty($json->error)  &&
+                !empty($json->error->data)  &&
+                !empty($json->error->data->response)  &&
+                !empty($json->error->data->response->results)  &&
                 !empty($json->error->data->response->results[0]->type)  &&
                 $json->error->data->response->results[0]->type == 'RATE_LIMIT_FAILURE'
             ) ||
@@ -470,11 +485,14 @@ class SignalJsonRpc extends AbstractSignal{
         
         // Unknown
         else{
-            TSJIPPY\printArray("Got error '$this->error' while running the '$method' command.");
-            TSJIPPY\printArray($params);   
-            TSJIPPY\printArray($json);            
-            TSJIPPY\printArray($this->error);
-            TSJIPPY\printArray($this);
+            TSJIPPY\printArray(
+                [
+                    'message'   => "Got error '$this->error' while running the '$method' command.",
+                    'method'    => $method,
+                    'params'    => $params,
+                    'json'      => $json
+                ]
+            );
         }
     }
 
