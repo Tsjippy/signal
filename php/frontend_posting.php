@@ -37,7 +37,7 @@ function afterContent($frontendContend){
 
         <div class='signal-message-type <?php echo $hidden;?>' style='margin-top:15px;'>                
 	        <?php
-            if(!empty($signalGroups)){
+            if(!empty($signalGroups) && is_array($signalGroups)){
                 ?>
                 <label>
                     Target Signal Groups<br>
