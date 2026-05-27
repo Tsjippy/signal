@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- empty groups bug
 
 ### Updated
+
+## [10.2.9] - 2026-05-27
+
+
+### Fixed
+- empty groups bug
 
 ## [10.2.8] - 2026-05-26
 
