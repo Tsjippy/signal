@@ -26,5 +26,5 @@ function loadAdminAssets($hook) {
 		return;
 	}
 
-	wp_enqueue_script('tsjippy_signal_admin', TSJIPPY\pathToUrl(PLUGINPATH.'js/admin.min.js'), array() ,PLUGINVERSION, true);
+	wp_enqueue_script('tsjippy_signal_admin', TSJIPPY\pathToUrl(PLUGINPATH.'js/admin.min.js'), array('tsjippy_script') ,PLUGINVERSION, true);
 }
