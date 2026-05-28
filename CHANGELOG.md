@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- empty main-tab param bug
 
 ### Updated
 
