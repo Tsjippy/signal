@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- do not wait on signal mail
 
 ### Updated
+
+## [10.3.2] - 2026-05-28
+
+
+### Fixed
+- do not wait on signal mail
 
 ## [10.3.1] - 2026-05-28
 
