@@ -554,7 +554,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param   \DOMElement|null $parent     Parent node element
      */
     public function connectedOptions($signal, $parent){
-        $url		= admin_url( "admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}" );
+        $tab        = '';
+        if(!empty($_GET['main-tab'])){
+            $tab    = "&main-tab={$_GET['main-tab']}";
+        }
+        $url		= admin_url( "admin.php?page={$_GET['page']}$tab" );
 
         if(isset($_GET['force'])){
             $signalGroups	= $signal->listGroups(false, false, true);
