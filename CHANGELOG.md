@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- do not wait on signal mail
 
 ### Updated
 
