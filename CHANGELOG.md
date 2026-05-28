@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- js dependency
 
 ### Changed
 
 ### Fixed
-- empty main-tab param bug
 
 ### Updated
+
+## [10.3.1] - 2026-05-28
+
+
+### Added
+- js dependency
+
+### Fixed
+- empty main-tab param bug
 
 ## [10.3.0] - 2026-05-28
 
