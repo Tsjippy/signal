@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- global var rename
 
 ### Fixed
 
