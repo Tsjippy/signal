@@ -139,7 +139,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         $tab      = 'sent';
         if(isset($_GET['second-tab'])){
-            $tab  = sanitize_key($_GET['second-tab']);
+            $tab  = sanitize_key( wp_unslash( $_GET['second-tab']));
         }
 
         foreach($buttons as $id => $text){
@@ -197,7 +197,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $label  = TSJIPPY\addElement('label', $form);
             TSJIPPY\addElement('h4', $label, [], 'Challenge string');
 
-            TSJIPPY\addElement('input', $label, ['type' => "text", 'name' => "challenge", 'value' => sanitize_text_field($_REQUEST['challenge']), 'style' => "width:100%", 'required' => "required"]);
+            TSJIPPY\addElement('input', $label, ['type' => "text", 'name' => "challenge", 'value' => sanitize_text_field( wp_unslash( $_REQUEST['challenge'])), 'style' => "width:100%", 'required' => "required"]);
 
             $label  = TSJIPPY\addElement('label', $form, [], 'Get the captcha from ');
             TSJIPPY\addElement('h4', $label, [], 'Captcha string', 'afterBegin');
@@ -416,7 +416,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             $message	= '';
 
             if(isset($_POST['display-name'])){
-                $displayName	= sanitize_text_field($_POST['display-name']);
+                $displayName	= sanitize_text_field( wp_unslash( $_POST['display-name']));
 
                 if($displayName != $this->settings['display-name']){
                     $result	= $signal->updateProfile($displayName);
@@ -432,7 +432,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
 
             if(isset($_POST['picture-ids']['avatar'])){
-                $avatarAttachmentId	= sanitize_text_field($_POST['picture-ids']['avatar']);
+                $avatarAttachmentId	= sanitize_text_field( wp_unslash( $_POST['picture-ids']['avatar']));
 
                 if($avatarAttachmentId != $this->settings['picture-ids']['avatar']){
                     if(empty($avatarAttachmentId)){
