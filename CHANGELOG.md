@@ -5,6 +5,7 @@
 
 ### Changed
 - global var rename
+- do not store get_plugin_data in global variable
 
 ### Fixed
 
