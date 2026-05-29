@@ -1,4 +1,4 @@
-<?php
+$tsjippySignal<?php
 
 /**
  * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
@@ -25,11 +25,11 @@ set_time_limit(0);
 
 include_once __DIR__.'/../php/classes/SignalJsonRpc.php';
 
-$signal = new SIGNAL\SignalJsonRpc(false, true);
+$tsjippySignal = new SIGNAL\SignalJsonRpc(false, true);
 
-if(!$signal->socket){
-   print("Invalid socket: $signal->error\n");
-   TSJIPPY\printArray("Invalid socket: $signal->error\n", true);
+if(!$tsjippySignal->socket){
+   print("Invalid socket: $tsjippySignal->error\n");
+   TSJIPPY\printArray("Invalid socket: $tsjippySignal->error\n", true);
    return;
 }
 
@@ -38,8 +38,8 @@ while(1){
 
     $x      = 0;
     $base   = '{"jsonrpc":';
-    while (!feof($signal->socket)) {
-        $response       .= fgets($signal->socket, 4096);
+    while (!feof($tsjippySignal->socket)) {
+        $response       .= fgets($tsjippySignal->socket, 4096);
 
         // somehow we are reading the second one already
         if(substr_count($response, $base) > 1){
@@ -61,7 +61,7 @@ while(1){
             break;
         }
 
-        $streamMetaData  = stream_get_meta_data($signal->socket);
+        $streamMetaData  = stream_get_meta_data($tsjippySignal->socket);
 
         if($streamMetaData['unread_bytes'] <= 0){
             $x++;
@@ -120,11 +120,11 @@ while(1){
         processMessage($json->params);
     }elseif(isset($json->result)){
         TSJIPPY\printArray($json);
-        $signalResults              = get_option('tsjippy-signal-results', []);
+        $tsjippySignalResults              = get_option('tsjippy-signal-results', []);
 
-        $signalResults[$json->id]   = $json;
+        $tsjippySignalResults[$json->id]   = $json;
 
-        update_option('tsjippy-signal-results', $signalResults);
+        update_option('tsjippy-signal-results', $tsjippySignalResults);
     }
 }
 
@@ -135,7 +135,7 @@ TSJIPPY\printArray("The end", true);
  * @param   object  $data   The data of the incoming message
  */
 function processMessage($data){
-    global $signal;
+    global $tsjippySignal;
 
     //TSJIPPY\printArray($data, true);
 
@@ -144,7 +144,7 @@ function processMessage($data){
         return;
     }
 
-    if($data->account != $signal->phoneNumber){
+    if($data->account != $tsjippySignal->phoneNumber){
         TSJIPPY\printArray($data);
         return;
     }
@@ -159,7 +159,7 @@ function processMessage($data){
             TSJIPPY\printArray($attachment);
             $path       = "/home/.local/share/signal-cli/attachments/{$attachment->id}";
 
-            $newPath    = "$signal->attachmentsPath/{$attachment->filename}";
+            $newPath    = "$tsjippySignal->attachmentsPath/{$attachment->filename}";
 
             // move the attachment
             $result = rename($path, $newPath);
@@ -178,10 +178,10 @@ function processMessage($data){
         // we are mentioned
         if( isset($data->envelope->dataMessage->mentions)){
             foreach($data->envelope->dataMessage->mentions as $mention){
-                if($mention->number == $signal->phoneNumber){
-                    $signal->sendReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
+                if($mention->number == $tsjippySignal->phoneNumber){
+                    $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
 
-                    $signal->sentTyping($data->envelope->source, '', $groupId);
+                    $tsjippySignal->sentTyping($data->envelope->source, '', $groupId);
 
                     // Remove mention from message
                     $message    = mb_convert_encoding($message, 'UTF-8', 'UTF-8');
@@ -190,22 +190,22 @@ function processMessage($data){
                     $message    = substr($message, 3);
                     $answer     = getAnswer(trim($message, " \t\n\r\0\x0B?"), $data->envelope->source);
 
-                    $signal->send($groupId, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
+                    $tsjippySignal->send($groupId, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
                 }
             }
         }
     }elseif(!isset($data->envelope->dataMessage->groupInfo)){
-        $signal->sendReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
+        $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
 
-        $signal->sentTyping($data->envelope->source, $data->envelope->timestamp);
+        $tsjippySignal->sentTyping($data->envelope->source, $data->envelope->timestamp);
 
         $answer = getAnswer($message, $data->envelope->source);
 
-        $signal->send($data->envelope->source, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
+        $tsjippySignal->send($data->envelope->source, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
     }
 
     // add message to the received table
-    $signal->addToReceivedMessageLog($data->envelope->source, $message, $data->envelope->timestamp, $groupId, $attachments);
+    $tsjippySignal->addToReceivedMessageLog($data->envelope->source, $message, $data->envelope->timestamp, $groupId, $attachments);
 }
 
 /**
@@ -216,7 +216,7 @@ function processMessage($data){
  * @return  array               The answer for the given message and source, with keys 'message' and 'pictures'
  */
 function getAnswer($message, $source){
-    global $signal;
+    global $tsjippySignal;
 
     $lowerMessage = strtolower($message);
 
@@ -291,7 +291,7 @@ function getAnswer($message, $source){
         $response['message'] = 'I have no clue, do you know?';
     }
 
-    $response   = apply_filters('tsjippy-signal-daemon-response', $response, $message, $source, $users, $name, $signal);
+    $response   = apply_filters('tsjippy-signal-daemon-response', $response, $message, $source, $users, $name, $tsjippySignal);
 
     return $response;
 }
@@ -308,7 +308,7 @@ function addAiResponse( $message, $phoneNumber){
     TSJIPPY\printArray($message);
     TSJIPPY\printArray($phoneNumber);
 
-    global $signal;
+    global $tsjippySignal;
 
     $connectors = [];
     foreach(wp_get_connectors() as $name => $connector){
@@ -323,9 +323,9 @@ function addAiResponse( $message, $phoneNumber){
 
     try {
         // Get message history of last hour
-        $received   = $signal->getReceivedMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
+        $received   = $tsjippySignal->getReceivedMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
 
-        $sent       = $signal->getSentMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
+        $sent       = $tsjippySignal->getSentMessageLog(100, 1, time() - MINUTE_IN_SECONDS*100000, '', $phoneNumber);
 
         $messages   = array_merge($received, $sent);
 
