@@ -4,12 +4,17 @@
 ### Added
 
 ### Changed
-- global var rename
-- do not store get_plugin_data in global variable
 
 ### Fixed
 
 ### Updated
+
+## [10.3.5] - 2026-05-30
+
+
+### Changed
+- global var rename
+- do not store get_plugin_data in global variable
 
 ## [10.3.4] - 2026-05-29
 
