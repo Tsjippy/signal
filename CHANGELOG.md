@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- skip signal-cli version 0.14.4.1
 
 ### Changed
 - js update
