@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- merged hooks.md into readme.md
 
 ### Fixed
 
