@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- skip signal-cli version 0.14.4.1
 
 ### Changed
-- js update
 
 ### Fixed
 
 ### Updated
+
+## [10.3.6] - 2026-06-01
+
+
+### Added
+- skip signal-cli version 0.14.4.1
+
+### Changed
+- js update
 
 ## [10.3.5] - 2026-05-30
 
