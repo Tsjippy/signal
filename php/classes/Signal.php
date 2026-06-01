@@ -40,8 +40,6 @@ class Signal{
     public function __construct(){
         global $wpdb;
 
-        require_once( PLUGINPATH  . 'lib/vendor/autoload.php');
-
         /**
          * Folder containing the signal-cli executable and its data
          */
