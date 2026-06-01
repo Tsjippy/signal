@@ -724,8 +724,13 @@ class Signal{
               */
             $publishDate    = strtotime($release['published_at']);
 
-            if($curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()){
-                echo "<strong>Updating Signal to version ".esc_attr($release['tag_name'])."</strong> <br>";
+            if($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()){
+                ?>
+                <strong>
+                    Updating Signal to version "<?php echo esc_attr($release['tag_name']);?>
+                </strong>
+                <br>
+                <?php
 
                 $this->installSignal($release);
             }
