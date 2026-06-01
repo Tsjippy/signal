@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- processing command queue sleep based on pending amount
 
 ### Changed
 - merged hooks.md into readme.md
