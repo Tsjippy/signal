@@ -45,7 +45,7 @@ trait SendEmailBySignal{
             $message    = str_replace($match, $matches[2][$index].': '.str_replace('https://', '', $matches[1][$index]), $message);
         }
 
-        $message        = html_entity_decode(strip_tags(str_replace(['<br>', '</br>', '<br />', '</p>'], "\n", $message)));
+        $message        = html_entity_decode(wp_strip_all_tags(str_replace(['<br>', '</br>', '<br />', '</p>'], "\n", $message)));
 
         //Send Signal message
         foreach($numbers as $number){

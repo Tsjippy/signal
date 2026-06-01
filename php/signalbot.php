@@ -39,7 +39,7 @@ function sendPostNotification($post){
 		$excerpt	= wp_trim_words($excerpt, 20);
 		
 		//Only add read more if the excerpt is not the whole content
-		if($excerpt != strip_tags($post->post_content)){
+		if($excerpt != wp_strip_all_tags($post->post_content)){
 			$excerpt .=	"...\n\nRead more on:\n".get_permalink($post->ID);
 		}elseif(!empty($signalUrl)){
 			$excerpt .=	"...\n\nView it on the web:\n".get_permalink($post->ID);
@@ -48,7 +48,7 @@ function sendPostNotification($post){
 
 	$excerpt = html_entity_decode($excerpt);
 	
-	$excerpt = strip_tags(str_replace('<br>',"\n",$excerpt));
+	$excerpt = wp_strip_all_tags(str_replace('<br>',"\n",$excerpt));
 
 	$excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
 	
