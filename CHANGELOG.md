@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- loading libraries is now done in shared-functionality plugin
 
 ### Fixed
 
