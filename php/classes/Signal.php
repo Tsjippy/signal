@@ -1098,6 +1098,21 @@ class Signal{
     }
 
     /**
+     * Check the queue count
+     */
+    private function getQueueSize(){
+        global $wpdb;
+
+        // Get the oldest 1 entry without result
+        $result    = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM %i WHERE result IS NULL;",
+            $this->queueTableName
+        ) );
+        
+        return $result;
+    }
+
+    /**
      * Removes a message from the queue
      *
      * @param   int     $id The id of the message to remove
@@ -1168,6 +1183,8 @@ class Signal{
         $startTime = time();
         update_option('tsjippy-signal-processing-queue', $startTime);
 
+        $queueSize  = 0;
+
         // Loop until a new cronjob has started
         while(true){
             /**
@@ -1215,7 +1232,20 @@ class Signal{
                 continue;
             }
 
-            //TSJIPPY\printArray($command);
+            /**
+             * Check the remaining items in the queue
+             */
+            // No need to query the db again if we already know that there are multiple commands awaiting execution
+            if($queueSize > 3){
+                $queueSize--;
+            }else{
+                $queueSize  = $this->getQueueSize();
+                if($queueSize < 3){
+                    $sleepTime  = 2;
+                }else{
+                    $sleepTime  = 30;
+                }
+            }
 
             if(method_exists($this, $command->method)){
                 if($command->method == 'send' && isset($command->params['groupId'])){
@@ -1253,14 +1283,14 @@ class Signal{
                 if( !$command->waiting || time() - $command->time_added > 25){
                     $this->removeFromQueue($command->id);
                     
-                    sleep(20);
+                    sleep($sleepTime);
                     continue;
                 }
             }
 
             $this->updateQueueResult($command, $result);
             
-            sleep(20);
+            sleep($sleepTime);
         }
 
         $this->processingQueue     = false;

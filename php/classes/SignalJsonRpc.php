@@ -776,6 +776,12 @@ class SignalJsonRpc extends AbstractSignal{
             }
 
             foreach($attachments as $index => $attachment){
+                if (empty($image)) {
+                    unset($attachments[$index]);
+
+                    continue;
+                }
+
                 // Check if the attachment is a file
                 if(!file_exists($attachment)){
                     TSJIPPY\printArray($attachment);
@@ -825,9 +831,6 @@ class SignalJsonRpc extends AbstractSignal{
         $result = $this->addToCommandQueue('send', $params);
 
         if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
-                TSJIPPY\printArray($result);
-            }
             return true;
         }
 
@@ -864,14 +867,26 @@ class SignalJsonRpc extends AbstractSignal{
         
         $result = $this->addToCommandQueue('sendReceipt', $params);
 
-        if(!$result || is_wp_error($result)){
+        if(
+            !$result ||                                         // No result at all, assume succes
+            is_wp_error($result) ||                             // it is an error
+            (
+                is_object($result) &&
+                ($result->results[0]->type ?? '') == 'SUCCESS'  // Command succesfull
+            )
+        ){
             if(is_wp_error($result)){
                 TSJIPPY\printArray($result);
             }
+
             return true;
         }
 
-        TSJIPPY\printArray($result);
+        TSJIPPY\printArray(
+            [
+                'sendReceipt result' => $result
+            ]
+        );
         
         return $result;
     }

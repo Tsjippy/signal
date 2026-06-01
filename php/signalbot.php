@@ -52,7 +52,7 @@ function sendPostNotification($post){
 
 	$excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
 	
-	if($_POST['update']){
+	if($_POST['update'] ?? false){
 		$message 	= "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
 	}else{
 		$author		= get_userdata($post->post_author)->display_name;
