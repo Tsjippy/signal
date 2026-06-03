@@ -483,7 +483,7 @@ class Signal{
         ];
 
         // Strip unwanted html
-        $message    = wp_strip_all_tags($message, [...array_keys($replaceTags), '<b>', '</b>']);
+        $message    = strip_tags($message, [...array_keys($replaceTags), '<b>', '</b>']);
 
         // replace html tags with signal styling
         $message	= str_replace(
