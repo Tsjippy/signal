@@ -5,6 +5,7 @@
 - echo escaping
 
 ### Changed
+- addSaveButton with echo param
 
 ### Fixed
 
