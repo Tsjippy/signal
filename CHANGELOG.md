@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.3.9] - 2026-06-03
+
+
+### Added
 - echo escaping
 
 ### Changed
@@ -9,8 +20,6 @@
 
 ### Fixed
 - do not use wp_strip_all_tags
-
-### Updated
 
 ## [10.3.8] - 2026-06-01
 
