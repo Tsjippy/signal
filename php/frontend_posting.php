@@ -35,7 +35,7 @@ function afterContent($frontendContend){
             Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish';?>
         </label>
 
-        <div class='signal-message-type <?php echo $hidden;?>' style='margin-top:15px;'>                
+        <div class='signal-message-type <?php echo esc_attr($hidden);?>' style='margin-top:15px;'>                
 	        <?php
             if(!empty($signalGroups) && is_array($signalGroups)){
                 ?>
@@ -55,8 +55,8 @@ function afterContent($frontendContend){
                             }
                             ?>
                             <label>
-                                <input type='checkbox' name='signal-groups[]' value='<?php echo $group->id;?>' <?php echo $checked;?>>
-                                <?php echo $group->name;?>
+                                <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id);?>' <?php echo $checked;?>>
+                                <?php echo esc_attr($group->name);?>
                             </label>
                             <?php
                         }
@@ -74,7 +74,7 @@ function afterContent($frontendContend){
                                     $selected = 'selected';
                                 }
                                 ?>
-                                <option value='<?php echo $group->id;?>' <?php echo $selected;?>><?php echo $group->name;?></option>
+                                <option value='<?php echo esc_attr($group->id);?>' <?php echo $selected;?>><?php echo esc_attr($group->name);?></option>
                                 <?php
                             }
                             ?>

@@ -572,7 +572,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             if(str_contains($signal->error, 'Specified account does not exist')){
                 ?>
                 <div class='warning'>
-                    <?php echo $signal->phoneNumber;?> is connected to on this machine but not registered on the Signal Servers, please register the number again<br>
+                    <?php echo esc_attr($signal->phoneNumber);?> is connected to on this machine but not registered on the Signal Servers, please register the number again<br>
                 </div>
 
                 <?php
@@ -585,8 +585,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         ?>
         <h4>Connection details</h4>
         <p>
-            Currently connected to <?php echo $signal->phoneNumber; ?>
-            <a href='<?php echo $url;?>&unregister=true' class='button'>Unregister</a><br>
+            Currently connected to <?php echo esc_attr($signal->phoneNumber); ?>
+            <a href='<?php echo esc_url($url);?>&unregister=true' class='button'>Unregister</a><br>
         </p>
 
         <label>
@@ -659,9 +659,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         <p>
             Currently not connected to Signal
             <br>
-            <a href='<?php echo $url;?>&register=true' class='button'>Register a new number with Signal</a>
+            <a href='<?php echo esc_url($url);?>&register=true' class='button'>Register a new number with Signal</a>
             
-            <a href='<?php echo $url;?>&link=true' class='button'>Link to an existing Signal number</a>
+            <a href='<?php echo esc_url($url);?>&link=true' class='button'>Link to an existing Signal number</a>
         </p>
         <?php
     }
@@ -688,10 +688,10 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 <?php
                 foreach($groups as $index=>$group){
                     ?>
-                    <div class="clone-div" data-div-id="<?php echo $index;?>">
+                    <div class="clone-div" data-div-id="<?php echo esc_attr($index);?>">
                         <label>
                             <h4 style='margin: 0px;'>Signal groupname <?php echo $index+1;?></h4>
-                            <input type='text' name="groups[<?php echo $index;?>]" value='<?php echo $group;?>'>
+                            <input type='text' name="groups[<?php echo esc_attr($index);?>]" value='<?php echo esc_attr($group);?>'>
                         </label>
                         <span class='button-wrapper' style='margin:auto;'>
                             <button type="button" class="add button" style="flex: 1;">+</button>
@@ -825,11 +825,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Show Messages send between <input type='date' name='start-date' value='<?php echo $startDate;?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo $endDate;?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
+                        Show Messages send between <input type='date' name='start-date' value='<?php echo esc_attr($startDate);?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo esc_attr($endDate);?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
                     </label>
                     <br>
                     <label>
-                        Amount of messages to show <input type='number' name='amount' value='<?php echo $amount; ?>' style='max-width: 60px;'>
+                        Amount of messages to show <input type='number' name='amount' value='<?php echo esc_attr($amount); ?>' style='max-width: 60px;'>
                     </label>
                     <br>
                     <input type='submit' value='Apply'>
