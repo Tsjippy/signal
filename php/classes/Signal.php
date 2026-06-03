@@ -591,7 +591,7 @@ class Signal{
             if(time() >= $epoch){
                 $epoch  = false;
             }else{
-                $this->rateLimitString   = date(DATEFORMAT.' '.TIMEFORMAT, $epoch);
+                $this->rateLimitString   = gmdate(DATEFORMAT.' '.TIMEFORMAT, $epoch);
             }
         }else{
             $epoch  = false;
