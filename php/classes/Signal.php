@@ -418,8 +418,16 @@ class Signal{
         $result1    = $wpdb->query( $query );
 
         // remove attachment files
-        $query      = "SELECT * FROM $this->receivedTableName WHERE `time_send` < {$timeSend}000 AND `attachments` is NOT NULL; ";
-        foreach($wpdb->get_results($query) as $result){
+        $results    = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM %i WHERE `time_send` < %d AND `attachments` is NOT NULL; ",
+                $this->receivedTableName,
+                "{$timeSend}000"
+
+            )
+        );
+        
+        foreach($results as $result){
             $attachments    = unserialize($result->attachments);
 
             foreach($attachments as $attachment){
