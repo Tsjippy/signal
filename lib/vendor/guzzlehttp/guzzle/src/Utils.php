@@ -1,16 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp;
 
 use GuzzleHttp\Exception\InvalidArgumentException;
 use GuzzleHttp\Handler\CurlHandler;
 use GuzzleHttp\Handler\CurlMultiHandler;
+use GuzzleHttp\Handler\CurlShareHandleState;
+use GuzzleHttp\Handler\CurlVersion;
 use GuzzleHttp\Handler\Proxy;
 use GuzzleHttp\Handler\StreamHandler;
+use GuzzleHttp\Promise\PromiseInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 
 final class Utils
 {
+    private function __construct()
+    {
+    }
+
     /**
      * Debug function used to describe the provided value type and class.
      *
@@ -79,33 +90,75 @@ final class Utils
      *
      * The returned handler is not wrapped by any default middlewares.
      *
-     * @return callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface Returns the best handler for the given system.
+     * @param array{transport_sharing?: mixed} $handlerOptions Handler constructor options.
+     *
+     * @return callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed> Returns the best handler for the given system.
      *
      * @throws \RuntimeException if no viable Handler is available.
      */
-    public static function chooseHandler(): callable
+    public static function chooseHandler(array $handlerOptions = []): callable
     {
         $handler = null;
+        $sharingMode = CurlShareHandleState::normalizeMode($handlerOptions['transport_sharing'] ?? null, 'transport_sharing');
+        $sharingRequested = $sharingMode !== TransportSharing::NONE;
+        $sharingRequired = \in_array($sharingMode, [TransportSharing::HANDLER_REQUIRE, TransportSharing::PERSISTENT_REQUIRE], true);
+        $curlHandlerOptions = [];
+        $curlSupported = CurlVersion::supportsTls12()
+            && (\function_exists('curl_multi_exec') || \function_exists('curl_exec'));
 
-        if (\defined('CURLOPT_CUSTOMREQUEST')) {
+        if ($sharingRequired && !$curlSupported) {
+            throw new \RuntimeException('Required transport sharing requires the PHP cURL extension, curl_exec() or curl_multi_exec(), and a supported libcurl version.');
+        }
+
+        if ($curlSupported) {
+            if ($sharingRequested) {
+                $shareState = CurlShareHandleState::fromOption($sharingMode);
+                if ($shareState !== null) {
+                    $curlHandlerOptions['transport_sharing'] = $shareState;
+                }
+            }
+
             if (\function_exists('curl_multi_exec') && \function_exists('curl_exec')) {
-                $handler = Proxy::wrapSync(new CurlMultiHandler(), new CurlHandler());
+                $handler = Proxy::wrapSync(new CurlMultiHandler($curlHandlerOptions), new CurlHandler($curlHandlerOptions));
             } elseif (\function_exists('curl_exec')) {
-                $handler = new CurlHandler();
+                $handler = new CurlHandler($curlHandlerOptions);
             } elseif (\function_exists('curl_multi_exec')) {
-                $handler = new CurlMultiHandler();
+                $handler = new CurlMultiHandler($curlHandlerOptions);
             }
         }
 
         if (\ini_get('allow_url_fopen')) {
+            $streamHandler = new StreamHandler();
+            if ($sharingRequired) {
+                $streamHandler = self::wrapStreamHandlerTransportSharing($streamHandler, $sharingMode);
+            }
+
             $handler = $handler
-                ? Proxy::wrapStreaming($handler, new StreamHandler())
-                : new StreamHandler();
+                ? Proxy::wrapStreaming($handler, $streamHandler)
+                : $streamHandler;
         } elseif (!$handler) {
-            throw new \RuntimeException('GuzzleHttp requires cURL, the allow_url_fopen ini setting, or a custom HTTP handler.');
+            throw new \RuntimeException('GuzzleHttp requires a supported cURL version, the allow_url_fopen ini setting, or a custom HTTP handler.');
         }
 
         return $handler;
+    }
+
+    /**
+     * @param callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed> $handler
+     *
+     * @return callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>
+     */
+    private static function wrapStreamHandlerTransportSharing(callable $handler, string $sharingMode): callable
+    {
+        return static function (RequestInterface $request, array $options) use ($handler, $sharingMode): PromiseInterface {
+            if (\array_key_exists('transport_sharing', $options)) {
+                CurlShareHandleState::normalizeMode($options['transport_sharing'], 'transport_sharing');
+            }
+
+            $options['transport_sharing'] = $sharingMode;
+
+            return $handler($request, $options);
+        };
     }
 
     /**
@@ -124,64 +177,40 @@ final class Utils
     {
         $result = [];
         foreach (\array_keys($headers) as $key) {
-            $result[\strtolower($key)] = $key;
+            $result[\strtolower((string) $key)] = $key;
         }
 
         return $result;
     }
 
     /**
-     * Returns true if the provided host matches any of the no proxy areas.
+     * @param mixed $protocols
      *
-     * This method will strip a port from the host if it is present. Each pattern
-     * can be matched with an exact match (e.g., "foo.com" == "foo.com") or a
-     * partial match: (e.g., "foo.com" == "baz.foo.com" and ".foo.com" ==
-     * "baz.foo.com", but ".foo.com" != "foo.com").
-     *
-     * Areas are matched in the following cases:
-     * 1. "*" (without quotes) always matches any hosts.
-     * 2. An exact match.
-     * 3. The area starts with "." and the area is the last part of the host. e.g.
-     *    '.mit.edu' will match any host that ends with '.mit.edu'.
-     *
-     * @param string   $host         Host to check against the patterns.
-     * @param string[] $noProxyArray An array of host patterns.
+     * @return string[]
      *
      * @throws InvalidArgumentException
      */
-    public static function isHostInNoProxy(string $host, array $noProxyArray): bool
+    public static function normalizeProtocols($protocols): array
     {
-        if (\strlen($host) === 0) {
-            throw new InvalidArgumentException('Empty host provided');
+        if (!\is_array($protocols) || $protocols === []) {
+            throw new InvalidArgumentException('protocols must be a non-empty array of "http" and/or "https"');
         }
 
-        // Strip port if present.
-        [$host] = \explode(':', $host, 2);
+        $normalized = [];
 
-        foreach ($noProxyArray as $area) {
-            // Always match on wildcards.
-            if ($area === '*') {
-                return true;
+        foreach ($protocols as $protocol) {
+            if (!\is_string($protocol)) {
+                throw new InvalidArgumentException('protocols must contain only strings');
             }
 
-            if (empty($area)) {
-                // Don't match on empty values.
-                continue;
+            if ($protocol !== 'http' && $protocol !== 'https') {
+                throw new InvalidArgumentException('protocols may only contain "http" and "https"');
             }
 
-            if ($area === $host) {
-                // Exact matches.
-                return true;
-            }
-            // Special match if the area when prefixed with ".". Remove any
-            // existing leading "." and add a new leading ".".
-            $area = '.'.\ltrim($area, '.');
-            if (\substr($host, -\strlen($area)) === $area) {
-                return true;
-            }
+            $normalized[$protocol] = true;
         }
 
-        return false;
+        return \array_keys($normalized);
     }
 
     /**
@@ -201,6 +230,10 @@ final class Utils
      */
     public static function jsonDecode(string $json, bool $assoc = false, int $depth = 512, int $options = 0)
     {
+        if ($depth < 1) {
+            throw new InvalidArgumentException('json_decode error: Maximum stack depth exceeded');
+        }
+
         try {
             return \json_decode($json, $assoc, $depth, $options | \JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
@@ -239,6 +272,54 @@ final class Utils
     public static function currentTime(): float
     {
         return (float) \function_exists('hrtime') ? \hrtime(true) / 1e9 : \microtime(true);
+    }
+
+    /**
+     * Converts a request timeout option to integer milliseconds.
+     *
+     * @param mixed $value
+     *
+     * @internal
+     */
+    public static function timeoutToMilliseconds($value, string $option): int
+    {
+        if (!\is_int($value) && !\is_float($value) && (!\is_string($value) || !\is_numeric($value))) {
+            throw new InvalidArgumentException($option.' must be a number of seconds');
+        }
+
+        $seconds = (float) $value;
+        if (!\is_finite($seconds) || $seconds < 0) {
+            throw new InvalidArgumentException($option.' must be 0 or greater than or equal to 0.001 seconds');
+        }
+
+        $milliseconds = (int) ($seconds * 1000);
+        if ($seconds > 0 && $milliseconds === 0) {
+            throw new InvalidArgumentException($option.' must be 0 or greater than or equal to 0.001 seconds');
+        }
+
+        return $milliseconds;
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @internal
+     */
+    public static function normalizeIdnConversionOption($value): ?int
+    {
+        if ($value === null || $value === false) {
+            return null;
+        }
+
+        if ($value === true) {
+            return \IDNA_DEFAULT;
+        }
+
+        if (\is_int($value)) {
+            return $value;
+        }
+
+        throw new InvalidArgumentException('idn_conversion must be true, false, null, or an integer IDNA_* bitmask');
     }
 
     /**

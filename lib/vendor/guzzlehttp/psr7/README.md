@@ -26,6 +26,17 @@ composer require guzzlehttp/psr7
 |---------|---------------------|--------------|
 | 1.x     | EOL (2024-06-30)    | >=5.4,<8.2   |
 | 2.x     | Latest              | >=7.2.5,<8.6 |
+| 3.x     | Experimental        | >=7.4,<8.6   |
+
+See [UPGRADING.md](UPGRADING.md) for package upgrade notes.
+
+## HTTP Method Casing
+
+HTTP method names are case-sensitive in PSR-7. Requests created explicitly with
+`Request`, `ServerRequest`, `withMethod()`, `Message::parseRequest()`, or the
+PSR-17 factories preserve the method string as provided. `ServerRequest::fromGlobals()`
+normalizes `$_SERVER['REQUEST_METHOD']` to uppercase for compatibility when
+hydrating requests from PHP server globals.
 
 
 ## AppendStream
@@ -61,8 +72,8 @@ preferred size of the buffer.
 ```php
 use GuzzleHttp\Psr7;
 
-// When more than 1024 bytes are in the buffer, it will begin returning
-// false to writes. This is an indication that writers should slow down.
+// When the buffer reaches or exceeds 1024 bytes, it will begin returning 0 to
+// writes. This is an indication that writers should slow down.
 $buffer = new Psr7\BufferStream(1024);
 ```
 
@@ -91,6 +102,13 @@ echo $stream->tell();
 // 0
 ```
 
+By default the bytes are cached in a `php://temp` stream. You can supply your own
+cache target as the second constructor argument, but it is used as a random-access
+byte buffer to replay the remote stream, so it must be readable, writable, and
+seekable, report an accurate position and size, and store writes losslessly. Lossy
+or non-seekable streams such as `BufferStream` and `DroppingStream` are not valid
+targets.
+
 
 ## DroppingStream
 
@@ -117,7 +135,7 @@ echo $stream; // 0123456789
 
 `GuzzleHttp\Psr7\FnStream`
 
-Compose stream implementations based on a hash of functions.
+Compose stream implementations based on a hash of callables.
 
 Allows for easy testing and extension of a provided stream without needing
 to create a concrete class for a simple extension point.
@@ -200,6 +218,11 @@ echo $stream->tell();
 Stream that when read returns bytes for a streaming multipart or
 multipart/form-data stream.
 
+Each multipart element must contain a `name` and `contents` key. `contents` may
+be any non-array value accepted by `GuzzleHttp\Psr7\Utils::streamFor()`,
+including closures and invokable objects. Array contents are recursively
+expanded into nested form fields.
+
 
 ## NoSeekStream
 
@@ -229,12 +252,17 @@ var_export($noSeek->read(3));
 
 Provides a read only stream that pumps data from a PHP callable.
 
-When invoking the provided callable, the PumpStream will pass the amount of
-data requested to read to the callable. The callable can choose to ignore
+When invoking the provided callable, the PumpStream will pass the suggested
+number of bytes to read to the callable. The callable can choose to ignore
 this value and return fewer or more bytes than requested. Any extra data
 returned by the provided callable is buffered internally until drained using
-the read() function of the PumpStream. The provided callable MUST return
-false when there is no more data to read.
+the read() function of the PumpStream. The provided callable MUST return a
+non-empty string to provide data, and MUST return false or null when there is
+no more data to read. Returning an empty string causes a RuntimeException
+because it cannot satisfy a positive-length read.
+
+Userland callables that declare no parameters are tolerated by PHP, but
+length-aware callables remain the recommended formal shape.
 
 
 ## Implementing stream decorators
@@ -267,7 +295,7 @@ class EofCallbackStream implements StreamInterface
         $this->callback = $cb;
     }
 
-    public function read($length)
+    public function read(int $length): string
     {
         $result = $this->stream->read($length);
 
@@ -337,11 +365,15 @@ echo GuzzleHttp\Psr7\Message::toString($request);
 
 ## `GuzzleHttp\Psr7\Message::bodySummary`
 
-`public static function bodySummary(MessageInterface $message, int $truncateAt = 120): string|null`
+`public static function bodySummary(MessageInterface $message, ?int $truncateAt = null): string|null`
 
 Get a short summary of the message body.
 
 Will return `null` if the response is not printable.
+
+Reads seekable bodies from the beginning and restores the original cursor
+position before returning. Pass `null` for `$truncateAt` to use the default
+summary length.
 
 
 ## `GuzzleHttp\Psr7\Message::rewindBody`
@@ -454,10 +486,21 @@ Remove the items given by the keys, case insensitively from the data.
 
 ## `GuzzleHttp\Psr7\Utils::copyToStream`
 
-`public static function copyToStream(StreamInterface $source, StreamInterface $dest, int $maxLen = -1): void`
+`public static function copyToStream(StreamInterface $source, StreamInterface $dest, int $maxLen = -1): int`
 
-Copy the contents of a stream into another stream until the given number
-of bytes have been read.
+Copy the contents of a stream into another stream until the given number of
+bytes have been read, returning the number of bytes copied as an `int`. On
+32-bit PHP, an unbounded copy larger than `PHP_INT_MAX` bytes cannot be
+represented by that return type. 64-bit PHP is not affected.
+
+The destination must accept writes that make positive progress. Streams that
+return 0 as a backpressure or drop signal — a `BufferStream` past its high water
+mark, or a full `DroppingStream` — will cause this method to throw. For full
+copies, use a normal writable stream such as a file or `php://temp` stream.
+
+Throws `GuzzleHttp\Psr7\Exception\TimeoutException` when PHP-style timeout
+metadata can be detected after a source read or destination write cannot make
+progress.
 
 
 ## `GuzzleHttp\Psr7\Utils::copyToString`
@@ -466,6 +509,9 @@ of bytes have been read.
 
 Copy the contents of a stream into a string until the given number of
 bytes have been read.
+
+Throws `GuzzleHttp\Psr7\Exception\TimeoutException` when PHP-style timeout
+metadata can be detected after a stream read cannot make progress.
 
 
 ## `GuzzleHttp\Psr7\Utils::hash`
@@ -476,6 +522,9 @@ Calculate a hash of a stream.
 
 This method reads the entire stream to calculate a rolling hash, based on
 PHP's `hash_init` functions.
+
+Throws `GuzzleHttp\Psr7\Exception\TimeoutException` when PHP-style timeout
+metadata can be detected after a stream read cannot make progress.
 
 
 ## `GuzzleHttp\Psr7\Utils::modifyRequest`
@@ -488,9 +537,14 @@ This method is useful for reducing the number of clones needed to mutate
 a message.
 
 - method: (string) Changes the HTTP method.
-- set_headers: (array) Sets the given headers.
-- remove_headers: (array) Remove the given headers.
-- body: (mixed) Sets the given body.
+- set_headers: (array) Sets the given headers. Values must be strings or arrays
+  of strings.
+- remove_headers: (array) Remove the given headers. Values may be strings or
+  integers.
+- body: (mixed) Sets the given body. Present non-null values are converted with
+  `GuzzleHttp\Psr7\Utils::streamFor()`, including scalar values, resources,
+  streams, iterators, callable arrays, closures, invokable objects, and
+  stringable objects. String inputs remain literal bodies.
 - uri: (UriInterface) Set the URI.
 - query: (string) Set the query string value of the URI.
 - version: (string) Set the protocol version.
@@ -502,17 +556,20 @@ a message.
 
 Read a line from the stream up to the maximum allowed buffer length.
 
+Throws `GuzzleHttp\Psr7\Exception\TimeoutException` when PHP-style timeout
+metadata can be detected after a stream read cannot make progress.
+
 
 ## `GuzzleHttp\Psr7\Utils::redactUserInfo`
 
 `public static function redactUserInfo(UriInterface $uri): UriInterface`
 
-Redact the password in the user info part of a URI.
+Redact the user info part of a URI.
 
 
 ## `GuzzleHttp\Psr7\Utils::streamFor`
 
-`public static function streamFor(resource|string|null|int|float|bool|StreamInterface|callable|\Iterator $resource = '', array $options = []): StreamInterface`
+`public static function streamFor(resource|string|null|int|float|bool|StreamInterface|callable|\Iterator|\Stringable $resource = '', array $options = []): StreamInterface`
 
 Create a new stream based on the input type.
 
@@ -530,19 +587,21 @@ This method accepts the following `$resource` types:
   stream object will be created that wraps the given iterable. Each time the
   stream is read from, data from the iterator will fill a buffer and will be
   continuously called until the buffer is equal to the requested read size.
-  Subsequent read calls will first read from the buffer and then call `next`
-  on the underlying iterator until it is exhausted.
+  Values that stringify to an empty string are skipped while the iterator
+  advances. Subsequent read calls will first read from the buffer and then call
+  `next` on the underlying iterator until it is exhausted.
 - `object` with `__toString()`: If the object has the `__toString()` method,
   the object will be cast to a string and then a stream will be returned that
   uses the string value.
 - `NULL`: When `null` is passed, an empty stream object is returned.
-- `callable` When a callable is passed, a read-only stream object will be
+- `callable`: When a callable array, closure, or invokable object is passed and
+  no earlier resource or object rule applies, a read-only stream object will be
   created that invokes the given callable. The callable is invoked with the
-  number of suggested bytes to read. The callable can return any number of
-  bytes, but MUST return `false` when there is no more data to return. The
-  stream object that wraps the callable will invoke the callable until the
-  number of requested bytes are available. Any additional bytes will be
-  buffered and used in subsequent reads.
+  suggested number of bytes to read. The callable can return fewer or more bytes
+  than requested, but MUST return a non-empty string to provide data and MUST
+  return `false` or `null` when there is no more data to return. Any additional
+  bytes will be buffered and used in subsequent reads. String inputs are always
+  treated as string bodies, even when they name callable functions.
 
 ```php
 $stream = GuzzleHttp\Psr7\Utils::streamFor('foo');
@@ -578,6 +637,9 @@ When stream_get_contents fails, PHP normally raises a warning. This
 function adds an error handler that checks for errors and throws an
 exception instead.
 
+Throws `GuzzleHttp\Psr7\Exception\TimeoutException` when PHP-style timeout
+metadata can be detected after the stream read cannot make progress.
+
 
 ## `GuzzleHttp\Psr7\Utils::uriFor`
 
@@ -602,36 +664,6 @@ Determines the mimetype of a file by looking at its extension.
 `public static function fromExtension(string $extension): string|null`
 
 Maps a file extensions to a mimetype.
-
-
-## Upgrading from Function API
-
-The static API was first introduced in 1.7.0, in order to mitigate problems with functions conflicting between global and local copies of the package. The function API was removed in 2.0.0. A migration table has been provided here for your convenience:
-
-| Original Function | Replacement Method |
-|----------------|----------------|
-| `str` | `Message::toString` |
-| `uri_for` | `Utils::uriFor` |
-| `stream_for` | `Utils::streamFor` |
-| `parse_header` | `Header::parse` |
-| `normalize_header` | `Header::normalize` |
-| `modify_request` | `Utils::modifyRequest` |
-| `rewind_body` | `Message::rewindBody` |
-| `try_fopen` | `Utils::tryFopen` |
-| `copy_to_string` | `Utils::copyToString` |
-| `copy_to_stream` | `Utils::copyToStream` |
-| `hash` | `Utils::hash` |
-| `readline` | `Utils::readLine` |
-| `parse_request` | `Message::parseRequest` |
-| `parse_response` | `Message::parseResponse` |
-| `parse_query` | `Query::parse` |
-| `build_query` | `Query::build` |
-| `mimetype_from_filename` | `MimeType::fromFilename` |
-| `mimetype_from_extension` | `MimeType::fromExtension` |
-| `_parse_message` | `Message::parseMessage` |
-| `_parse_request_uri` | `Message::parseRequestUri` |
-| `get_message_body_summary` | `Message::bodySummary` |
-| `_caseless_remove` | `Utils::caselessRemove` |
 
 
 # Additional URI Methods
@@ -744,6 +776,10 @@ provided key are removed.
 `public static function isCrossOrigin(UriInterface $original, UriInterface $modified): bool`
 
 Determines if a modified URL should be considered cross-origin with respect to an original URL.
+
+Two URLs are cross-origin when their scheme, host, or effective port differ. Host comparison is case-insensitive, and missing ports use the default port for `http` or `https`. Other schemes do not receive implicit default ports.
+
+This helper only compares URI origins. It does not implement redirect handling or credential policy.
 
 ## Reference Resolution
 

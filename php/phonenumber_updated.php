@@ -1,9 +1,12 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 add_action('tsjippy-phonenumber-updated', __NAMESPACE__ . '\phoneNumberUpdated', 10, 2);
-function phoneNumberUpdated($phonenumber, $userId) {
+function phoneNumberUpdated($phonenumber, $userId)
+{
 
     $groupPaths        = SETTINGS['invgroups'] ?? [];
 
@@ -17,7 +20,7 @@ function phoneNumberUpdated($phonenumber, $userId) {
                 $link    .= $result;
             }
         }
-    }else{
+    } else {
         $link        = SETTINGS['group-link'] ?? false;
     }
 
@@ -31,8 +34,8 @@ function phoneNumberUpdated($phonenumber, $userId) {
         if ($signal->getUserStatus($phonenumber)) {
             // Mark this number as the signal number
             update_user_meta($userId, 'signal_number', $phonenumber);
-        }else{
-           $valid    = false;
+        } else {
+            $valid    = false;
         }
     }
 
@@ -48,7 +51,7 @@ function phoneNumberUpdated($phonenumber, $userId) {
 
     if (!empty($link) && $valid) {
         $firstName    = get_userdata($userId)->first_name;
-        $message    = "Hi $firstName\n\nI noticed you just updated your phonenumber on " .SITEURLWITHOUTSCHEME. " .\n\nIf you want to join our Signal group with this number you can use this url:\n$link";
+        $message    = "Hi $firstName\n\nI noticed you just updated your phonenumber on " . SITEURLWITHOUTSCHEME . " .\n\nIf you want to join our Signal group with this number you can use this url:\n$link";
         asyncSignalMessageSend($message, $phonenumber);
     }
 }

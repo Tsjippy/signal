@@ -13,24 +13,27 @@ use Psr\Http\Message\StreamInterface;
 trait MessageTrait
 {
     /** @var string[][] Map of all registered headers, as original name => array of values */
-    private $headers = [];
+    private array $headers = [];
 
     /** @var string[] Map of lowercase header name => original name at registration */
-    private $headerNames = [];
+    private array $headerNames = [];
 
-    /** @var string */
-    private $protocol = '1.1';
+    private string $protocol = '1.1';
 
-    /** @var StreamInterface|null */
-    private $stream;
+    private ?StreamInterface $stream = null;
 
     public function getProtocolVersion(): string
     {
         return $this->protocol;
     }
 
-    public function withProtocolVersion($version): MessageInterface
+    /**
+     * @return static
+     */
+    public function withProtocolVersion(string $version): MessageInterface
     {
+        $this->assertProtocolVersion($version);
+
         if ($this->protocol === $version) {
             return $this;
         }
@@ -46,14 +49,14 @@ trait MessageTrait
         return $this->headers;
     }
 
-    public function hasHeader($header): bool
+    public function hasHeader(string $name): bool
     {
-        return isset($this->headerNames[strtolower($header)]);
+        return isset($this->headerNames[strtolower($name)]);
     }
 
-    public function getHeader($header): array
+    public function getHeader(string $name): array
     {
-        $header = strtolower($header);
+        $header = strtolower($name);
 
         if (!isset($this->headerNames[$header])) {
             return [];
@@ -64,57 +67,66 @@ trait MessageTrait
         return $this->headers[$header];
     }
 
-    public function getHeaderLine($header): string
+    public function getHeaderLine(string $name): string
     {
-        return implode(', ', $this->getHeader($header));
+        return implode(', ', $this->getHeader($name));
     }
 
-    public function withHeader($header, $value): MessageInterface
+    /**
+     * @return static
+     */
+    public function withHeader(string $name, $value): MessageInterface
     {
-        $this->assertHeader($header);
+        $this->assertHeader($name);
         $value = $this->normalizeHeaderValue($value);
-        $normalized = strtolower($header);
+        $normalized = strtolower($name);
 
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
             unset($new->headers[$new->headerNames[$normalized]]);
         }
-        $new->headerNames[$normalized] = $header;
-        $new->headers[$header] = $value;
+        $new->headerNames[$normalized] = $name;
+        $new->headers[$name] = $value;
 
         return $new;
     }
 
-    public function withAddedHeader($header, $value): MessageInterface
+    /**
+     * @return static
+     */
+    public function withAddedHeader(string $name, $value): MessageInterface
     {
-        $this->assertHeader($header);
+        $this->assertHeader($name);
         $value = $this->normalizeHeaderValue($value);
-        $normalized = strtolower($header);
+        $normalized = strtolower($name);
 
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
-            $header = $this->headerNames[$normalized];
-            $new->headers[$header] = array_merge($this->headers[$header], $value);
+            $name = $this->headerNames[$normalized];
+            $new->headers[$name] = array_merge($this->headers[$name], $value);
         } else {
-            $new->headerNames[$normalized] = $header;
-            $new->headers[$header] = $value;
+            $new->headerNames[$normalized] = $name;
+            $new->headers[$name] = $value;
         }
 
         return $new;
     }
 
-    public function withoutHeader($header): MessageInterface
+    /**
+     * @return static
+     */
+    public function withoutHeader(string $name): MessageInterface
     {
-        $normalized = strtolower($header);
+        $normalized = strtolower($name);
 
         if (!isset($this->headerNames[$normalized])) {
             return $this;
         }
 
-        $header = $this->headerNames[$normalized];
+        $name = $this->headerNames[$normalized];
 
         $new = clone $this;
-        unset($new->headers[$header], $new->headerNames[$normalized]);
+        unset($new->headers[$name], $new->headerNames[$normalized]);
 
         return $new;
     }
@@ -128,6 +140,9 @@ trait MessageTrait
         return $this->stream;
     }
 
+    /**
+     * @return static
+     */
     public function withBody(StreamInterface $body): MessageInterface
     {
         if ($body === $this->stream) {
@@ -170,6 +185,10 @@ trait MessageTrait
      */
     private function normalizeHeaderValue($value): array
     {
+        if (is_array($value) && $value === []) {
+            throw new \InvalidArgumentException('Header value must be a non-empty array or string.');
+        }
+
         if (!is_array($value)) {
             return $this->trimAndValidateHeaderValues([$value]);
         }
@@ -193,15 +212,15 @@ trait MessageTrait
      */
     private function trimAndValidateHeaderValues(array $values): array
     {
-        return array_map(function ($value) {
-            if (!is_scalar($value) && null !== $value) {
+        return array_map(function ($value): string {
+            if (!is_string($value)) {
                 throw new \InvalidArgumentException(sprintf(
-                    'Header value must be scalar or null but %s provided.',
-                    is_object($value) ? get_class($value) : gettype($value)
+                    'Header value must be a string or array of strings but %s provided.',
+                    \get_debug_type($value)
                 ));
             }
 
-            $trimmed = trim((string) $value, " \t");
+            $trimmed = trim($value, " \t");
             $this->assertValue($trimmed);
 
             return $trimmed;
@@ -210,22 +229,20 @@ trait MessageTrait
 
     /**
      * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
-     *
-     * @param mixed $header
      */
-    private function assertHeader($header): void
+    private function assertHeader(string $header): void
     {
-        if (!is_string($header)) {
-            throw new \InvalidArgumentException(sprintf(
-                'Header name must be a string but %s provided.',
-                is_object($header) ? get_class($header) : gettype($header)
-            ));
-        }
-
         if (!preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $header)) {
             throw new \InvalidArgumentException(
                 sprintf('"%s" is not valid header name.', $header)
             );
+        }
+    }
+
+    private function assertProtocolVersion(string $version): void
+    {
+        if (!preg_match('/^\d+(?:\.\d+)?$/D', $version)) {
+            throw new \InvalidArgumentException('Protocol version must be a valid HTTP version number.');
         }
     }
 

@@ -1,6 +1,59 @@
 # CHANGELOG
 
 
+## 3.0.0 - Unreleased
+
+### Added
+
+- Added `concurrency` config support to `Utils::all()` and `Each::of()`
+- Added generic PHPDoc annotations to promise APIs and collection callbacks
+- Added recursive and `concurrency` config support to `Utils::settle()`
+- Allowed promises to be resolved without passing a value
+
+### Changed
+
+- Changed `Utils::inspect()` to return actual rejection reasons
+- Changed late rejection callbacks to follow rejected promises
+- Made static helper classes non-instantiable
+- Require iterable inputs for promise collection helpers and `EachPromise`
+
+### Fixed
+
+- Fixed recursive `Utils::all()` handling of dynamically-added settled values and raw values
+
+### Removed
+
+- Dropped support for PHP 7.2 and 7.3
+
+
+## 2.5.0 - 2026-06-02
+
+### Deprecated
+
+- Deprecated passing non-iterable inputs to promise collection helpers and `EachPromise`
+
+
+## 2.4.1 - 2026-05-20
+
+### Fixed
+
+- Fixed cancelling settled coroutines when no current promise remains
+
+
+## 2.4.0 - 2026-05-20
+
+### Changed
+
+- Empty `EachPromise` instances now resolve when the task queue runs without `wait()`
+
+
+## 2.3.1 - 2026-05-19
+
+### Fixed
+
+- Fixed `Utils::inspect()` returning the internal reason array instead of the `AggregateException`
+
+
 ## 2.3.0 - 2025-08-22
 
 ### Added

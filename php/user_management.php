@@ -1,10 +1,13 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 /*
     Add a signal page to user management screen
 */
+
 add_filter('tsjippy_user_info_page', __NAMESPACE__ . '\userInfoPage', 10, 4);
 /**
  * Add a signal page to user management screen
@@ -14,7 +17,8 @@ add_filter('tsjippy_user_info_page', __NAMESPACE__ . '\userInfoPage', 10, 4);
  *
  * @return array The updated html for the user info page
  */
-function userInfoPage($filteredHtml, $showCurrentUserData, $user) {
+function userInfoPage($filteredHtml, $showCurrentUserData, $user)
+{
     //Add an extra tab
     $filteredHtml['tabs']['Signal']    = "<li class='tablink' id='show-signal-options' data-target='signal-options'>Signal options</li>";
 
@@ -23,20 +27,20 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user) {
     //Content
     ob_start();
 
-    ?>
+?>
     <div id='signal-options' class='tabcontent hidden'>
         <form>
-            <input type='hidden' class='no-reset' name='user-id' value='<?php echo esc_attr($user->ID);?>'>
+            <input type='hidden' class='no-reset' name='user-id' value='<?php echo esc_attr($user->ID); ?>'>
             <h3>Signal Options</h3>
             <?php
-                $prefs      = get_user_meta($user->ID, 'signal_preferences', true);
-                echo apply_filters('tsjippy_personal_signal_settings', '', $user, $prefs);
+            $prefs      = get_user_meta($user->ID, 'signal_preferences', true);
+            echo apply_filters('tsjippy_personal_signal_settings', '', $user, $prefs);
 
-                TSJIPPY\addSaveButton('save_signal_preferences','Update Preferences');
+            TSJIPPY\addSaveButton('save_signal_preferences', 'Update Preferences');
             ?>
         </form>
     </div>
-    <?php
+<?php
 
     $result    = ob_get_clean();
 

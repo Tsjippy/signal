@@ -1,12 +1,16 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
-if ( ! defined('ABSPATH')) exit;
+if (! defined('ABSPATH')) exit;
 
-class AfterUpdate extends TSJIPPY\AfterPluginUpdate {
+class AfterUpdate extends TSJIPPY\AfterPluginUpdate
+{
 
-    public function afterPluginUpdate($oldVersion) {
+    public function afterPluginUpdate($oldVersion)
+    {
         global $wpdb;
 
         if (version_compare('10.0.5', $oldVersion) === 1) {
@@ -16,17 +20,17 @@ class AfterUpdate extends TSJIPPY\AfterPluginUpdate {
             $wpdb->query(
                 "ALTER TABLE `{$wpdb->prefix}tsjippy_received_signal_messages`
                 RENAME COLUMN `timesend` to `time_send`;"
-           );
+            );
 
             $wpdb->query(
                 "ALTER TABLE `{$wpdb->prefix}tsjippy_signal_message_queue`
                 RENAME COLUMN `timeadded` to `time_added`;"
-           );
+            );
 
             $wpdb->query(
                 "ALTER TABLE `{$wpdb->prefix}tsjippy_signal_messages`
                 RENAME COLUMN `timesend` to `time_send`;"
-           );
+            );
         }
 
         if (version_compare('10.3.9', $oldVersion) === 1) {

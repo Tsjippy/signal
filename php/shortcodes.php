@@ -1,11 +1,14 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 
 //Add Signal messages overview shortcode
 add_shortcode('signal_messages', __NAMESPACE__ . '\signalMessages');
-function signalMessages() {
+function signalMessages()
+{
     $signalMessages = get_option('signal_bot_messages');
 
     $html             = '';
@@ -15,7 +18,7 @@ function signalMessages() {
         if (wp_get_environment_type() === 'local') {
             $html .= '<div class="success">Succesfully removed all the messages</div>';
             delete_option('signal_bot_messages');
-        }else{
+        } else {
             $html .= '<div class="success">Succesfully removed the message</div>';
 
             unset($signalMessages[$_POST['recipient-number']][$_POST['key']]);
@@ -27,19 +30,19 @@ function signalMessages() {
     }
 
     if (is_array($signalMessages) && !empty($signalMessages)) {
-        foreach ($signalMessages as $recipient_number=>$recipient) {
+        foreach ($signalMessages as $recipient_number => $recipient) {
             $html .= "<strong>Messages to $recipient_number</strong><br>";
-            foreach ($recipient as $key=>$signal_message) {
-                $html .= 'Message ' .($key+1). ":<br>";
-                $html .= $signal_message[0]. '<br>';
+            foreach ($recipient as $key => $signal_message) {
+                $html .= 'Message ' . ($key + 1) . ":<br>";
+                $html .= $signal_message[0] . '<br>';
                 $html .= '<form action="" method="post">
-                    <input type="hidden" class="no-reset" id="recipient-number" name="recipient-number" value="' .$recipient_number. '">
-                    <input type="hidden" class="no-reset" id="key" name="key" value="' .$key. '">
+                    <input type="hidden" class="no-reset" id="recipient-number" name="recipient-number" value="' . $recipient_number . '">
+                    <input type="hidden" class="no-reset" id="key" name="key" value="' . $key . '">
                     <button class="button remove signal-message sim" type="submit" style="margin-top:10px;">Remove this message</button>
                 </form>';
             }
         }
-    }else{
+    } else {
         $html .= "No Signal messages found";
     }
     return $html;

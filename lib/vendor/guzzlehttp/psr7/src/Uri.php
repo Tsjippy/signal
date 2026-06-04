@@ -38,44 +38,28 @@ class Uri implements UriInterface, \JsonSerializable
         'ldap' => 389,
     ];
 
-    /**
-     * Unreserved characters for use in a regex.
-     *
-     * @see https://datatracker.ietf.org/doc/html/rfc3986#section-2.3
-     */
-    private const CHAR_UNRESERVED = 'a-zA-Z0-9_\-\.~';
-
-    /**
-     * Sub-delims for use in a regex.
-     *
-     * @see https://datatracker.ietf.org/doc/html/rfc3986#section-2.2
-     */
-    private const CHAR_SUB_DELIMS = '!\$&\'\(\)\*\+,;=';
-    private const QUERY_SEPARATORS_REPLACEMENT = ['=' => '%3D', '&' => '%26'];
+    private const QUERY_SEPARATORS_REPLACEMENT = ['=' => '%3D', '&' => '%26', '+' => '%2B'];
 
     /** @var string Uri scheme. */
-    private $scheme = '';
+    private string $scheme = '';
 
     /** @var string Uri user info. */
-    private $userInfo = '';
+    private string $userInfo = '';
 
     /** @var string Uri host. */
-    private $host = '';
+    private string $host = '';
 
     /** @var int|null Uri port. */
-    private $port;
+    private ?int $port = null;
 
     /** @var string Uri path. */
-    private $path = '';
+    private string $path = '';
 
     /** @var string Uri query string. */
-    private $query = '';
+    private string $query = '';
 
     /** @var string Uri fragment. */
-    private $fragment = '';
-
-    /** @var string|null String representation */
-    private $composedComponents;
+    private string $fragment = '';
 
     public function __construct(string $uri = '')
     {
@@ -84,7 +68,13 @@ class Uri implements UriInterface, \JsonSerializable
             if ($parts === false) {
                 throw new MalformedUriException("Unable to parse URI: $uri");
             }
-            $this->applyParts($parts);
+            try {
+                $this->applyParts($parts);
+            } catch (MalformedUriException $e) {
+                throw $e;
+            } catch (\InvalidArgumentException $e) {
+                throw new MalformedUriException($e->getMessage(), 0, $e);
+            }
         }
     }
 
@@ -105,22 +95,30 @@ class Uri implements UriInterface, \JsonSerializable
      */
     private static function parse(string $url)
     {
-        // If IPv6
+        if (self::isPathNoSchemeReference($url)) {
+            return self::parsePathNoSchemeReference($url);
+        }
+
+        // Preserve bracketed IPv6 literals before encoding, including dotted IPv4 tails.
         $prefix = '';
-        if (preg_match('%^(.*://\[[0-9:a-fA-F]+\])(.*?)$%', $url, $matches)) {
+        if (preg_match('%^([0-9A-Za-z+.-]+://\[[0-9:.a-fA-F]+\])(.*?)$%', $url, $matches)) {
             /** @var array{0:string, 1:string, 2:string} $matches */
             $prefix = $matches[1];
             $url = $matches[2];
         }
 
-        /** @var string */
+        /** @var string|null */
         $encodedUrl = preg_replace_callback(
             '%[^:/@?&=#]+%usD',
-            static function ($matches) {
+            static function (array $matches): string {
                 return urlencode($matches[0]);
             },
             $url
         );
+
+        if ($encodedUrl === null) {
+            return false;
+        }
 
         $result = parse_url($prefix.$encodedUrl);
 
@@ -131,19 +129,48 @@ class Uri implements UriInterface, \JsonSerializable
         return array_map('urldecode', $result);
     }
 
-    public function __toString(): string
+    private static function isPathNoSchemeReference(string $url): bool
     {
-        if ($this->composedComponents === null) {
-            $this->composedComponents = self::composeComponents(
-                $this->scheme,
-                $this->getAuthority(),
-                $this->path,
-                $this->query,
-                $this->fragment
-            );
+        if ($url === '' || $url[0] === '/' || $url[0] === '?' || $url[0] === '#') {
+            return false;
         }
 
-        return $this->composedComponents;
+        $firstSegment = substr($url, 0, strcspn($url, '/?#'));
+
+        return strpos($firstSegment, ':') === false;
+    }
+
+    /**
+     * @return array{path: string, query?: string, fragment?: string}
+     */
+    private static function parsePathNoSchemeReference(string $url): array
+    {
+        $parts = [];
+
+        if (false !== ($fragmentPosition = strpos($url, '#'))) {
+            $parts['fragment'] = substr($url, $fragmentPosition + 1);
+            $url = substr($url, 0, $fragmentPosition);
+        }
+
+        if (false !== ($queryPosition = strpos($url, '?'))) {
+            $parts['query'] = substr($url, $queryPosition + 1);
+            $url = substr($url, 0, $queryPosition);
+        }
+
+        $parts['path'] = $url;
+
+        return $parts;
+    }
+
+    public function __toString(): string
+    {
+        return self::composeComponents(
+            $this->scheme,
+            $this->getAuthority(),
+            $this->path,
+            $this->query,
+            $this->fragment
+        );
     }
 
     /**
@@ -360,10 +387,28 @@ class Uri implements UriInterface, \JsonSerializable
     public static function fromParts(array $parts): UriInterface
     {
         $uri = new self();
-        $uri->applyParts($parts);
-        $uri->validateState();
+        try {
+            $uri->applyParts($parts);
+            $uri->validateState();
+        } catch (MalformedUriException $e) {
+            throw $e;
+        } catch (\InvalidArgumentException $e) {
+            throw new MalformedUriException($e->getMessage(), 0, $e);
+        }
 
         return $uri;
+    }
+
+    /**
+     * @throws \InvalidArgumentException If the host is invalid.
+     *
+     * @internal
+     */
+    public static function assertValidHost(string $host): void
+    {
+        if (!Rfc3986::isValidHost($host)) {
+            throw new \InvalidArgumentException(sprintf('Invalid host: "%s"', $host));
+        }
     }
 
     public function getScheme(): string
@@ -402,6 +447,10 @@ class Uri implements UriInterface, \JsonSerializable
 
     public function getPath(): string
     {
+        if (isset($this->path[1]) && $this->path[0] === '/' && $this->path[1] === '/') {
+            return '/'.ltrim($this->path, '/');
+        }
+
         return $this->path;
     }
 
@@ -415,7 +464,7 @@ class Uri implements UriInterface, \JsonSerializable
         return $this->fragment;
     }
 
-    public function withScheme($scheme): UriInterface
+    public function withScheme(string $scheme): UriInterface
     {
         $scheme = $this->filterScheme($scheme);
 
@@ -425,14 +474,13 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->scheme = $scheme;
-        $new->composedComponents = null;
         $new->removeDefaultPort();
         $new->validateState();
 
         return $new;
     }
 
-    public function withUserInfo($user, $password = null): UriInterface
+    public function withUserInfo(string $user, ?string $password = null): UriInterface
     {
         $info = $this->filterUserInfoComponent($user);
         if ($password !== null) {
@@ -445,13 +493,12 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->userInfo = $info;
-        $new->composedComponents = null;
         $new->validateState();
 
         return $new;
     }
 
-    public function withHost($host): UriInterface
+    public function withHost(string $host): UriInterface
     {
         $host = $this->filterHost($host);
 
@@ -461,13 +508,12 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->host = $host;
-        $new->composedComponents = null;
         $new->validateState();
 
         return $new;
     }
 
-    public function withPort($port): UriInterface
+    public function withPort(?int $port): UriInterface
     {
         $port = $this->filterPort($port);
 
@@ -477,14 +523,13 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->port = $port;
-        $new->composedComponents = null;
         $new->removeDefaultPort();
         $new->validateState();
 
         return $new;
     }
 
-    public function withPath($path): UriInterface
+    public function withPath(string $path): UriInterface
     {
         $path = $this->filterPath($path);
 
@@ -494,13 +539,12 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->path = $path;
-        $new->composedComponents = null;
         $new->validateState();
 
         return $new;
     }
 
-    public function withQuery($query): UriInterface
+    public function withQuery(string $query): UriInterface
     {
         $query = $this->filterQueryAndFragment($query);
 
@@ -510,12 +554,11 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->query = $query;
-        $new->composedComponents = null;
 
         return $new;
     }
 
-    public function withFragment($fragment): UriInterface
+    public function withFragment(string $fragment): UriInterface
     {
         $fragment = $this->filterQueryAndFragment($fragment);
 
@@ -525,7 +568,6 @@ class Uri implements UriInterface, \JsonSerializable
 
         $new = clone $this;
         $new->fragment = $fragment;
-        $new->composedComponents = null;
 
         return $new;
     }
@@ -552,7 +594,7 @@ class Uri implements UriInterface, \JsonSerializable
             ? $this->filterHost($parts['host'])
             : '';
         $this->port = isset($parts['port'])
-            ? $this->filterPort($parts['port'])
+            ? $this->filterPortPart($parts['port'])
             : null;
         $this->path = isset($parts['path'])
             ? $this->filterPath($parts['path'])
@@ -571,63 +613,51 @@ class Uri implements UriInterface, \JsonSerializable
     }
 
     /**
-     * @param mixed $scheme
-     *
      * @throws \InvalidArgumentException If the scheme is invalid.
      */
-    private function filterScheme($scheme): string
+    private function filterScheme(string $scheme): string
     {
-        if (!is_string($scheme)) {
-            throw new \InvalidArgumentException('Scheme must be a string');
+        $scheme = \strtr($scheme, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+
+        if (!Rfc3986::isValidScheme($scheme)) {
+            throw new \InvalidArgumentException(sprintf('Invalid scheme: "%s"', $scheme));
         }
 
-        return \strtr($scheme, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+        return $scheme;
     }
 
     /**
-     * @param mixed $component
-     *
      * @throws \InvalidArgumentException If the user info is invalid.
      */
-    private function filterUserInfoComponent($component): string
+    private function filterUserInfoComponent(string $component): string
     {
-        if (!is_string($component)) {
-            throw new \InvalidArgumentException('User info must be a string');
-        }
-
         return preg_replace_callback(
-            '/(?:[^%'.self::CHAR_UNRESERVED.self::CHAR_SUB_DELIMS.']+|%(?![A-Fa-f0-9]{2}))/',
+            '/(?:[^%'.Rfc3986::CHAR_UNRESERVED.Rfc3986::CHAR_SUB_DELIMS.']++|%(?!'.Rfc3986::HEX_OCTET.'))/',
             [$this, 'rawurlencodeMatchZero'],
             $component
         );
     }
 
     /**
-     * @param mixed $host
-     *
      * @throws \InvalidArgumentException If the host is invalid.
      */
-    private function filterHost($host): string
+    private function filterHost(string $host): string
     {
-        if (!is_string($host)) {
-            throw new \InvalidArgumentException('Host must be a string');
-        }
+        $host = \strtr($host, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+        self::assertValidHost($host);
 
-        return \strtr($host, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz');
+        return $host;
     }
 
     /**
-     * @param mixed $port
-     *
      * @throws \InvalidArgumentException If the port is invalid.
      */
-    private function filterPort($port): ?int
+    private function filterPort(?int $port): ?int
     {
         if ($port === null) {
             return null;
         }
 
-        $port = (int) $port;
         if (0 > $port || 0xFFFF < $port) {
             throw new \InvalidArgumentException(
                 sprintf('Invalid port: %d. Must be between 0 and 65535', $port)
@@ -635,6 +665,75 @@ class Uri implements UriInterface, \JsonSerializable
         }
 
         return $port;
+    }
+
+    /**
+     * @param mixed $port
+     *
+     * @throws \InvalidArgumentException If the port is invalid.
+     */
+    private function filterPortPart($port): ?int
+    {
+        if (\is_int($port)) {
+            return $this->filterPort($port);
+        }
+
+        if (!\is_string($port) || $port === '' || !\ctype_digit($port)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Invalid port: %s. Must be between 0 and 65535',
+                self::describeInvalidPort($port)
+            ));
+        }
+
+        $normalized = \ltrim($port, '0');
+        if ($normalized === '') {
+            return 0;
+        }
+
+        if (\strlen($normalized) > 5 || (int) $normalized > 0xFFFF) {
+            throw new \InvalidArgumentException(sprintf(
+                'Invalid port: %s. Must be between 0 and 65535',
+                $normalized
+            ));
+        }
+
+        return (int) $normalized;
+    }
+
+    /**
+     * @param mixed $port
+     */
+    private static function describeInvalidPort($port): string
+    {
+        if (\is_string($port)) {
+            return $port;
+        }
+
+        if (\is_int($port)) {
+            return (string) $port;
+        }
+
+        if (\is_bool($port)) {
+            return $port ? 'true' : 'false';
+        }
+
+        if ($port === null) {
+            return 'null';
+        }
+
+        if (\is_float($port)) {
+            if (\is_nan($port)) {
+                return 'NAN';
+            }
+
+            if (\is_infinite($port)) {
+                return $port > 0 ? 'INF' : '-INF';
+            }
+
+            return \sprintf('%.14G', $port);
+        }
+
+        return \get_debug_type($port);
     }
 
     /**
@@ -654,14 +753,15 @@ class Uri implements UriInterface, \JsonSerializable
             return rawurldecode((string) $k);
         }, $keys);
 
-        return array_filter(explode('&', $current), function ($part) use ($decodedKeys) {
+        return array_filter(explode('&', $current), static function (string $part) use ($decodedKeys): bool {
             return !in_array(rawurldecode(explode('=', $part)[0]), $decodedKeys, true);
         });
     }
 
     private static function generateQueryString(string $key, ?string $value): string
     {
-        // Query string separators ("=", "&") within the key or value need to be encoded
+        // Query string separators ("=", "&") and literal plus signs ("+") within the
+        // key or value need to be encoded
         // (while preventing double-encoding) before setting the query string. All other
         // chars that need percent-encoding will be encoded by withQuery().
         $queryString = strtr($key, self::QUERY_SEPARATORS_REPLACEMENT);
@@ -683,18 +783,12 @@ class Uri implements UriInterface, \JsonSerializable
     /**
      * Filters the path of a URI
      *
-     * @param mixed $path
-     *
      * @throws \InvalidArgumentException If the path is invalid.
      */
-    private function filterPath($path): string
+    private function filterPath(string $path): string
     {
-        if (!is_string($path)) {
-            throw new \InvalidArgumentException('Path must be a string');
-        }
-
         return preg_replace_callback(
-            '/(?:[^'.self::CHAR_UNRESERVED.self::CHAR_SUB_DELIMS.'%:@\/]++|%(?![A-Fa-f0-9]{2}))/',
+            '/(?:[^'.Rfc3986::CHAR_UNRESERVED.Rfc3986::CHAR_SUB_DELIMS.'%:@\/]++|%(?!'.Rfc3986::HEX_OCTET.'))/',
             [$this, 'rawurlencodeMatchZero'],
             $path
         );
@@ -703,18 +797,12 @@ class Uri implements UriInterface, \JsonSerializable
     /**
      * Filters the query string or fragment of a URI.
      *
-     * @param mixed $str
-     *
      * @throws \InvalidArgumentException If the query or fragment is invalid.
      */
-    private function filterQueryAndFragment($str): string
+    private function filterQueryAndFragment(string $str): string
     {
-        if (!is_string($str)) {
-            throw new \InvalidArgumentException('Query and fragment must be a string');
-        }
-
         return preg_replace_callback(
-            '/(?:[^'.self::CHAR_UNRESERVED.self::CHAR_SUB_DELIMS.'%:@\/\?]++|%(?![A-Fa-f0-9]{2}))/',
+            '/(?:[^'.Rfc3986::CHAR_UNRESERVED.Rfc3986::CHAR_SUB_DELIMS.'%:@\/\?]++|%(?!'.Rfc3986::HEX_OCTET.'))/',
             [$this, 'rawurlencodeMatchZero'],
             $str
         );

@@ -1,9 +1,12 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 add_action('tsjippy_frontend_post_after_content', __NAMESPACE__ . '\afterContent');
-function afterContent($frontendContend) {
+function afterContent($frontendContend)
+{
     $hidden            = 'hidden';
     $checked        = '';
     $messageType    = '';
@@ -13,8 +16,8 @@ function afterContent($frontendContend) {
         (
             $frontendContend->postId == null ||                     // this is a new page
             !empty($frontendContend->getPostMeta('send_signal'))    // we should send a signal message
-       )
-   ) {
+        )
+    ) {
         $checked         = 'checked';
         $hidden            = '';
         $messageType    = $frontendContend->getPostMeta('signal_message_type');
@@ -27,18 +30,18 @@ function afterContent($frontendContend) {
         $defaultGroups    = SETTINGS['groups'] ?? [];
     }
 
-    ?>
+?>
     <div id="signal-message" class="frontend-form">
         <h4>Signal</h4>
         <label>
             <input type='checkbox' name='send-signal' value='1' <?php echo esc_attr($checked); ?>>
-            Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish';?>
+            Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish'; ?>
         </label>
 
-        <div class='signal-message-type <?php echo esc_attr($hidden);?>' style='margin-top:15px;'>
+        <div class='signal-message-type <?php echo esc_attr($hidden); ?>' style='margin-top:15px;'>
             <?php
             if (!empty($signalGroups) && is_array($signalGroups)) {
-                ?>
+            ?>
                 <label>
                     Target Signal Groups<br>
 
@@ -53,14 +56,14 @@ function afterContent($frontendContend) {
                             if (in_array($group->id, $defaultGroups)) {
                                 $checked = 'checked';
                             }
-                            ?>
+                    ?>
                             <label>
-                                <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id);?>' <?php echo $checked;?>>
-                                <?php echo esc_attr($group->name);?>
+                                <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php echo $checked; ?>>
+                                <?php echo esc_attr($group->name); ?>
                             </label>
-                            <?php
+                        <?php
                         }
-                    }else{
+                    } else {
                         ?>
                         <select name="signal-groups[]" multiple="multiple" class="hidden-select">
                             <?php
@@ -73,14 +76,14 @@ function afterContent($frontendContend) {
                                 if (in_array($group->id, $defaultGroups)) {
                                     $selected = 'selected';
                                 }
-                                ?>
-                                <option value='<?php echo esc_attr($group->id);?>' <?php echo $selected;?>><?php echo esc_attr($group->name);?></option>
-                                <?php
+                            ?>
+                                <option value='<?php echo esc_attr($group->id); ?>' <?php echo $selected; ?>><?php echo esc_attr($group->name); ?></option>
+                            <?php
                             }
                             ?>
                         </select>
 
-                        <?php
+                    <?php
                     }
                     ?>
                 </label>
@@ -90,11 +93,15 @@ function afterContent($frontendContend) {
             ?>
             <br>
             <label>
-                <input type='radio' name='signal-message-type' value='summary' <?php if ($messageType != 'all') {echo 'checked';}?>>
+                <input type='radio' name='signal-message-type' value='summary' <?php if ($messageType != 'all') {
+                                                                                    echo 'checked';
+                                                                                } ?>>
                 Send a summary
             </label>
             <label>
-                <input type='radio' name='signal-message-type' value='all' <?php if ($messageType == 'all') {echo 'checked';}?>>
+                <input type='radio' name='signal-message-type' value='all' <?php if ($messageType == 'all') {
+                                                                                echo 'checked';
+                                                                            } ?>>
                 Send the whole post content
             </label>
             <br>
@@ -111,19 +118,20 @@ function afterContent($frontendContend) {
             </label>
         </div>
     </div>
-    <?php
+<?php
 }
 
 // Send Signal message about the new or updated post
 add_action('tsjippy_after_post_save', __NAMESPACE__ . '\afterPostSave', 999);
-function afterPostSave($post) {
+function afterPostSave($post)
+{
     if (isset($_POST['send-signal']) && $_POST['send-signal']) {
         update_metadata('post', $post->ID, 'send_signal', true);
         update_metadata('post', $post->ID, 'signal_groups', $_POST['signal-groups']);
         update_metadata('post', $post->ID, 'signal_message_type', $_POST['signal-message-type']);
         update_metadata('post', $post->ID, 'signal_url', true);
         update_metadata('post', $post->ID, 'signal_extra_message', $_POST['signal-extra-message']);
-    }else{
+    } else {
         delete_metadata('post', $post->ID, 'send_signal');
         delete_metadata('post', $post->ID, 'signal_groups');
         delete_metadata('post', $post->ID, 'signal_message_type');
@@ -133,7 +141,8 @@ function afterPostSave($post) {
 }
 
 add_action('wp_after_insert_post', __NAMESPACE__ . '\afterInsertPost', 10, 3);
-function afterInsertPost($postId, $post) {
+function afterInsertPost($postId, $post)
+{
     if (in_array($post->post_status, ['publish'])) {
         //Send signal message
         sendPostNotification($post);

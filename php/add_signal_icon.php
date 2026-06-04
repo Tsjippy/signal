@@ -1,9 +1,12 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 add_filter('tsjippy-form-element-html', __NAMESPACE__ . '\elmentHtml', 10, 3);
-function elmentHtml($node, $object) {
+function elmentHtml($node, $object)
+{
     $element    = $object->element;
 
     if ($element->slug == 'phonenumbers') {
@@ -19,7 +22,7 @@ function elmentHtml($node, $object) {
                     'height'    => "30px",
                     'style'     => "padding-top: 8px;margin: 37px 5px 0 5px;"
                 ]
-           );
+            );
 
             $g  = $object->addElement('g', $icon, ['transform' => "matrix(0.15625 0 0 0.15625 0 0)"]);
 
@@ -33,7 +36,7 @@ function elmentHtml($node, $object) {
                     'fill'      => "#3A76F0",
                     'fill-rule' => "nonzero"
                 ]
-           );
+            );
 
             // add the signal logo behind the phone number input
             $wrapper = $node->parentNode->parentNode;

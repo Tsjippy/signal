@@ -5,6 +5,156 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.0.0 - Unreleased
+
+### Added
+
+- Add `GuzzleHttp\Psr7\Exception\TimeoutException` for timed-out stream operations
+
+### Changed
+
+- Require `psr/http-message:^2.0` and add native parameter and return types
+- Require `psr/http-factory:^1.1`
+- Preserve request method casing, except `ServerRequest::fromGlobals()` still uppercases
+- Reject empty arrays and non-string values as header values
+- Reject invalid uploaded file trees and invalid parsed body values
+- Reject uploaded file specs missing `tmp_name`, `size`, or `error`
+- Reject invalid stream/upload sizes, buffer high-water marks, and dropping-stream limits
+- Rewind seekable uploaded-file streams before copying in `UploadedFile::moveTo()`
+- Reject negative `read()` lengths across all stream implementations
+- Detect the `+` flag anywhere in a mode for `Stream::isReadable()`/`isWritable()`
+- Reject empty strings returned by `PumpStream` source callables
+- Discard buffered bytes on `PumpStream` close and detach
+- Restore the original stream position after `Message::bodySummary()`
+- Allow `null` for the `Message::bodySummary()` truncation length to use the default
+- Validate `LimitStream` offset/limit and track non-seekable offset by bytes skipped
+- Make `FnStream` close and detach terminal, calling close callbacks at most once
+- Suppress exceptions from `FnStream` close callbacks during destructor cleanup
+- Make `CachingStream::close()` idempotent, preserving remote cleanup after detach
+- Normalize multiple leading slashes in `Uri::getPath()` and origin-form request targets
+- Harden URI host validation (delimiters, backslashes, IPv6, embedded ports); require schemes to start with a letter
+- Redact all non-empty URI userinfo in `Utils::redactUserInfo()`
+- Rebuild server request URIs from `$_SERVER` by `REQUEST_METHOD`, using target authority before `SERVER_PORT`
+- Reject zero-port `HTTP_HOST` and malformed `SERVER_PORT` in `ServerRequest::getUriFromGlobals()`
+- Reject zero-port `Host` and normalize leading-zero ports in `Message::parseRequest()`
+- Reject duplicate `Host` headers and validate present values for all request-target forms
+- Synchronize the `Host` header in `Request::withUri()` when the URI changes or Host is empty
+- Include the URI port in `Host` headers synthesized by `Message::toString()`
+- Accept `OPTIONS *` and `CONNECT` authority-form request targets in `Message::parseRequest()`
+- Reject malformed HTTP request/response start-lines
+- Validate iterator chunks passed to `Utils::streamFor()`
+- Validate unsupported values passed to `Query::build()`
+- Reject invalid `Utils::modifyRequest()` change values
+- Use PHP debug type names in type error messages
+- Changed `Utils::copyToStream()` to throw when destination streams cannot make progress
+- Throw `TimeoutException` from `Stream` read/write and `Utils` copy/hash/readLine on stream timeouts
+- Re-throw `TimeoutException` from `InflateStream` when the decoded source stream times out
+- Return the number of bytes copied from `Utils::copyToStream()`
+- Throw `OverflowException` when stream byte counts or offsets exceed `PHP_INT_MAX`
+- Translate `StreamWrapper` runtime failures to PHP stream failure values
+- Stop adding default `Content-Length` to `multipart/form-data` parts (RFC 7578 §4.8)
+- Escape multipart `Content-Disposition` parameters and reject unsafe boundaries and part headers
+- Preserve trailing whitespace in custom `MultipartStream` part header values
+- Made static utility classes non-instantiable
+
+### Removed
+
+- Dropped support for PHP 7.2 and 7.3
+- Removed the `ralouphie/getallheaders` dependency
+
+## 2.11.0 - 2026-06-02
+
+### Changed
+
+- Changed `Utils::modifyRequest()` to reject conflicting URI and `Host` header changes in the same call
+- Changed `Header::parse()` to split semicolon-separated parameters without repeated regular expression lookaheads
+- Changed `UriComparator::isCrossOrigin()` so only HTTP and HTTPS missing ports receive implicit default ports
+
+### Deprecated
+
+- Deprecated invalid PSR-7 arguments that guzzlehttp/psr7 3.0 will require native types for
+- Deprecated non-string header values that guzzlehttp/psr7 3.0 will reject
+- Deprecated empty header value arrays that guzzlehttp/psr7 3.0 will reject
+- Deprecated URI schemes that do not match guzzlehttp/psr7 3.0 syntax requirements
+- Deprecated multipart boundary and custom part header metadata that guzzlehttp/psr7 3.0 will reject
+- Deprecated reliance on automatic uppercasing of request methods; guzzlehttp/psr7 3.0 preserves method casing
+- Deprecated invalid `Utils::modifyRequest()` change values that guzzlehttp/psr7 3.0 will reject
+
+### Fixed
+
+- Fixed `Utils::copyToStream()` to retry short destination writes instead of dropping the unwritten remainder
+- Fixed `Header::parse()` splitting of semicolon-separated parameters with escaped quotes
+
+## 2.10.4 - 2026-05-29
+
+### Fixed
+
+- Apply `UriNormalizer` percent-encoding normalizations to URI fragments
+- Make `LimitStream::getSize()` return `0` for slices past the underlying stream end
+- Make `AppendStream::read()` return an empty string when no streams are attached
+- Make `CachingStream::read()` throw on an incomplete cache-target write instead of silently corrupting replays
+- Prevent `CachingStream::seek()` from looping indefinitely when the remote stream makes no progress
+
+## 2.10.3 - 2026-05-27
+
+### Fixed
+
+- Fixed URI parsing for IPv6 literals containing embedded IPv4 addresses
+- Fixed malformed UTF-8 URI strings being parsed as empty URIs
+
+## 2.10.2 - 2026-05-25
+
+### Security
+
+- Reject control and whitespace characters in URI host components (GHSA-hq7v-mx3g-29hw)
+- Reject malformed Host values when constructing request URIs (GHSA-34xg-wgjx-8xph)
+
+### Fixed
+
+- Make `ServerRequest::fromGlobals()` robust against unexpected HTTP header value types in `$_SERVER`
+
+## 2.10.1 - 2026-05-20
+
+### Fixed
+
+- Fix `Utils::modifyRequest()` with numeric header names
+
+## 2.10.0 - 2026-05-19
+
+### Changed
+
+- Harden `ServerRequest::fromGlobals()` against malformed `$_SERVER` values
+- Prevent custom stream metadata from affecting internal size handling
+- Throw when `StreamWrapper::getResource()` cannot create a resource
+- Preserve custom request implementations in `Utils::modifyRequest()`
+- Preserve custom URI implementations in `UriResolver::resolve()`
+- Make `Uri::__toString()` side-effect-free
+
+## 2.9.1 - 2026-05-19
+
+### Fixed
+
+- Fix parsing of relative path references containing a colon in a non-initial path segment
+- Fix `CachingStream::detach()` returning an incomplete resource before the decorated stream has been fully read
+- Fix `Message::bodySummary()` returning `null` when truncating printable UTF-8 bodies inside a multibyte character
+
+## 2.9.0 - 2026-03-10
+
+### Added
+
+- Added nested array expansion support to `MultipartStream`
+- Added `@return static` to `MessageTrait` methods
+
+### Changed
+
+- Updated MIME type mappings
+
+## 2.8.1 - 2026-03-10
+
+### Fixed
+
+- Encode `+` signs in `Uri::withQueryValue()` and `Uri::withQueryValues()` to prevent them being interpreted as spaces
+
 ## 2.8.0 - 2025-08-23
 
 ### Added

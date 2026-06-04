@@ -1,15 +1,18 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 use function TSJIPPY\addRawHtml;
 use function TSJIPPY\addElement;
 
-if ( ! defined('ABSPATH')) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
-class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
+class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
+{
 
     /**
      * AdminMenu constructor.
@@ -17,11 +20,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param array $settings The settings for the plugin
      * @param string $name The name of the plugin
      */
-    public function __construct($settings, $name) {
+    public function __construct($settings, $name)
+    {
         parent::__construct($settings, $name);
     }
 
-    public function settings($parent) {
+    public function settings($parent)
+    {
         $local    = false;
         if (isset($this->settings['local']) && $this->settings['local']) {
             $local    = true;
@@ -29,12 +34,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         ob_start();
 
-        ?>
+?>
         <strong>Server type</strong><br>
         Indicate if you can install signal-cli on this server or not<br>
         I have root access on this server
         <label class="switch">
-            <input type="checkbox" name="local" value=1 <?php if ($local) {echo 'checked';}?>>
+            <input type="checkbox" name="local" value=1 <?php if ($local) {
+                                                            echo 'checked';
+                                                        } ?>>
             <span class="slider round"></span>
         </label>
         <br>
@@ -58,18 +65,18 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             ob_start();
 
             if (!$passed) {
-                ?>
+        ?>
                 <div class='error'>
                     Signal-cli is not working properly, please check the error log for more details.<br>
                     <?php echo esc_html($signal->error); ?>
                 </div>
-                <?php
-            }elseif ($signal->phoneNumber && $signal->getUserStatus($signal->phoneNumber)) {
+        <?php
+            } elseif ($signal->phoneNumber && $signal->getUserStatus($signal->phoneNumber)) {
                 $this->connectedOptions($signal, $parent);
-            }else{
+            } else {
                 $this->notConnectedOptions();
             }
-        }else{
+        } else {
             $this->notLocalOptions();
         }
 
@@ -78,7 +85,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
-    public function emails($parent) {
+    public function emails($parent)
+    {
         if (!SETTINGS['local'] ?? false) {
             return false;
         }
@@ -97,7 +105,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         ?>
 
         <h4>E-mail to remind people to add their Signal phonenumber</h4>
-        <?php
+    <?php
 
         $email->printInputs();
 
@@ -106,7 +114,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
-    public function data($parent) {
+    public function data($parent)
+    {
         if (!isset($this->settings['local']) || !$this->settings['local']) {
             return false;
         }
@@ -164,7 +173,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return true;
     }
 
-    private function rateChallenge($parent) {
+    private function rateChallenge($parent)
+    {
         // no challenge var set
         if (empty($_REQUEST['challenge'])) {
             return false;
@@ -178,7 +188,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
             if (!$result) {
                 TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Rate challenge could not be submitted');
-            }else{
+            } else {
                 TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Rate challenge succesfully submitted');
             }
 
@@ -188,7 +198,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         /**
          * Show rate challenge form
          */
-        else{
+        else {
             $form   = TSJIPPY\addElement('form', $parent, ['method' => 'get']);
 
             TSJIPPY\addElement('input', $form, ['type' => "hidden", 'class' => "no-reset", 'name' => "page", 'value' => "tsjippy-signal"]);
@@ -219,7 +229,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         return false;
     }
 
-    public function functions($parent) {
+    public function functions($parent)
+    {
         if ($this->rateChallenge($parent)) {
             return true;
         }
@@ -233,18 +244,18 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             // reply to previous message
             if (!empty($_REQUEST['timesent']) && !empty($_REQUEST['replymessage']) && !empty($_REQUEST['author'])) {
                 $result    = sendSignalMessage($message, stripslashes($_REQUEST['recipient']), '', intval($_REQUEST['timesent']), $_REQUEST['author'], $_REQUEST['replymessage']);
-            }else{
+            } else {
                 $result    = sendSignalMessage($message, stripslashes($_REQUEST['recipient']));
             }
 
             if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
 
-                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Message could not be send' .esc_html($result->get_error_message()));
-            }elseif (empty($result)) {
+                TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Message could not be send' . esc_html($result->get_error_message()));
+            } elseif (empty($result)) {
                 TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Message sending timed out');
-            }else{
-                TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Message succesfully send' .esc_html($result));
+            } else {
+                TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Message succesfully send' . esc_html($result));
             }
         }
 
@@ -287,7 +298,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         TSJIPPY\addElement('br', $label);
 
         ob_start();
-        ?>
+    ?>
         <table>
             <thead>
                 <tr>
@@ -345,15 +356,15 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 'placeholder'   => "Type a name or groupname to select",
                 'value'         => $chat
             ]
-       );
+        );
 
         $users            = get_users([
             'meta_query' => array(
                 array(
                     'key'     => 'phonenumbers',
                     'compare' => 'EXISTS'
-               )
-           ),
+                )
+            ),
             'orderby'    => 'meta_value',
             'order'     => 'ASC'
         ]);
@@ -379,10 +390,10 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
                 TSJIPPY\addElement('option', $dataList, ['value' => $group->id], $group->name);
             }
-        }else{
+        } else {
             if (empty($this->settings['groups'])) {
                 $groups    = [''];
-            }else{
+            } else {
                 $groups    = $this->settings['groups'];
             }
             foreach ((array)$groups as $group) {
@@ -401,7 +412,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     /**
      * Function to do extra actions from $_POST data. Overwrite if needed
      */
-    public function postActions() {
+    public function postActions()
+    {
         $local    = SETTINGS['local'] ?? false;
 
         if (!$local) {
@@ -423,8 +435,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
                     if (is_wp_error($result)) {
                         // @disregard
-                        $message    .= "<div class='error'>" .$result->get_error_message(). "</div>";
-                    }else{
+                        $message    .= "<div class='error'>" . $result->get_error_message() . "</div>";
+                    } else {
                         $message    .= "<div class='success'>Display name changed succesfully to $displayName</div>";
                     }
                 }
@@ -437,18 +449,18 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 if ($avatarAttachmentId != $this->settings['picture-ids']['avatar']) {
                     if (empty($avatarAttachmentId)) {
                         $result    = $signal->updateProfile('', null, true);
-                    }else{
+                    } else {
                         $path    = get_attached_file($avatarAttachmentId);
 
                         if (empty($path) || !file_exists($path)) {
-                            return $message. "<div class='error'>Something went wrong with the avatar, please try again</div>";
+                            return $message . "<div class='error'>Something went wrong with the avatar, please try again</div>";
                         }
                         $result    = $signal->updateProfile('', $path);
                     }
 
                     if (is_wp_error($result)) {
-                        $message    .= "<div class='error'>" .$result->get_error_message(). "</div>";
-                    }else{
+                        $message    .= "<div class='error'>" . $result->get_error_message() . "</div>";
+                    } else {
                         $message    .= "<div class='success'>Avatar changed succesfully</div>";
                     }
                 }
@@ -460,19 +472,19 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         /**
          * Show the registration form if needed
          */
-        if ( isset($_GET['register'])) {
+        if (isset($_GET['register'])) {
             return $this->registerForm();
-        }elseif (isset($_GET['unregister'])) {
+        } elseif (isset($_GET['unregister'])) {
             $signal->unregister();
-        }elseif (!empty($_POST['captcha'])) {
-            $result= $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
+        } elseif (!empty($_POST['captcha'])) {
+            $result = $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
 
             if (is_wp_error($result)) {
-                return "<div class='error'>" .$result->get_error_message(). "</div>";
-            }elseif (empty($signal->error)) {
+                return "<div class='error'>" . $result->get_error_message() . "</div>";
+            } elseif (empty($signal->error)) {
                 ob_start();
                 // show the verification form after the registration form if there is no error
-                ?>
+        ?>
                 <form method='post'>
                     You should have received a verification code.<br>
                     Please insert the code below.
@@ -486,23 +498,23 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <br>
                     <button>Verify</button>
                 </form>
-                <?php
+        <?php
 
                 return ob_get_clean();
             }
-        }elseif (!empty($_POST['verification-code'])) {
+        } elseif (!empty($_POST['verification-code'])) {
             $result    = $signal->verify($_POST['verification-code']);
 
             if (is_wp_error($result)) {
-                return "<div class='error'>" .$result->get_error_message(). "</div>" .$this->registerForm();
-            }elseif (!empty($signal->error)) {
-                return "<div class='error'>$signal->error</div>" .$this->registerForm();
-            }else{
+                return "<div class='error'>" . $result->get_error_message() . "</div>" . $this->registerForm();
+            } elseif (!empty($signal->error)) {
+                return "<div class='error'>$signal->error</div>" . $this->registerForm();
+            } else {
                 unset($_POST['verification-code']);
 
                 return "<div class='success'>Succesfully registered with Signal!</div>";
             }
-        }elseif (isset($_GET['link'])) {
+        } elseif (isset($_GET['link'])) {
             return $signal->link();
         }
     }
@@ -510,15 +522,17 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     /**
      * Schedules the tasks for this plugin
      *
-    */
-    public function postSettingsSave() {
+     */
+    public function postSettingsSave()
+    {
         scheduleTasks();
     }
 
-    public function registerForm() {
+    public function registerForm()
+    {
         ob_start();
         ?>
-        <form method='post' action='<?php echo admin_url("admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}");?>'>
+        <form method='post' action='<?php echo admin_url("admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}"); ?>'>
             <h4>Register with Signal</h4>
             <br>
             <label>
@@ -553,7 +567,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param    object            $signal        The signal object
      * @param   \DOMElement|null $parent     Parent node element
      */
-    public function connectedOptions($signal, $parent) {
+    public function connectedOptions($signal, $parent)
+    {
         $tab        = '';
         if (!empty($_GET['main-tab'])) {
             $tab    = "&main-tab={$_GET['main-tab']}";
@@ -562,7 +577,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         if (isset($_GET['force'])) {
             $signalGroups    = $signal->listGroups(false, false, true);
-        }else{
+        } else {
             $signalGroups    = $signal->listGroups();
         }
 
@@ -570,12 +585,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         if (!empty($signal->error)) {
             if (str_contains($signal->error, 'Specified account does not exist')) {
-                ?>
+        ?>
                 <div class='warning'>
-                    <?php echo esc_attr($signal->phoneNumber);?> is connected to on this machine but not registered on the Signal Servers, please register the number again<br>
+                    <?php echo esc_attr($signal->phoneNumber); ?> is connected to on this machine but not registered on the Signal Servers, please register the number again<br>
                 </div>
 
-                <?php
+        <?php
 
                 return $this->notConnectedOptions();
             }
@@ -586,12 +601,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         <h4>Connection details</h4>
         <p>
             Currently connected to <?php echo esc_attr($signal->phoneNumber); ?>
-            <a href='<?php echo esc_url($url);?>&unregister=true' class='button'>Unregister</a><br>
+            <a href='<?php echo esc_url($url); ?>&unregister=true' class='button'>Unregister</a><br>
         </p>
 
         <label>
             Signal Messenger Display name<br>
-            <input type='text' name='display-name' value='<?php echo $this->settings['display-name'];?>' style='width:310px'>
+            <input type='text' name='display-name' value='<?php echo $this->settings['display-name']; ?>' style='width:310px'>
         </label>
         <br>
         <label>
@@ -648,7 +663,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     /**
      * Shows the options when not connected to Signal
      */
-    public function notConnectedOptions() {
+    public function notConnectedOptions()
+    {
         $url        = admin_url("admin.php?page={$_GET['page']}");
         if (!empty($_GET['tab'])) {
             $url    .= "&main-tab={$_GET['main-tab']}";
@@ -659,24 +675,25 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         <p>
             Currently not connected to Signal
             <br>
-            <a href='<?php echo esc_url($url);?>&register=true' class='button'>Register a new number with Signal</a>
+            <a href='<?php echo esc_url($url); ?>&register=true' class='button'>Register a new number with Signal</a>
 
-            <a href='<?php echo esc_url($url);?>&link=true' class='button'>Link to an existing Signal number</a>
+            <a href='<?php echo esc_url($url); ?>&link=true' class='button'>Link to an existing Signal number</a>
         </p>
-        <?php
+    <?php
     }
 
     /**
      * Shows the options when Java JDK is not installed
      */
-    public function notLocalOptions() {
+    public function notLocalOptions()
+    {
         if (empty($this->settings['groups'])) {
             $groups    = [''];
-        }else{
+        } else {
             $groups    = $this->settings['groups'];
         }
 
-        ?>
+    ?>
         <label>
             Link to join the Signal group
             <input type='url' name='group-link' value='<?php echo $this->settings["group-link"]; ?>' style='width:100%'>
@@ -686,33 +703,34 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             <h4>Give optional Signal group name(s) to send new content messages to:</h4>
             <div class="clone-divs-wrapper">
                 <?php
-                foreach ($groups as $index=>$group) {
-                    ?>
-                    <div class="clone-div" data-div-id="<?php echo esc_attr($index);?>">
+                foreach ($groups as $index => $group) {
+                ?>
+                    <div class="clone-div" data-div-id="<?php echo esc_attr($index); ?>">
                         <label>
-                            <h4 style='margin: 0px;'>Signal groupname <?php echo $index+1;?></h4>
-                            <input type='text' name="groups[<?php echo esc_attr($index);?>]" value='<?php echo esc_attr($group);?>'>
+                            <h4 style='margin: 0px;'>Signal groupname <?php echo $index + 1; ?></h4>
+                            <input type='text' name="groups[<?php echo esc_attr($index); ?>]" value='<?php echo esc_attr($group); ?>'>
                         </label>
                         <span class='button-wrapper' style='margin:auto;'>
                             <button type="button" class="add button" style="flex: 1;">+</button>
                             <?php
-                            if (count($groups)> 1) {
-                                ?>
+                            if (count($groups) > 1) {
+                            ?>
                                 <button type="button" class="remove button" style="flex: 1;">-</button>
-                                <?php
+                            <?php
                             }
                             ?>
                         </span>
                     </div>
-                    <?php
+                <?php
                 }
                 ?>
             </div>
         </div>
-        <?php
+    <?php
     }
 
-    public function processActions($parent) {
+    public function processActions($parent)
+    {
         /**
          * Download a backup of the configuration
          */
@@ -762,27 +780,27 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     $result !== true ||
                     (
                         is_string($result) && !is_numeric(str_replace('int64 ', '', $result))
-                   )
-               ) {
+                    )
+                ) {
                     TSJIPPY\addElement('div', $parent, ['class' => 'error'], $result);
-                }else{
+                } else {
                     TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Succesfully removed the message');
                 }
-            }else{
+            } else {
                 $result        = $signal->clearMessageLog($_REQUEST['delete-date']);
 
                 if ($result === false) {
                     TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Something went wrong');
-                }else{
+                } else {
                     TSJIPPY\addElement('div', $parent, ['class' => 'success'], "Succesfully removed $result messages");
                 }
             }
-        }elseif ($_REQUEST['action'] == 'Save') {
+        } elseif ($_REQUEST['action'] == 'Save') {
             $this->settings['clean-period']    = $_REQUEST['clean-period'];
             $this->settings['clean-amount']    = $_REQUEST['clean-amount'];
 
             update_option('tsjippy_signal_settings', $this->settings);
-        }elseif ($_REQUEST['action'] == 'Reply') {
+        } elseif ($_REQUEST['action'] == 'Reply') {
             $signal    = getSignalInstance();
 
             $groupId    = '';
@@ -790,11 +808,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 $groupId    = $_REQUEST['chat'];
             }
 
-            $result    = $signal->sendReaction($_REQUEST['sender'] , $_REQUEST['timesent'], $groupId, $_REQUEST['emoji'] );
+            $result    = $signal->sendReaction($_REQUEST['sender'], $_REQUEST['timesent'], $groupId, $_REQUEST['emoji']);
 
             if (is_numeric(str_replace('int64 ', '', $result))) {
                 TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Reaction sent succesfully');
-            }else{
+            } else {
                 TSJIPPY\addElement('div', $parent, ['class' => 'error'], 'Reaction sent not succesfull');
             }
         }
@@ -806,7 +824,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param string $endDate The end date for the message log
      * @param int $amount The number of messages to display
      */
-    public function messagesHeader($startDate, $endDate, $amount, $parent) {
+    public function messagesHeader($startDate, $endDate, $amount, $parent)
+    {
         if (!isset($this->settings['clean-period'])) {
             $this->settings['clean-period']    = '';
         }
@@ -815,7 +834,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         }
 
         ob_start();
-        ?>
+    ?>
         <div class='flex-container'>
             <div class='flex'>
                 <h2>Show Message History</h2>
@@ -825,7 +844,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Show Messages send between <input type='date' name='start-date' value='<?php echo esc_attr($startDate);?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo esc_attr($endDate);?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
+                        Show Messages send between <input type='date' name='start-date' value='<?php echo esc_attr($startDate); ?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo esc_attr($endDate); ?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
                     </label>
                     <br>
                     <label>
@@ -844,7 +863,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo gmdate('Y-m-d', strtotime('-1 month'));?>' max='<?php echo gmdate('Y-m-d'); ?>'>
+                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo gmdate('Y-m-d', strtotime('-1 month')); ?>' max='<?php echo gmdate('Y-m-d'); ?>'>
                     </label>
                     <br>
                     <input type='submit' name='action' value='Delete'>
@@ -859,11 +878,17 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo $this->settings['clean-amount'];?>' style='width:60px;'>
+                        Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo $this->settings['clean-amount']; ?>' style='width:60px;'>
                         <select name='clean-period' class='inline'>
-                            <option value='days' <?php if ($this->settings['clean-period'] == 'days') {echo 'selected="selected"';}?>>days</option>
-                            <option value='weeks' <?php if ($this->settings['clean-period'] == 'weeks') {echo 'selected="selected"';}?>>weeks</option>
-                            <option value='months' <?php if ($this->settings['clean-period'] == 'months') {echo 'selected="selected"';}?>>months</option>
+                            <option value='days' <?php if ($this->settings['clean-period'] == 'days') {
+                                                        echo 'selected="selected"';
+                                                    } ?>>days</option>
+                            <option value='weeks' <?php if ($this->settings['clean-period'] == 'weeks') {
+                                                        echo 'selected="selected"';
+                                                    } ?>>weeks</option>
+                            <option value='months' <?php if ($this->settings['clean-period'] == 'months') {
+                                                        echo 'selected="selected"';
+                                                    } ?>>months</option>
                         </select>
                     </label>
                     <br>
@@ -871,7 +896,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 </form>
             </div>
         </div>
-        <?php
+    <?php
 
         addRawHtml(ob_get_clean(), $parent);
     }
@@ -879,7 +904,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
     /**
      * Adds the navigator for the messages tables
      */
-    private function addNavigator($startDate, $endDate, $amount, $parent, $signal, $page) {
+    private function addNavigator($startDate, $endDate, $amount, $parent, $signal, $page)
+    {
         if ($signal->totalMessages < $amount) {
             return;
         }
@@ -889,7 +915,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         if ($page != 1) {
             $prev    = $page - 1;
-            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url.$prev)], '< Previous');
+            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url . $prev)], '< Previous');
         }
 
         for ($x = 1; $x <= $totalPages; $x++) {
@@ -898,13 +924,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 $wrapEl = TSJIPPY\addElement('strong', $parent);
             }
 
-            TSJIPPY\addElement('a', $wrapEl, ['href' => esc_url($url.$x)], " $x ");
+            TSJIPPY\addElement('a', $wrapEl, ['href' => esc_url($url . $x)], " $x ");
         }
 
         if ($page != $totalPages) {
             $next    = $page + 1;
 
-            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url.$next)], "Next >");
+            TSJIPPY\addElement('a', $parent, ['href' => esc_url($url . $next)], "Next >");
         }
     }
 
@@ -915,7 +941,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param int $amount The number of messages to display
      * @return bool True if the table is displayed, false otherwise
      */
-    public function sentMessagesTable($startDate, $endDate, $amount, $parent) {
+    public function sentMessagesTable($startDate, $endDate, $amount, $parent)
+    {
         global $wpdb;
 
         $page    = 1;
@@ -930,17 +957,17 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             return false;
         }
 
-        ?>
+    ?>
         <style>
-            .flex-container{
+            .flex-container {
                 display: flex;
             }
 
-            .flex{
+            .flex {
                 padding: 20px;
             }
 
-            .signal-table td.message{
+            .signal-table td.message {
                 max-width: 500px;
                 word-break: break-word;
                 white-space: break-spaces;
@@ -974,14 +1001,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
         }
 
         foreach ($messages as $message) {
-            $isoDate    = gmdate('Y-m-d H:i:s', intval($message->time_send/1000));
+            $isoDate    = gmdate('Y-m-d H:i:s', intval($message->time_send / 1000));
             $date        = get_date_from_gmt($isoDate, DATEFORMAT);
             $time        = get_date_from_gmt($isoDate, TIMEFORMAT);
 
             $recipient    = '';
             if ($message->recipient[0] === '+') {
                 $recipient    = $wpdb->get_var("SELECT display_name FROM $wpdb->users WHERE ID in (SELECT user_id FROM `{$wpdb->prefix}usermeta` WHERE `meta_value` LIKE '%$message->recipient%')");
-            }else{
+            } else {
                 $signal->listGroups();
                 if (gettype($signal->groups) == 'array') {
                     foreach ($signal->groups as $group) {
@@ -1006,7 +1033,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                  * @disregard
                  */
                 $delete->append("Already Deleted");
-            }else{
+            } else {
                 $form   = TSJIPPY\addElement('form', $delete, ['method' => 'post']);
 
                 TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'time_send', 'value' => $message->time_send]);
@@ -1030,7 +1057,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
      * @param string $hidden The CSS class for hiding the table
      * @return bool True if the table is displayed, false otherwise
      */
-    public function receivedMessagesTable($startDate, $endDate, $amount, $parent, $hidden='hidden') {
+    public function receivedMessagesTable($startDate, $endDate, $amount, $parent, $hidden = 'hidden')
+    {
         global $wpdb;
 
         if (!empty($_GET['second-tab']) && $_GET['second-tab'] == 'received') {
@@ -1071,68 +1099,68 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
 
         ?>
         <style>
-            .flex-container{
+            .flex-container {
                 display: flex;
             }
 
-            .flex{
+            .flex {
                 padding: 20px;
             }
         </style>
         <script>
-            document.addEventListener("click", function (ev) {
-                let target    = ev.target;
+            document.addEventListener("click", function(ev) {
+                let target = ev.target;
 
                 if (target.matches(' .expand')) {
 
                     let rowspan = target.closest('td').dataset.rowspan;
 
-                    target.closest('td').rowSpan    = rowspan;
+                    target.closest('td').rowSpan = rowspan;
 
-                    let row    = target.closest('tr').nextElementSibling;
+                    let row = target.closest('tr').nextElementSibling;
 
-                    while(row.matches(' .hidden')) {
+                    while (row.matches(' .hidden')) {
                         row.classList.remove('hidden');
-                        row    = row.nextElementSibling;
+                        row = row.nextElementSibling;
 
                         if (row == null) {
                             break;
                         }
                     }
 
-                    target.textContent    = '-';
+                    target.textContent = '-';
                     target.classList.replace('expand', 'condense');
-                }else if (target.matches(' .condense')) {
+                } else if (target.matches(' .condense')) {
 
-                    let rowspan = target.closest('td').rowSpan    = 1;
+                    let rowspan = target.closest('td').rowSpan = 1;
 
-                    let row    = target.closest('tr').nextElementSibling;
+                    let row = target.closest('tr').nextElementSibling;
 
-                    while(row.querySelector('td.chat') == null) {
+                    while (row.querySelector('td.chat') == null) {
                         console.log(row);
                         row.classList.add('hidden');
-                        row    = row.nextElementSibling;
+                        row = row.nextElementSibling;
 
                         if (row == null) {
                             break;
                         }
                     }
 
-                    target.textContent    = '+';
-                    target.classList.replace('condense','expand');
-                }else{
+                    target.textContent = '+';
+                    target.classList.replace('condense', 'expand');
+                } else {
                     return;
                 }
 
                 ev.stopImmediatePropagation();
             });
 
-            document.addEventListener("emoji_selected", function (ev) {
+            document.addEventListener("emoji_selected", function(ev) {
                 ev.target.closest('form').submit();
             });
         </script>
 
-        <?php
+<?php
 
         $div    = TSJIPPY\addElement('div', $parent, ['class' => "send-signal-messages tabcontent $hidden", 'id' => 'received']);
 
@@ -1153,7 +1181,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
             TSJIPPY\addElement('p', $tbody, [], 'No messages found. ');
         }
 
-        foreach ($groupedMessages as $chat=>$group) {
+        foreach ($groupedMessages as $chat => $group) {
             if (empty($group)) {
                 continue;
             }
@@ -1163,12 +1191,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 if (empty($chatName)) {
                     $chatName    = 'Unknow group';
                 }
-            }else{
+            } else {
                 $chatName    = $chat;
             }
 
             foreach ($group as $index => $message) {
-                $isoDate    = gmdate('Y-m-d H:i:s', intval($message['timesent']/1000));
+                $isoDate    = gmdate('Y-m-d H:i:s', intval($message['timesent'] / 1000));
                 $date        = get_date_from_gmt($isoDate, DATEFORMAT);
                 $time        = get_date_from_gmt($isoDate, TIMEFORMAT);
 
@@ -1177,12 +1205,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                         "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE '%{$message['sender']}')",
                         $wpdb->users,
                         $wpdb->usermeta
-                   )
-               );
+                    )
+                );
 
                 if (empty($sender)) {
                     $sender    = $message['sender'];
-                }else{
+                } else {
                     $sender    = $sender[0];
                     $sender    = apply_filters('signal-admin-display-name', $sender->display_name, $sender);
                 }
@@ -1232,7 +1260,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                     if ($size && is_array($size)) {
                         $a  = TSJIPPY\addElement('a', $td, ['href' => $url]);
                         TSJIPPY\addElement('img', $a, ['src' => $url, 'alt' => 'picture', 'loading' => 'lazy', 'style' => 'height:150px;']);
-
                     } else {
                         TSJIPPY\addElement('a', $td, ['href' => $url], basename($attachment));
                     }
@@ -1243,7 +1270,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                 if ($message['status'] == 'replied') {
                     /** @disregard */
                     $td->append("Already Replied");
-                }else{
+                } else {
                     $msg    = urlencode($message['message']);
                     $author    = urlencode($message['sender']);
                     $chat    = urlencode($chat);
@@ -1259,7 +1286,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu{
                             'title'         => 'Send an emoji reaction'
                         ],
                         'emoji'
-                   );
+                    );
 
                     $form    = TSJIPPY\addElement('form', $td, ['method' => 'post', 'class' => 'hidden']);
 

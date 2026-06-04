@@ -1,9 +1,12 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 add_action('init', __NAMESPACE__ . '\taskInit');
-function taskInit() {
+function taskInit()
+{
     //add action for use in scheduled task
     add_action('check_signal_action', __NAMESPACE__ . '\checkSignal');
 
@@ -19,12 +22,14 @@ function taskInit() {
     add_action('tsjippy_signal_process_queue', __NAMESPACE__ . '\processQueue');
 }
 
-function checkSignal() {
+function checkSignal()
+{
     $signal         = TSJIPPY\SIGNAL\getSignalInstance();
     $signal->checkPrerequisites();
 }
 
-function scheduleTasks() {
+function scheduleTasks()
+{
     TSJIPPY\scheduleTask('check_signal_action', 'daily');
 
     TSJIPPY\scheduleTask('clean_signal_log_action', 'daily');
@@ -42,7 +47,8 @@ function scheduleTasks() {
 /**
  * Check for updated signal numbers
  */
-function checkSignalNumbers() {
+function checkSignalNumbers()
+{
     // we can send a signal message directly from the server
     if (!SETTINGS['local'] ?? false) {
         return;
@@ -79,7 +85,8 @@ function checkSignalNumbers() {
 /**
  * Remind people to add their signal message to the website
  */
-function signalNumberReminder() {
+function signalNumberReminder()
+{
     $users = get_users([
         'meta_key'     => 'signal_number',
         'meta_compare' => 'NOT EXISTS',
@@ -97,7 +104,8 @@ function signalNumberReminder() {
     }
 }
 
-function cleanSignalLog() {
+function cleanSignalLog()
+{
     $period     = SETTINGS['clean-period'] ?? false;
     $amount     = SETTINGS['clean-amount'] ?? false;
 
@@ -108,7 +116,8 @@ function cleanSignalLog() {
     $signal->clearMessageLog($maxDate);
 }
 
-function processQueue() {
+function processQueue()
+{
     $signal    = getSignalInstance();
 
     $signal->processQueue();

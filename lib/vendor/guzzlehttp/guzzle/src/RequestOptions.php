@@ -1,18 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp;
+
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * This class contains a list of built-in Guzzle request options.
  *
- * @see https://docs.guzzlephp.org/en/latest/request-options.html
+ * @see https://github.com/guzzle/guzzle/blob/8.0/docs/request-options.md
  */
 final class RequestOptions
 {
+    private function __construct()
+    {
+    }
+
     /**
      * allow_redirects: (bool|array) Controls redirect behavior. Pass false
-     * to disable redirects, pass true to enable redirects, pass an
-     * associative to provide custom redirect settings. Defaults to "false".
+     * to disable redirects, pass true to enable redirects, or pass an
+     * associative array to provide custom redirect settings. Clients enable
+     * redirects by default when the default redirect middleware is present.
      * This option only works if your handler has the RedirectMiddleware. When
      * passing an associative array, you can provide the following key value
      * pairs:
@@ -23,41 +35,56 @@ final class RequestOptions
      *   browsers do which is redirect POST requests with GET requests
      * - referer: (bool, default=false) Set to true to enable the Referer
      *   header.
-     * - protocols: (array, default=['http', 'https']) Allowed redirect
-     *   protocols.
-     * - on_redirect: (callable) PHP callable that is invoked when a redirect
-     *   is encountered. The callable is invoked with the request, the redirect
-     *   response that was received, and the effective URI. Any return value
-     *   from the on_redirect function is ignored.
+     * - protocols: (non-empty-array<array-key, string>, default=['http', 'https'])
+     *   Allowed redirect protocols. Redirect matching is case-sensitive; use
+     *   "http" and "https".
+     * - on_redirect: (callable(RequestInterface, ResponseInterface, UriInterface): mixed)
+     *   PHP callable that is invoked when a redirect is encountered. The
+     *   callable is invoked with the request, the redirect response that was
+     *   received, and the effective URI. Any return value is ignored.
+     * - track_redirects: (bool, default=false) Track redirected URI and status
+     *   history in response headers.
      */
     public const ALLOW_REDIRECTS = 'allow_redirects';
 
     /**
-     * auth: (array) Pass an array of HTTP authentication parameters to use
-     * with the request. The array must contain the username in index [0],
-     * the password in index [1], and you can optionally provide a built-in
-     * authentication type in index [2]. Pass null to disable authentication
-     * for a request.
+     * auth: (array{0: string, 1: string, 2?: string|null}|string|false|null)
+     * Pass an array of HTTP authentication parameters to use with the request.
+     * The array must contain the username in index [0], the password in index
+     * [1], and you can optionally provide a built-in authentication type in
+     * index [2]. Pass false or null to disable authentication for a request.
+     * String values are passed through for custom handlers.
      */
     public const AUTH = 'auth';
 
     /**
-     * body: (resource|string|null|int|float|StreamInterface|callable|\Iterator)
-     * Body to send in the request.
+     * body: (resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable)
+     * Body to send in the request. Scalar, resource, and stringable object
+     * values are converted using the configured stream_factory. Callable and
+     * iterator bodies use Guzzle's existing stream handling. Strings are used
+     * as literal body contents, even when they name a callable. Callable bodies
+     * may be closures or invokable objects; arrays are not valid body values.
      */
     public const BODY = 'body';
 
     /**
-     * cert: (string|array) Set to a string to specify the path to a file
-     * containing a PEM formatted SSL client side certificate. If a password
-     * is required, then set cert to an array containing the path to the PEM
-     * file in the first array element followed by the certificate password
-     * in the second array element.
+     * cert: (string|array{0: string, 1?: string|null}) Set to a string to
+     * specify the path to a client certificate file. PEM is the default
+     * certificate format. If a password is required, set cert to an array
+     * containing the certificate path in the first array element followed by
+     * the certificate password in the second array element. A null password is
+     * treated the same as omitting it. Use cert_type to specify another
+     * supported certificate format.
      */
     public const CERT = 'cert';
 
     /**
-     * cookies: (bool|GuzzleHttp\Cookie\CookieJarInterface, default=false)
+     * cert_type: (string) Specify the SSL client certificate file type.
+     */
+    public const CERT_TYPE = 'cert_type';
+
+    /**
+     * cookies: (false|GuzzleHttp\Cookie\CookieJarInterface, default=false)
      * Specifies whether or not cookies are used in a request or what cookie
      * jar to use or what cookies to send. This option only works if your
      * handler has the `cookie` middleware. Valid values are `false` and
@@ -66,21 +93,21 @@ final class RequestOptions
     public const COOKIES = 'cookies';
 
     /**
-     * connect_timeout: (float, default=0) Float describing the number of
-     * seconds to wait while trying to connect to a server. Use 0 to wait
-     * 300 seconds (the default behavior).
+     * connect_timeout: (int|float, default=0) Number of seconds to wait while
+     * trying to connect to a server. Use 0 to wait 300 seconds (the default
+     * behavior). Positive values below 0.001 seconds are rejected by the
+     * built-in cURL handler.
      */
     public const CONNECT_TIMEOUT = 'connect_timeout';
 
     /**
      * crypto_method: (int) A value describing the minimum TLS protocol
-     * version to use.
+     * version to use. The built-in cURL and stream handlers default HTTPS
+     * requests to TLS 1.2 or newer.
      *
      * This setting must be set to one of the
-     * ``STREAM_CRYPTO_METHOD_TLS*_CLIENT`` constants. PHP 7.4 or higher is
-     * required in order to use TLS 1.3, and cURL 7.34.0 or higher is required
-     * in order to specify a crypto method, with cURL 7.52.0 or higher being
-     * required to use TLS 1.3.
+     * ``STREAM_CRYPTO_METHOD_TLS*_CLIENT`` constants. cURL 7.52.0 or higher
+     * is required to use TLS 1.3 with the cURL handler.
      */
     public const CRYPTO_METHOD = 'crypto_method';
 
@@ -92,14 +119,14 @@ final class RequestOptions
     public const DEBUG = 'debug';
 
     /**
-     * decode_content: (bool, default=true) Specify whether or not
+     * decode_content: (bool|string, default=true) Specify whether or not
      * Content-Encoding responses (gzip, deflate, etc.) are automatically
      * decoded.
      */
     public const DECODE_CONTENT = 'decode_content';
 
     /**
-     * delay: (int) The amount of time to delay before sending in milliseconds.
+     * delay: (int|float) The amount of time to delay before sending in milliseconds.
      */
     public const DELAY = 'delay';
 
@@ -122,16 +149,17 @@ final class RequestOptions
     public const EXPECT = 'expect';
 
     /**
-     * form_params: (array) Associative array of form field names to values
-     * where each value is a string or array of strings. Sets the Content-Type
-     * header to application/x-www-form-urlencoded when no Content-Type header
-     * is already present.
+     * form_params: (array<array-key, string|int|float|bool|null|array>)
+     * Associative array of form field names to scalar, null, or nested array
+     * values. Sets the Content-Type header to application/x-www-form-urlencoded
+     * when no Content-Type header is already present.
      */
     public const FORM_PARAMS = 'form_params';
 
     /**
-     * headers: (array) Associative array of HTTP headers. Each value MUST be
-     * a string or array of strings.
+     * headers: (array<array-key, string|non-empty-array<array-key, string>>|null)
+     * Associative array of HTTP headers. Each value MUST be a string or non-empty
+     * array of strings.
      */
     public const HEADERS = 'headers';
 
@@ -144,77 +172,117 @@ final class RequestOptions
     public const HTTP_ERRORS = 'http_errors';
 
     /**
-     * idn: (bool|int, default=true) A combination of IDNA_* constants for
-     * idn_to_ascii() PHP's function (see "options" parameter). Set to false to
-     * disable IDN support completely, or to true to use the default
-     * configuration (IDNA_DEFAULT constant).
+     * idn_conversion: (bool|int|null, default=false) A combination of IDNA_* constants
+     * for PHP's idn_to_ascii() function. Set to false or null to disable IDN
+     * support, or true to use the default configuration (IDNA_DEFAULT constant).
      */
     public const IDN_CONVERSION = 'idn_conversion';
 
     /**
      * json: (mixed) Adds JSON data to a request. The provided value is JSON
      * encoded and a Content-Type header of application/json will be added to
-     * the request if no Content-Type header is already present.
+     * the request if no Content-Type header is already present. An Accept
+     * header is not added automatically.
      */
     public const JSON = 'json';
 
     /**
-     * multipart: (array) Array of associative arrays, each containing a
-     * required "name" key mapping to the form field, name, a required
-     * "contents" key mapping to a StreamInterface|resource|string, an
-     * optional "headers" associative array of custom headers, and an
-     * optional "filename" key mapping to a string to send as the filename in
-     * the part. If no "filename" key is present, then no "filename" attribute
-     * will be added to the part.
+     * multipart: (array) Array of part arrays, each containing a required
+     * "name" key mapping to the string or integer form field name, a required
+     * "contents" key mapping to any non-array value accepted by PSR-7
+     * Utils::streamFor() or a nested array of field values, an optional
+     * "headers" array of string custom header values, and an optional
+     * "filename" key mapping to a string to send as the filename in the part.
+     * "headers" and "filename" cannot be used when "contents" is an array.
      */
     public const MULTIPART = 'multipart';
 
     /**
-     * on_headers: (callable) A callable that is invoked when the HTTP headers
-     * of the response have been received but the body has not yet begun to
-     * download.
+     * on_headers: (callable(ResponseInterface, RequestInterface): mixed) A callable that is invoked when the HTTP headers
+     * of the final response, or a 101 Switching Protocols response, have been
+     * received but the body has not yet begun to download. The callable is
+     * passed the response and request as {@see ResponseInterface} and
+     * {@see RequestInterface} objects, respectively. If it throws, the request
+     * promise is rejected with a GuzzleHttp\Exception\ResponseException (a
+     * RequestException subtype) wrapping the thrown exception.
      */
     public const ON_HEADERS = 'on_headers';
 
     /**
-     * on_stats: (callable) allows you to get access to transfer statistics of
+     * on_stats: (callable(TransferStats): mixed) allows you to get access to transfer statistics of
      * a request and access the lower level transfer details of the handler
      * associated with your client. ``on_stats`` is a callable that is invoked
      * when a handler has finished sending a request. The callback is invoked
      * with transfer statistics about the request, the response received, or
      * the error encountered. Included in the data is the total amount of time
-     * taken to send the request.
+     * taken to send the request. Exceptions thrown by on_stats are not wrapped
+     * by Guzzle. Built-in handlers reject non-callable values before starting
+     * the transfer. The built-in cURL handlers release native easy handles
+     * before invoking on_stats and invoke it per low-level transfer attempt.
      */
     public const ON_STATS = 'on_stats';
 
     /**
-     * progress: (callable) Defines a function to invoke when transfer
-     * progress is made. The function accepts the following positional
+     * progress: (callable(int, int, int, int): mixed)
+     * Defines a function to invoke when transfer progress is made. The function accepts the following positional
      * arguments: the total number of bytes expected to be downloaded, the
      * number of bytes downloaded so far, the number of bytes expected to be
-     * uploaded, the number of bytes uploaded so far.
+     * uploaded, the number of bytes uploaded so far. With the built-in cURL
+     * handlers, returning a truthy value aborts the transfer and throwing
+     * rejects the promise with a RequestException. The built-in stream handler
+     * ignores return values.
      */
     public const PROGRESS = 'progress';
 
     /**
+     * protocols: (non-empty-array<array-key, string>, default=['http', 'https'])
+     * Allowed URI schemes. Built-in handlers accept only the case-sensitive
+     * values "http" and "https".
+     */
+    public const PROTOCOLS = 'protocols';
+
+    /**
      * proxy: (string|array) Pass a string to specify an HTTP proxy, or an
      * array to specify different proxies for different protocols (where the
-     * key is the protocol and the value is a proxy string).
+     * key is the protocol and the value is a proxy string or null). Provide a
+     * "no" key as a comma-delimited string, array of strings, or null to
+     * specify hosts, host-and-port pairs, IP literals, IP CIDR rules, or
+     * wildcard rules that should not be proxied. Domain rules are matched
+     * case-insensitively. Exact IP literals are normalized before matching.
+     * CIDR rules match IP literals only and are not port-specific. Custom
+     * handlers can use ProxyOptions::resolve() to apply Guzzle-compatible
+     * proxy selection.
      */
     public const PROXY = 'proxy';
 
     /**
-     * query: (array|string) Associative array of query string values to add
-     * to the request. This option uses PHP's http_build_query() to create
-     * the string representation. Pass a string value if you need more
-     * control than what this method provides
+     * query: (array<array-key, mixed>|string) Associative array of query string
+     * values to add to the request. This option uses PHP's http_build_query()
+     * to create the string representation. Pass a string value if you need
+     * more control than what this method provides
      */
     public const QUERY = 'query';
 
     /**
+     * request_factory: (Psr\Http\Message\RequestFactoryInterface) PSR-17
+     * request factory used when creating requests through request() and
+     * requestAsync().
+     */
+    public const REQUEST_FACTORY = 'request_factory';
+
+    /**
+     * stream_factory: (Psr\Http\Message\StreamFactoryInterface) PSR-17
+     * stream factory used when creating request body streams from body,
+     * form_params, and json request options.
+     */
+    public const STREAM_FACTORY = 'stream_factory';
+
+    /**
      * sink: (resource|string|StreamInterface) Where the data of the
      * response is written to. Defaults to a PHP temp stream. Providing a
-     * string will write data to a file by the given name.
+     * string will write data to a file by the given name. Built-in handlers
+     * treat PHP resources as caller-owned; callers are responsible for closing
+     * resource sinks.
      */
     public const SINK = 'sink';
 
@@ -227,15 +295,22 @@ final class RequestOptions
     public const SYNCHRONOUS = 'synchronous';
 
     /**
-     * ssl_key: (array|string) Specify the path to a file containing a private
-     * SSL key in PEM format. If a password is required, then set to an array
-     * containing the path to the SSL key in the first array element followed
-     * by the password required for the certificate in the second element.
+     * ssl_key: (array{0: string, 1?: string|null}|string) Specify the path to
+     * a private SSL key file. PEM is the default private key format. If a
+     * password is required, set ssl_key to an array containing the key path in
+     * the first array element followed by the key password in the second
+     * element. A null password is treated the same as omitting it. Use
+     * ssl_key_type to specify another supported key format.
      */
     public const SSL_KEY = 'ssl_key';
 
     /**
-     * stream: Set to true to attempt to stream a response rather than
+     * ssl_key_type: (string) Specify the SSL private key file type.
+     */
+    public const SSL_KEY_TYPE = 'ssl_key_type';
+
+    /**
+     * stream: (bool) Set to true to attempt to stream a response rather than
      * download it all up-front.
      */
     public const STREAM = 'stream';
@@ -251,24 +326,41 @@ final class RequestOptions
     public const VERIFY = 'verify';
 
     /**
-     * timeout: (float, default=0) Float describing the timeout of the
+     * timeout: (int|float, default=0) Number describing the timeout of the
      * request in seconds. Use 0 to wait indefinitely (the default behavior).
+     * Positive values below 0.001 seconds are rejected by the built-in handlers.
      */
     public const TIMEOUT = 'timeout';
 
     /**
-     * read_timeout: (float, default=default_socket_timeout ini setting) Float describing
-     * the body read timeout, for stream requests.
+     * read_timeout: (int|float, default=default_socket_timeout ini setting) Number
+     * describing the body read timeout, for stream requests. Positive values below
+     * 0.001 seconds are rejected by the built-in stream handler.
      */
     public const READ_TIMEOUT = 'read_timeout';
 
     /**
-     * version: (float) Specifies the HTTP protocol version to attempt to use.
+     * uri_factory: (Psr\Http\Message\UriFactoryInterface) PSR-17 URI factory
+     * used when creating URI objects from string request URI, base_uri, and
+     * redirect Location values.
+     */
+    public const URI_FACTORY = 'uri_factory';
+
+    /**
+     * version: (string|int|float, default=1.1) Specifies the HTTP protocol
+     * version to attempt to use.
+     *
+     * Guzzle defaults to HTTP/1.1. The built-in stream handler supports
+     * HTTP/1.0 and HTTP/1.1. The built-in cURL handler also supports HTTP/2
+     * and HTTP/3 when the installed cURL stack reports those features. For
+     * HTTP/2 and HTTP/3, libcurl may use a lower HTTP version when
+     * negotiation or connection setup falls back.
      */
     public const VERSION = 'version';
 
     /**
-     * force_ip_resolve: (bool) Force client to use only ipv4 or ipv6 protocol
+     * force_ip_resolve: (string) Set to "v4" to force IPv4 resolution or "v6"
+     * to force IPv6 resolution when supported by the handler.
      */
     public const FORCE_IP_RESOLVE = 'force_ip_resolve';
 }

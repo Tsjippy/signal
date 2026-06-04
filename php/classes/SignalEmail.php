@@ -1,13 +1,17 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 use TSJIPPY\ADMIN;
 
-class SignalEmail extends ADMIN\MailSetting{
+class SignalEmail extends ADMIN\MailSetting
+{
 
     public $user;
 
-    public function __construct($user) {
+    public function __construct($user)
+    {
         // call parent constructor
         parent::__construct('signal_reminder', PLUGINSLUG);
 

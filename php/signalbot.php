@@ -1,5 +1,7 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 /**
@@ -8,8 +10,9 @@ use TSJIPPY;
  *
  * @param    object|int $post       Wordpress post or post id
  *
-**/
-function sendPostNotification($post) {
+ **/
+function sendPostNotification($post)
+{
     if (is_numeric($post)) {
         $post = get_post($post);
     }
@@ -33,28 +36,28 @@ function sendPostNotification($post) {
     if ($signalMessageType == 'all') {
 
         if (!empty($signalUrl)) {
-            $excerpt .=    " ...\n\nView it on the web:\n" .get_permalink($post->ID);
+            $excerpt .=    " ...\n\nView it on the web:\n" . get_permalink($post->ID);
         }
-    }else{
+    } else {
         $excerpt    = wp_trim_words($excerpt, 20);
 
         //Only add read more if the excerpt is not the whole content
         if ($excerpt != wp_strip_all_tags($post->post_content)) {
-            $excerpt .=    " ...\n\nRead more on:\n" .get_permalink($post->ID);
-        }elseif (!empty($signalUrl)) {
-            $excerpt .=    " ...\n\nView it on the web:\n" .get_permalink($post->ID);
+            $excerpt .=    " ...\n\nRead more on:\n" . get_permalink($post->ID);
+        } elseif (!empty($signalUrl)) {
+            $excerpt .=    " ...\n\nView it on the web:\n" . get_permalink($post->ID);
         }
     }
 
     $excerpt = html_entity_decode($excerpt);
 
-    $excerpt = wp_strip_all_tags(str_replace('<br>',"\n",$excerpt));
+    $excerpt = wp_strip_all_tags(str_replace('<br>', "\n", $excerpt));
 
     $excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
 
     if ($_POST['update'] ?? false) {
         $message     = "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
-    }else{
+    } else {
         $author        = get_userdata($post->post_author)->display_name;
         $message    = "<b>'{$post->post_title}'</b> just got published by <i>$author</i>\n\n$excerpt";
     }
@@ -75,7 +78,8 @@ function sendPostNotification($post) {
  * @param    string        $recipient        The recipient
  * @param    string        $postId            The post ID
  */
-function asyncSignalMessageSend($message, $recipient, $postId="") {
+function asyncSignalMessageSend($message, $recipient, $postId = "")
+{
     wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
 }
 
@@ -92,7 +96,8 @@ function asyncSignalMessageSend($message, $recipient, $postId="") {
  *
  * @return    string|False|\WP_Error                the result
  */
-function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true) {
+function sendSignalMessage($message, $recipient, $images = [], int $timeStamp = 0, $quoteAuthor = '', $quoteMessage = '', $getResult = true)
+{
     if (is_wp_error($message)) {
         TSJIPPY\printArray("Error is:");
         TSJIPPY\printArray($message);
@@ -124,16 +129,16 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
     $message            = str_replace(SITEURL, $urlWithoutHttps, $message);
 
     if (is_numeric($images)) {
-        if ( has_post_thumbnail($images)) {
+        if (has_post_thumbnail($images)) {
             $images = [get_attached_file(get_post_thumbnail_id($images))];
-        }else{
+        } else {
             $images = [];
         }
     }
 
     if (SETTINGS['local'] ?? false) {
         return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $getResult);
-    }else{
+    } else {
         return sendSignalFromExternal($message, $phonenumber, $images);
     }
 }
@@ -151,7 +156,8 @@ function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $
  *
  * @return    string|False|\WP_Error        the result
  */
-function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true) {
+function sendSignalFromLocal($message, $recipient, $images, int $timeStamp = 0, $quoteAuthor = '', $quoteMessage = '', $getResult = true)
+{
     $phonenumber        = $recipient;
 
     if (strlen($phonenumber) < 10) {
@@ -179,7 +185,8 @@ function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $q
  *
  * @return    string|False|\WP_Error        the result
  */
-function sendSignalFromExternal($message, $phonenumber, $image) {
+function sendSignalFromExternal($message, $phonenumber, $image)
+{
     if (!empty($image)) {
         if (is_array($image)) {
             $image    = $image[0];
@@ -211,11 +218,11 @@ function sendSignalFromExternal($message, $phonenumber, $image) {
     }
 
     ob_start();
-    ?>
+?>
     <div class='success'>
         Message send succesfully
     </div>
-    <?php
+<?php
 
     return ob_get_clean();
 }

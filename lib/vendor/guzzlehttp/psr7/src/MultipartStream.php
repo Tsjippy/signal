@@ -14,27 +14,37 @@ final class MultipartStream implements StreamInterface
 {
     use StreamDecoratorTrait;
 
-    /** @var string */
-    private $boundary;
+    private string $boundary;
 
-    /** @var StreamInterface */
-    private $stream;
+    private StreamInterface $stream;
+
+    private const BOUNDARY_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'()+_,-./:=? ";
 
     /**
-     * @param array  $elements Array of associative arrays, each containing a
-     *                         required "name" key mapping to the form field,
-     *                         name, a required "contents" key mapping to a
-     *                         StreamInterface/resource/string, an optional
-     *                         "headers" associative array of custom headers,
-     *                         and an optional "filename" key mapping to a
-     *                         string to send as the filename in the part.
-     * @param string $boundary You can optionally provide a specific boundary
+     * @param array       $elements Array of associative arrays, each containing a
+     *                              required "name" key mapping to the form field,
+     *                              name, a required "contents" key mapping to any
+     *                              non-array value accepted by Utils::streamFor(),
+     *                              or an array for nested expansion.
+     *                              Optional keys include "headers" (associative
+     *                              array of custom headers) and "filename" (string
+     *                              to send as the filename in the part).
+     *                              When "contents" is an array, it is recursively
+     *                              expanded into multiple fields using bracket notation
+     *                              (e.g., name[0][key]). Empty arrays produce no fields.
+     *                              The "filename" and "headers" options cannot be used
+     *                              with array contents.
+     * @param string|null $boundary You can optionally provide a specific boundary
      *
      * @throws \InvalidArgumentException
      */
     public function __construct(array $elements = [], ?string $boundary = null)
     {
-        $this->boundary = $boundary ?: bin2hex(random_bytes(20));
+        if ($boundary !== null) {
+            self::validateBoundary($boundary);
+        }
+
+        $this->boundary = $boundary ?? bin2hex(random_bytes(20));
         $this->stream = $this->createStream($elements);
     }
 
@@ -51,16 +61,21 @@ final class MultipartStream implements StreamInterface
     /**
      * Get the headers needed before transferring the content of a POST file
      *
-     * @param string[] $headers
+     * @param array<array-key, string> $headers
      */
     private function getHeaders(array $headers): string
     {
         $str = '';
         foreach ($headers as $key => $value) {
+            $key = (string) $key;
+
+            self::validatePartHeaderName($key);
+            self::validatePartHeaderValue($value);
+
             $str .= "{$key}: {$value}\r\n";
         }
 
-        return "--{$this->boundary}\r\n".trim($str)."\r\n\r\n";
+        return "--{$this->boundary}\r\n".rtrim($str, "\r\n")."\r\n\r\n";
     }
 
     /**
@@ -91,6 +106,22 @@ final class MultipartStream implements StreamInterface
             }
         }
 
+        if (!is_string($element['name']) && !is_int($element['name'])) {
+            throw new \InvalidArgumentException("The 'name' key must be a string or integer");
+        }
+
+        if (is_array($element['contents'])) {
+            if (array_key_exists('filename', $element) || array_key_exists('headers', $element)) {
+                throw new \InvalidArgumentException(
+                    "The 'filename' and 'headers' options cannot be used when 'contents' is an array"
+                );
+            }
+
+            $this->addNestedElements($stream, $element['contents'], (string) $element['name']);
+
+            return;
+        }
+
         $element['contents'] = Utils::streamFor($element['contents']);
 
         if (empty($element['filename'])) {
@@ -101,7 +132,7 @@ final class MultipartStream implements StreamInterface
         }
 
         [$body, $headers] = $this->createElement(
-            $element['name'],
+            (string) $element['name'],
             $element['contents'],
             $element['filename'] ?? null,
             $element['headers'] ?? []
@@ -113,30 +144,43 @@ final class MultipartStream implements StreamInterface
     }
 
     /**
-     * @param string[] $headers
+     * Recursively expand array contents into multiple form fields.
      *
-     * @return array{0: StreamInterface, 1: string[]}
+     * @param array<array-key, mixed> $contents
+     */
+    private function addNestedElements(AppendStream $stream, array $contents, string $root): void
+    {
+        foreach ($contents as $key => $value) {
+            $fieldName = $root === '' ? sprintf('[%s]', (string) $key) : sprintf('%s[%s]', $root, (string) $key);
+
+            if (is_array($value)) {
+                $this->addNestedElements($stream, $value, $fieldName);
+            } else {
+                $this->addElement($stream, ['name' => $fieldName, 'contents' => $value]);
+            }
+        }
+    }
+
+    /**
+     * @param array<array-key, mixed> $headers
+     *
+     * @return array{0: StreamInterface, 1: array<array-key, string>}
      */
     private function createElement(string $name, StreamInterface $stream, ?string $filename, array $headers): array
     {
+        $headers = self::normalizePartHeaders($headers);
+
         // Set a default content-disposition header if one was no provided
         $disposition = self::getHeader($headers, 'content-disposition');
         if (!$disposition) {
+            $escapedName = self::escapeContentDispositionParameter($name);
             $headers['Content-Disposition'] = ($filename === '0' || $filename)
                 ? sprintf(
                     'form-data; name="%s"; filename="%s"',
-                    $name,
-                    basename($filename)
+                    $escapedName,
+                    self::escapeContentDispositionParameter(basename($filename))
                 )
-                : "form-data; name=\"{$name}\"";
-        }
-
-        // Set a default content-length header if one was no provided
-        $length = self::getHeader($headers, 'content-length');
-        if (!$length) {
-            if ($length = $stream->getSize()) {
-                $headers['Content-Length'] = (string) $length;
-            }
+                : sprintf('form-data; name="%s"', $escapedName);
         }
 
         // Set a default Content-Type if one was not supplied
@@ -149,7 +193,7 @@ final class MultipartStream implements StreamInterface
     }
 
     /**
-     * @param string[] $headers
+     * @param array<array-key, string> $headers
      */
     private static function getHeader(array $headers, string $key): ?string
     {
@@ -161,5 +205,64 @@ final class MultipartStream implements StreamInterface
         }
 
         return null;
+    }
+
+    private static function validateBoundary(string $boundary): void
+    {
+        $length = strlen($boundary);
+
+        if ($length < 1 || $length > 70 || $boundary[$length - 1] === ' ') {
+            throw new \InvalidArgumentException('Invalid multipart boundary.');
+        }
+
+        if (strspn($boundary, self::BOUNDARY_CHARS) !== $length) {
+            throw new \InvalidArgumentException('Invalid multipart boundary.');
+        }
+    }
+
+    /**
+     * @param array<array-key, mixed> $headers
+     *
+     * @return array<array-key, string>
+     */
+    private static function normalizePartHeaders(array $headers): array
+    {
+        $normalized = [];
+
+        foreach ($headers as $key => $value) {
+            $key = (string) $key;
+
+            self::validatePartHeaderName($key);
+
+            if (!is_string($value)) {
+                throw new \InvalidArgumentException('Multipart part header value must be a string.');
+            }
+
+            self::validatePartHeaderValue($value);
+
+            $normalized[$key] = $value;
+        }
+
+        return $normalized;
+    }
+
+    private static function validatePartHeaderName(string $name): void
+    {
+        if (!preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $name)) {
+            throw new \InvalidArgumentException(sprintf('"%s" is not valid multipart part header name.', $name));
+        }
+    }
+
+    private static function validatePartHeaderValue(string $value): void
+    {
+        if (!preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*$/D', $value)) {
+            throw new \InvalidArgumentException(sprintf('"%s" is not valid multipart part header value.', $value));
+        }
+    }
+
+    private static function escapeContentDispositionParameter(string $value): string
+    {
+        // Match WHATWG browser multipart/form-data behavior: escape CR, LF, and DQUOTE only.
+        return str_replace(["\r", "\n", '"'], ['%0D', '%0A', '%22'], $value);
     }
 }

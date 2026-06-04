@@ -1,25 +1,29 @@
-import {copyFormInput, fixNumbering, removeNode} from '../../tsjippy-forms/js/form_exports.js';
+import {
+  copyFormInput,
+  fixNumbering,
+  removeNode,
+} from "../../tsjippy-forms/js/form_exports.js";
 
-document.addEventListener('click', function(event) {
-	let target = event.target;
-	
-	//add element
-	if(target.matches('.add')){
-		copyFormInput(target.closest(".clone-div"));
+document.addEventListener("click", function (event) {
+  let target = event.target;
 
-		fixNumbering(target.closest('.clone-divs-wrapper'));
+  //add element
+  if (target.matches(".add")) {
+    copyFormInput(target.closest(".clone-div"));
 
-		target.remove();
-	}
-	
-	//remove element
-	else if(target.matches('.remove')){
-        console.log(target);
-		//Remove node clicked
-		removeNode(target);
-	}else{
-		return;
-	}
+    fixNumbering(target.closest(".clone-divs-wrapper"));
 
-	event.stopImmediatePropagation();
+    target.remove();
+  }
+
+  //remove element
+  else if (target.matches(".remove")) {
+    console.log(target);
+    //Remove node clicked
+    removeNode(target);
+  } else {
+    return;
+  }
+
+  event.stopImmediatePropagation();
 });

@@ -1,14 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp;
 
 use GuzzleHttp\Cookie\CookieJar;
+use GuzzleHttp\Cookie\CookieJarInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\InvalidArgumentException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Handler\CurlShareHandleState;
 use GuzzleHttp\Promise as P;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\HttpFactory;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\StreamInterface;
+use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -21,7 +31,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     /**
      * @var array Default request options
      */
-    private $config;
+    private array $config;
 
     /**
      * Clients accept an array of constructor parameters.
@@ -48,23 +58,122 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
      *   default middleware to the handler.
      * - base_uri: (string|UriInterface) Base URI of the client that is merged
      *   into relative URIs. Can be a string or instance of UriInterface.
+     * - transport_sharing: (string|null) Transport sharing mode for the
+     *   default handler. Accepts TransportSharing::* or null. Defaults to null.
      * - **: any request option
      *
-     * @param array $config Client configuration settings.
+     * @param array{
+     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
+     *     base_uri?: string|UriInterface,
+     *     transport_sharing?: string|null,
+     *     allow_redirects?: bool|array{
+     *         max?: int,
+     *         strict?: bool,
+     *         referer?: bool,
+     *         protocols?: non-empty-array<array-key, string>,
+     *         on_redirect?: callable(RequestInterface, ResponseInterface, UriInterface): mixed,
+     *         track_redirects?: bool
+     *     },
+     *     auth?: array{
+     *         0: string,
+     *         1: string,
+     *         2?: string|null
+     *     }|string|false|null,
+     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     cert?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     cert_type?: string,
+     *     connect_timeout?: int|float,
+     *     cookies?: bool|CookieJarInterface,
+     *     crypto_method?: int,
+     *     debug?: bool|resource,
+     *     decode_content?: bool|string,
+     *     delay?: int|float,
+     *     expect?: bool|int,
+     *     form_params?: array<array-key, string|int|float|bool|null|array>,
+     *     force_ip_resolve?: string,
+     *     headers?: array<array-key, string|non-empty-array<array-key, string>>|null,
+     *     http_errors?: bool,
+     *     idn_conversion?: bool|int|null,
+     *     json?: mixed,
+     *     multipart?: array<array-key, array{
+     *         name: string|int,
+     *         contents: mixed,
+     *         headers?: array<array-key, string>,
+     *         filename?: string
+     *     }>,
+     *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
+     *     on_stats?: callable(TransferStats): mixed,
+     *     progress?: callable(int, int, int, int): mixed,
+     *     protocols?: non-empty-array<array-key, string>,
+     *     proxy?: string|array{
+     *         http?: string|null,
+     *         https?: string|null,
+     *         no?: string|array<array-key, string>|null
+     *     },
+     *     query?: array<array-key, mixed>|string,
+     *     read_timeout?: int|float,
+     *     retries?: int,
+     *     request_factory?: RequestFactoryInterface,
+     *     sink?: resource|string|StreamInterface,
+     *     ssl_key?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     ssl_key_type?: string,
+     *     stream?: bool,
+     *     stream_factory?: StreamFactoryInterface,
+     *     stream_context?: array<array-key, mixed>,
+     *     synchronous?: bool,
+     *     timeout?: int|float,
+     *     uri_factory?: UriFactoryInterface,
+     *     verify?: bool|string,
+     *     version?: string|int|float,
+     *     curl?: array<int|string, mixed>,
+     *     ...
+     * } $config Client configuration settings and default request options.
      *
      * @see RequestOptions for a list of available request options.
      */
     public function __construct(array $config = [])
     {
+        $transportSharing = \array_key_exists('transport_sharing', $config) ? $config['transport_sharing'] : null;
+        $transportSharingMode = CurlShareHandleState::normalizeMode($transportSharing, 'transport_sharing');
+        unset($config['transport_sharing']);
+
         if (!isset($config['handler'])) {
-            $config['handler'] = HandlerStack::create();
+            $config['handler'] = $transportSharingMode === TransportSharing::NONE
+                ? HandlerStack::create()
+                : HandlerStack::create(Utils::chooseHandler(['transport_sharing' => $transportSharingMode]));
         } elseif (!\is_callable($config['handler'])) {
             throw new InvalidArgumentException('handler must be a callable');
+        } elseif (\in_array($transportSharingMode, [TransportSharing::HANDLER_REQUIRE, TransportSharing::PERSISTENT_REQUIRE], true)) {
+            throw new InvalidArgumentException('The "transport_sharing" client option can only require sharing when Guzzle creates the default handler. Configure the "transport_sharing" option on CurlHandler or CurlMultiHandler when providing a custom cURL handler.');
         }
 
-        // Convert the base_uri to a UriInterface
+        $factory = new HttpFactory();
+
+        if (!isset($config[RequestOptions::REQUEST_FACTORY])) {
+            $config[RequestOptions::REQUEST_FACTORY] = $factory;
+        }
+
+        if (!isset($config[RequestOptions::URI_FACTORY])) {
+            $config[RequestOptions::URI_FACTORY] = $factory;
+        }
+
+        if (!isset($config[RequestOptions::STREAM_FACTORY])) {
+            $config[RequestOptions::STREAM_FACTORY] = $factory;
+        }
+
+        self::requireRequestFactory($config[RequestOptions::REQUEST_FACTORY]);
+        self::requireStreamFactory($config[RequestOptions::STREAM_FACTORY]);
+        $uriFactory = self::requireUriFactory($config[RequestOptions::URI_FACTORY]);
+
+        // Convert the base_uri to a UriInterface using the configured URI factory.
         if (isset($config['base_uri'])) {
-            $config['base_uri'] = Psr7\Utils::uriFor($config['base_uri']);
+            $config['base_uri'] = self::createUri($config['base_uri'], $uriFactory);
         }
 
         $this->configureDefaults($config);
@@ -73,8 +182,79 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     /**
      * Asynchronously send an HTTP request.
      *
-     * @param array $options Request options to apply to the given
-     *                       request and to the transfer. See \GuzzleHttp\RequestOptions.
+     * @param array{
+     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
+     *     base_uri?: string|UriInterface,
+     *     allow_redirects?: bool|array{
+     *         max?: int,
+     *         strict?: bool,
+     *         referer?: bool,
+     *         protocols?: non-empty-array<array-key, string>,
+     *         on_redirect?: callable(RequestInterface, ResponseInterface, UriInterface): mixed,
+     *         track_redirects?: bool
+     *     },
+     *     auth?: array{
+     *         0: string,
+     *         1: string,
+     *         2?: string|null
+     *     }|string|false|null,
+     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     cert?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     cert_type?: string,
+     *     connect_timeout?: int|float,
+     *     cookies?: false|CookieJarInterface,
+     *     crypto_method?: int,
+     *     debug?: bool|resource,
+     *     decode_content?: bool|string,
+     *     delay?: int|float,
+     *     expect?: bool|int,
+     *     form_params?: array<array-key, string|int|float|bool|null|array>,
+     *     force_ip_resolve?: string,
+     *     headers?: array<array-key, string|non-empty-array<array-key, string>>|null,
+     *     http_errors?: bool,
+     *     idn_conversion?: bool|int|null,
+     *     json?: mixed,
+     *     multipart?: array<array-key, array{
+     *         name: string|int,
+     *         contents: mixed,
+     *         headers?: array<array-key, string>,
+     *         filename?: string
+     *     }>,
+     *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
+     *     on_stats?: callable(TransferStats): mixed,
+     *     progress?: callable(int, int, int, int): mixed,
+     *     protocols?: non-empty-array<array-key, string>,
+     *     proxy?: string|array{
+     *         http?: string|null,
+     *         https?: string|null,
+     *         no?: string|array<array-key, string>|null
+     *     },
+     *     query?: array<array-key, mixed>|string,
+     *     read_timeout?: int|float,
+     *     retries?: int,
+     *     request_factory?: RequestFactoryInterface,
+     *     sink?: resource|string|StreamInterface,
+     *     ssl_key?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     ssl_key_type?: string,
+     *     stream?: bool,
+     *     stream_factory?: StreamFactoryInterface,
+     *     stream_context?: array<array-key, mixed>,
+     *     synchronous?: bool,
+     *     timeout?: int|float,
+     *     uri_factory?: UriFactoryInterface,
+     *     verify?: bool|string,
+     *     version?: string|int|float,
+     *     curl?: array<int|string, mixed>,
+     *     ...
+     * } $options Request options to apply to the given request and to the transfer. See {@see RequestOptions}.
+     *
+     * @return PromiseInterface<ResponseInterface, mixed>
      */
     public function sendAsync(RequestInterface $request, array $options = []): PromiseInterface
     {
@@ -90,8 +270,77 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     /**
      * Send an HTTP request.
      *
-     * @param array $options Request options to apply to the given
-     *                       request and to the transfer. See \GuzzleHttp\RequestOptions.
+     * @param array{
+     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
+     *     base_uri?: string|UriInterface,
+     *     allow_redirects?: bool|array{
+     *         max?: int,
+     *         strict?: bool,
+     *         referer?: bool,
+     *         protocols?: non-empty-array<array-key, string>,
+     *         on_redirect?: callable(RequestInterface, ResponseInterface, UriInterface): mixed,
+     *         track_redirects?: bool
+     *     },
+     *     auth?: array{
+     *         0: string,
+     *         1: string,
+     *         2?: string|null
+     *     }|string|false|null,
+     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     cert?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     cert_type?: string,
+     *     connect_timeout?: int|float,
+     *     cookies?: false|CookieJarInterface,
+     *     crypto_method?: int,
+     *     debug?: bool|resource,
+     *     decode_content?: bool|string,
+     *     delay?: int|float,
+     *     expect?: bool|int,
+     *     form_params?: array<array-key, string|int|float|bool|null|array>,
+     *     force_ip_resolve?: string,
+     *     headers?: array<array-key, string|non-empty-array<array-key, string>>|null,
+     *     http_errors?: bool,
+     *     idn_conversion?: bool|int|null,
+     *     json?: mixed,
+     *     multipart?: array<array-key, array{
+     *         name: string|int,
+     *         contents: mixed,
+     *         headers?: array<array-key, string>,
+     *         filename?: string
+     *     }>,
+     *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
+     *     on_stats?: callable(TransferStats): mixed,
+     *     progress?: callable(int, int, int, int): mixed,
+     *     protocols?: non-empty-array<array-key, string>,
+     *     proxy?: string|array{
+     *         http?: string|null,
+     *         https?: string|null,
+     *         no?: string|array<array-key, string>|null
+     *     },
+     *     query?: array<array-key, mixed>|string,
+     *     read_timeout?: int|float,
+     *     retries?: int,
+     *     request_factory?: RequestFactoryInterface,
+     *     sink?: resource|string|StreamInterface,
+     *     ssl_key?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     ssl_key_type?: string,
+     *     stream?: bool,
+     *     stream_factory?: StreamFactoryInterface,
+     *     stream_context?: array<array-key, mixed>,
+     *     synchronous?: bool,
+     *     timeout?: int|float,
+     *     uri_factory?: UriFactoryInterface,
+     *     verify?: bool|string,
+     *     version?: string|int|float,
+     *     curl?: array<int|string, mixed>,
+     *     ...
+     * } $options Request options to apply to the given request and to the transfer. See {@see RequestOptions}.
      *
      * @throws GuzzleException
      */
@@ -121,28 +370,113 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
      *
      * Use an absolute path to override the base path of the client, or a
      * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
+     * contain the query string as well.
      *
-     * @param string              $method  HTTP method
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply. See \GuzzleHttp\RequestOptions.
+     * @param string              $method HTTP method
+     * @param string|UriInterface $uri    URI object or string.
+     * @param array{
+     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
+     *     base_uri?: string|UriInterface,
+     *     allow_redirects?: bool|array{
+     *         max?: int,
+     *         strict?: bool,
+     *         referer?: bool,
+     *         protocols?: non-empty-array<array-key, string>,
+     *         on_redirect?: callable(RequestInterface, ResponseInterface, UriInterface): mixed,
+     *         track_redirects?: bool
+     *     },
+     *     auth?: array{
+     *         0: string,
+     *         1: string,
+     *         2?: string|null
+     *     }|string|false|null,
+     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     cert?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     cert_type?: string,
+     *     connect_timeout?: int|float,
+     *     cookies?: false|CookieJarInterface,
+     *     crypto_method?: int,
+     *     debug?: bool|resource,
+     *     decode_content?: bool|string,
+     *     delay?: int|float,
+     *     expect?: bool|int,
+     *     form_params?: array<array-key, string|int|float|bool|null|array>,
+     *     force_ip_resolve?: string,
+     *     headers?: array<array-key, string|non-empty-array<array-key, string>>|null,
+     *     http_errors?: bool,
+     *     idn_conversion?: bool|int|null,
+     *     json?: mixed,
+     *     multipart?: array<array-key, array{
+     *         name: string|int,
+     *         contents: mixed,
+     *         headers?: array<array-key, string>,
+     *         filename?: string
+     *     }>,
+     *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
+     *     on_stats?: callable(TransferStats): mixed,
+     *     progress?: callable(int, int, int, int): mixed,
+     *     protocols?: non-empty-array<array-key, string>,
+     *     proxy?: string|array{
+     *         http?: string|null,
+     *         https?: string|null,
+     *         no?: string|array<array-key, string>|null
+     *     },
+     *     query?: array<array-key, mixed>|string,
+     *     read_timeout?: int|float,
+     *     retries?: int,
+     *     request_factory?: RequestFactoryInterface,
+     *     sink?: resource|string|StreamInterface,
+     *     ssl_key?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     ssl_key_type?: string,
+     *     stream?: bool,
+     *     stream_factory?: StreamFactoryInterface,
+     *     stream_context?: array<array-key, mixed>,
+     *     synchronous?: bool,
+     *     timeout?: int|float,
+     *     uri_factory?: UriFactoryInterface,
+     *     verify?: bool|string,
+     *     version?: string|int|float,
+     *     curl?: array<int|string, mixed>,
+     *     ...
+     * } $options Request options to apply. See {@see RequestOptions}.
+     *
+     * @return PromiseInterface<ResponseInterface, mixed>
      */
     public function requestAsync(string $method, $uri = '', array $options = []): PromiseInterface
     {
         $options = $this->prepareDefaults($options);
-        // Remove request modifying parameter because it can be done up-front.
-        $headers = $options['headers'] ?? [];
-        $body = $options['body'] ?? null;
-        $version = $options['version'] ?? '1.1';
-        // Merge the URI into the base URI.
-        $uri = $this->buildUri(Psr7\Utils::uriFor($uri), $options);
-        if (\is_array($body)) {
+
+        $version = self::normalizeProtocolVersion($options['version'] ?? '1.1');
+        unset($options['version']);
+
+        if (isset($options['body']) && \is_array($options['body'])) {
             throw $this->invalidBody();
         }
-        $request = new Psr7\Request($method, $uri, $headers, $body, $version);
-        // Remove the option so that they are not doubly-applied.
-        unset($options['headers'], $options['body'], $options['version']);
+
+        $uriFactory = isset($options[RequestOptions::URI_FACTORY])
+            ? self::requireUriFactory($options[RequestOptions::URI_FACTORY])
+            : new HttpFactory();
+        $requestFactory = isset($options[RequestOptions::REQUEST_FACTORY])
+            ? self::requireRequestFactory($options[RequestOptions::REQUEST_FACTORY])
+            : new HttpFactory();
+
+        // Merge the URI into the base URI.
+        $uriIsString = \is_string($uri);
+        $uri = self::createUri($uri, $uriFactory);
+        $builtUri = $this->buildUri($uri, $options);
+        if ($uriIsString && $builtUri !== $uri) {
+            $builtUri = self::createUri((string) $builtUri, $uriFactory);
+        }
+
+        $uri = $builtUri;
+        $request = $requestFactory->createRequest($method, $uri);
+        $request = Psr7\Utils::modifyRequest($request, ['version' => $version]);
 
         return $this->transfer($request, $options);
     }
@@ -154,9 +488,79 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
      * relative path to append to the base path of the client. The URL can
      * contain the query string as well.
      *
-     * @param string              $method  HTTP method.
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply. See \GuzzleHttp\RequestOptions.
+     * @param string              $method HTTP method.
+     * @param string|UriInterface $uri    URI object or string.
+     * @param array{
+     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
+     *     base_uri?: string|UriInterface,
+     *     allow_redirects?: bool|array{
+     *         max?: int,
+     *         strict?: bool,
+     *         referer?: bool,
+     *         protocols?: non-empty-array<array-key, string>,
+     *         on_redirect?: callable(RequestInterface, ResponseInterface, UriInterface): mixed,
+     *         track_redirects?: bool
+     *     },
+     *     auth?: array{
+     *         0: string,
+     *         1: string,
+     *         2?: string|null
+     *     }|string|false|null,
+     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     cert?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     cert_type?: string,
+     *     connect_timeout?: int|float,
+     *     cookies?: false|CookieJarInterface,
+     *     crypto_method?: int,
+     *     debug?: bool|resource,
+     *     decode_content?: bool|string,
+     *     delay?: int|float,
+     *     expect?: bool|int,
+     *     form_params?: array<array-key, string|int|float|bool|null|array>,
+     *     force_ip_resolve?: string,
+     *     headers?: array<array-key, string|non-empty-array<array-key, string>>|null,
+     *     http_errors?: bool,
+     *     idn_conversion?: bool|int|null,
+     *     json?: mixed,
+     *     multipart?: array<array-key, array{
+     *         name: string|int,
+     *         contents: mixed,
+     *         headers?: array<array-key, string>,
+     *         filename?: string
+     *     }>,
+     *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
+     *     on_stats?: callable(TransferStats): mixed,
+     *     progress?: callable(int, int, int, int): mixed,
+     *     protocols?: non-empty-array<array-key, string>,
+     *     proxy?: string|array{
+     *         http?: string|null,
+     *         https?: string|null,
+     *         no?: string|array<array-key, string>|null
+     *     },
+     *     query?: array<array-key, mixed>|string,
+     *     read_timeout?: int|float,
+     *     retries?: int,
+     *     request_factory?: RequestFactoryInterface,
+     *     sink?: resource|string|StreamInterface,
+     *     ssl_key?: string|array{
+     *         0: string,
+     *         1?: string|null
+     *     },
+     *     ssl_key_type?: string,
+     *     stream?: bool,
+     *     stream_factory?: StreamFactoryInterface,
+     *     stream_context?: array<array-key, mixed>,
+     *     synchronous?: bool,
+     *     timeout?: int|float,
+     *     uri_factory?: UriFactoryInterface,
+     *     verify?: bool|string,
+     *     version?: string|int|float,
+     *     curl?: array<int|string, mixed>,
+     *     ...
+     * } $options Request options to apply. See {@see RequestOptions}.
      *
      * @throws GuzzleException
      */
@@ -176,9 +580,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
      *
      * @param string|null $option The config option to retrieve.
      *
-     * @return mixed
-     *
-     * @deprecated Client::getConfig will be removed in guzzlehttp/guzzle:9.0.
+     * @return ($option is null ? array<string, mixed> : mixed)
      */
     public function getConfig(?string $option = null)
     {
@@ -190,15 +592,116 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     private function buildUri(UriInterface $uri, array $config): UriInterface
     {
         if (isset($config['base_uri'])) {
-            $uri = Psr7\UriResolver::resolve(Psr7\Utils::uriFor($config['base_uri']), $uri);
+            $uriFactory = self::requireUriFactory($config[RequestOptions::URI_FACTORY] ?? new HttpFactory());
+            $uri = Psr7\UriResolver::resolve(self::createUri($config['base_uri'], $uriFactory), $uri);
         }
 
-        if (isset($config['idn_conversion']) && ($config['idn_conversion'] !== false)) {
-            $idnOptions = ($config['idn_conversion'] === true) ? \IDNA_DEFAULT : $config['idn_conversion'];
+        $idnOptions = Utils::normalizeIdnConversionOption($config['idn_conversion'] ?? null);
+        if ($idnOptions !== null) {
             $uri = Utils::idnUriConvert($uri, $idnOptions);
         }
 
         return $uri->getScheme() === '' && $uri->getHost() !== '' ? $uri->withScheme('http') : $uri;
+    }
+
+    /**
+     * @param mixed $factory
+     */
+    private static function requireRequestFactory($factory): RequestFactoryInterface
+    {
+        if (!$factory instanceof RequestFactoryInterface) {
+            throw new InvalidArgumentException(\sprintf(
+                '%s must be an instance of %s',
+                RequestOptions::REQUEST_FACTORY,
+                RequestFactoryInterface::class
+            ));
+        }
+
+        return $factory;
+    }
+
+    /**
+     * @param mixed $factory
+     */
+    private static function requireUriFactory($factory): UriFactoryInterface
+    {
+        if (!$factory instanceof UriFactoryInterface) {
+            throw new InvalidArgumentException(\sprintf(
+                '%s must be an instance of %s',
+                RequestOptions::URI_FACTORY,
+                UriFactoryInterface::class
+            ));
+        }
+
+        return $factory;
+    }
+
+    /**
+     * @param mixed $factory
+     */
+    private static function requireStreamFactory($factory): StreamFactoryInterface
+    {
+        if (!$factory instanceof StreamFactoryInterface) {
+            throw new InvalidArgumentException(\sprintf(
+                '%s must be an instance of %s',
+                RequestOptions::STREAM_FACTORY,
+                StreamFactoryInterface::class
+            ));
+        }
+
+        return $factory;
+    }
+
+    /**
+     * @param mixed $uri
+     */
+    private static function createUri($uri, UriFactoryInterface $uriFactory): UriInterface
+    {
+        if ($uri instanceof UriInterface) {
+            return $uri;
+        }
+
+        if (\is_string($uri)) {
+            return $uriFactory->createUri($uri);
+        }
+
+        throw new InvalidArgumentException(\sprintf('URI must be a string or %s', UriInterface::class));
+    }
+
+    /**
+     * @param mixed $body
+     */
+    private static function createBodyStream($body, StreamFactoryInterface $streamFactory): StreamInterface
+    {
+        if ($body instanceof StreamInterface) {
+            return $body;
+        }
+
+        if (\is_resource($body)) {
+            return $streamFactory->createStreamFromResource($body);
+        }
+
+        if ($body === null) {
+            return $streamFactory->createStream();
+        }
+
+        if (\is_scalar($body)) {
+            return $streamFactory->createStream((string) $body);
+        }
+
+        if ($body instanceof \Iterator) {
+            return Psr7\Utils::streamFor($body);
+        }
+
+        if (\is_object($body) && \method_exists($body, '__toString')) {
+            return $streamFactory->createStream((string) $body);
+        }
+
+        if (\is_callable($body)) {
+            return Psr7\Utils::streamFor($body);
+        }
+
+        throw new InvalidArgumentException('Invalid resource type: '.\gettype($body));
     }
 
     /**
@@ -207,12 +710,13 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
     private function configureDefaults(array $config): void
     {
         $defaults = [
-            'allow_redirects' => RedirectMiddleware::$defaultSettings,
+            'allow_redirects' => RedirectMiddleware::DEFAULT_SETTINGS,
             'http_errors' => true,
             'decode_content' => true,
             'verify' => true,
             'cookies' => false,
             'idn_conversion' => false,
+            'protocols' => ['http', 'https'],
         ];
 
         // Use the standard Linux HTTP_PROXY and HTTPS_PROXY if set.
@@ -228,9 +732,12 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             $defaults['proxy']['https'] = $proxy;
         }
 
-        if ($noProxy = Utils::getenv('NO_PROXY')) {
-            $cleanedNoProxy = \str_replace(' ', '', $noProxy);
-            $defaults['proxy']['no'] = \explode(',', $cleanedNoProxy);
+        $noProxy = Utils::getenv('NO_PROXY');
+        if ($noProxy !== null) {
+            $noProxy = ProxyOptions::normalizeNoProxy($noProxy);
+            if ($noProxy !== []) {
+                $defaults['proxy']['no'] = $noProxy;
+            }
         }
 
         $this->config = $config + $defaults;
@@ -244,12 +751,21 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             $this->config['headers'] = ['User-Agent' => Utils::defaultUserAgent()];
         } else {
             // Add the User-Agent header if one was not already set.
+            $hasUserAgent = false;
             foreach (\array_keys($this->config['headers']) as $name) {
-                if (\strtolower($name) === 'user-agent') {
-                    return;
+                if (\strtolower((string) $name) === 'user-agent') {
+                    $hasUserAgent = true;
+                    break;
                 }
             }
-            $this->config['headers']['User-Agent'] = Utils::defaultUserAgent();
+
+            if (!$hasUserAgent) {
+                $this->config['headers']['User-Agent'] = Utils::defaultUserAgent();
+            }
+        }
+
+        if (\is_array($this->config['headers'])) {
+            self::assertHeaderOptionTypes($this->config['headers']);
         }
     }
 
@@ -290,7 +806,387 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             }
         }
 
+        self::assertRequestOptionTypes($result);
+
         return $result;
+    }
+
+    private static function assertRequestOptionTypes(array $options): void
+    {
+        if (isset($options['handler']) && !\is_callable($options['handler'])) {
+            self::invalidRequestOptionType('handler', 'callable', $options['handler']);
+        }
+
+        if (isset($options['allow_redirects'])) {
+            if (!\is_bool($options['allow_redirects']) && !\is_array($options['allow_redirects'])) {
+                self::invalidRequestOptionType('allow_redirects', 'bool|array', $options['allow_redirects']);
+            }
+
+            if (\is_array($options['allow_redirects'])) {
+                self::assertAllowRedirectsOptionTypes($options['allow_redirects']);
+            }
+        }
+
+        if (
+            isset($options['auth'])
+            && $options['auth'] !== false
+            && !\is_string($options['auth'])
+            && !\is_array($options['auth'])
+        ) {
+            self::invalidRequestOptionType('auth', 'array{0: string, 1: string, 2?: string|null}|string|false|null', $options['auth']);
+        }
+
+        self::assertTlsFileOptionTypes($options, 'cert');
+        self::assertIfPresentAndNotString($options, 'cert_type');
+        self::assertIfPresentAndNotNumber($options, 'connect_timeout');
+        self::assertIfPresentAndNotInt($options, 'crypto_method');
+        self::assertIfPresentAndNotBoolOrResource($options, 'debug');
+        self::assertIfPresentAndNotBoolOrString($options, 'decode_content');
+        self::assertIfPresentAndNotNumber($options, 'delay');
+        self::assertIfPresentAndNotBoolOrInt($options, 'expect');
+
+        if (isset($options['form_params'])) {
+            self::assertFormParamTypes($options['form_params']);
+        }
+
+        if (isset($options['force_ip_resolve']) && !\is_string($options['force_ip_resolve'])) {
+            self::invalidRequestOptionType('force_ip_resolve', 'string', $options['force_ip_resolve']);
+        }
+
+        if (isset($options['headers'])) {
+            self::assertHeaderOptionTypes($options['headers']);
+        }
+
+        self::assertIfPresentAndNotBool($options, 'http_errors');
+
+        if (isset($options['multipart'])) {
+            self::assertMultipartOptionTypes($options['multipart']);
+        }
+
+        self::assertIfPresentAndNotCallable($options, 'on_headers');
+        self::assertIfPresentAndNotCallable($options, 'on_stats');
+        self::assertIfPresentAndNotCallable($options, 'progress');
+        self::assertIfPresentAndNotStringArray($options, 'protocols', true);
+        self::assertProxyOptionTypes($options);
+        self::assertIfPresentAndNotNumber($options, 'read_timeout');
+        self::assertIfPresentAndNotInt($options, 'retries');
+
+        if (isset($options['sink']) && !\is_resource($options['sink']) && !\is_string($options['sink']) && !$options['sink'] instanceof StreamInterface) {
+            self::invalidRequestOptionType('sink', 'resource|string|StreamInterface', $options['sink']);
+        }
+
+        self::assertTlsFileOptionTypes($options, 'ssl_key');
+        self::assertIfPresentAndNotString($options, 'ssl_key_type');
+        self::assertIfPresentAndNotBool($options, 'stream');
+        self::assertIfPresentAndNotArray($options, 'stream_context', 'array<array-key, mixed>');
+        self::assertIfPresentAndNotBool($options, 'synchronous');
+        self::assertIfPresentAndNotNumber($options, 'timeout');
+        self::assertIfPresentAndNotBoolOrString($options, 'verify');
+        self::assertIfPresentAndNotStringOrNumber($options, 'version');
+        self::assertIfPresentAndNotArray($options, 'curl', 'array<int|string, mixed>');
+
+        if (isset($options['cookies']) && $options['cookies'] !== false && !$options['cookies'] instanceof CookieJarInterface) {
+            self::invalidRequestOptionType('cookies', 'false|CookieJarInterface', $options['cookies']);
+        }
+    }
+
+    private static function assertAllowRedirectsOptionTypes(array $allowRedirects): void
+    {
+        self::assertIfPresentAndNotInt($allowRedirects, 'max', 'allow_redirects.max');
+        self::assertIfPresentAndNotBool($allowRedirects, 'strict', 'allow_redirects.strict');
+        self::assertIfPresentAndNotBool($allowRedirects, 'referer', 'allow_redirects.referer');
+        self::assertIfPresentAndNotStringArray($allowRedirects, 'protocols', true, 'allow_redirects.protocols');
+        self::assertIfPresentAndNotCallable($allowRedirects, 'on_redirect', 'allow_redirects.on_redirect');
+        self::assertIfPresentAndNotBool($allowRedirects, 'track_redirects', 'allow_redirects.track_redirects');
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function assertFormParamTypes($value): void
+    {
+        if (!\is_array($value)) {
+            self::invalidRequestOptionType('form_params', 'array<array-key, string|int|float|bool|null|array>', $value);
+
+            return;
+        }
+
+        self::assertFormParamArray($value, 'form_params');
+    }
+
+    private static function assertFormParamArray(array $values, string $path): bool
+    {
+        foreach ($values as $key => $item) {
+            $itemPath = $path.'.'.(string) $key;
+            if (\is_array($item)) {
+                if (!self::assertFormParamArray($item, $itemPath)) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($item !== null && !\is_scalar($item)) {
+                self::invalidRequestOptionType($itemPath, 'string|int|float|bool|null|array', $item);
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param mixed $headers
+     */
+    private static function assertHeaderOptionTypes($headers): void
+    {
+        if (!\is_array($headers)) {
+            self::invalidRequestOptionType('headers', 'array<array-key, string|non-empty-array<array-key, string>>|null', $headers);
+
+            return;
+        }
+
+        foreach ($headers as $name => $value) {
+            $path = 'headers.'.(string) $name;
+            if (\is_array($value)) {
+                if ($value === []) {
+                    self::invalidRequestOptionType($path, 'string|non-empty-array<array-key, string>', $value);
+                }
+
+                foreach ($value as $index => $item) {
+                    if (!\is_string($item)) {
+                        self::invalidRequestOptionType($path.'.'.(string) $index, 'string', $item);
+                    }
+                }
+            } elseif (!\is_string($value)) {
+                self::invalidRequestOptionType($path, 'string|non-empty-array<array-key, string>', $value);
+            }
+        }
+    }
+
+    /**
+     * @param mixed $multipart
+     */
+    private static function assertMultipartOptionTypes($multipart): void
+    {
+        if (!\is_array($multipart)) {
+            self::invalidRequestOptionType('multipart', 'array<array-key, array{name: string|int, contents: mixed, headers?: array<array-key, string>, filename?: string}>', $multipart);
+
+            return;
+        }
+
+        foreach ($multipart as $index => $part) {
+            $path = 'multipart.'.(string) $index;
+            if (!\is_array($part)) {
+                self::invalidRequestOptionType($path, 'array{name: string|int, contents: mixed, headers?: array<array-key, string>, filename?: string}', $part);
+
+                return;
+            }
+
+            if (!\array_key_exists('name', $part) || (!\is_string($part['name']) && !\is_int($part['name']))) {
+                self::invalidRequestOptionType($path.'.name', 'string|int', $part['name'] ?? null);
+            }
+
+            if (!\array_key_exists('contents', $part)) {
+                self::invalidRequestOptionType($path, 'array{name: string|int, contents: mixed, headers?: array<array-key, string>, filename?: string}', $part);
+            }
+
+            if (\array_key_exists('headers', $part)) {
+                if (!\is_array($part['headers'])) {
+                    self::invalidRequestOptionType($path.'.headers', 'array<array-key, string>', $part['headers']);
+
+                    return;
+                }
+
+                foreach ($part['headers'] as $name => $value) {
+                    if (!\is_string($value)) {
+                        self::invalidRequestOptionType($path.'.headers.'.(string) $name, 'string', $value);
+                    }
+                }
+            }
+
+            if (\array_key_exists('filename', $part) && !\is_string($part['filename'])) {
+                self::invalidRequestOptionType($path.'.filename', 'string', $part['filename']);
+            }
+        }
+    }
+
+    private static function assertProxyOptionTypes(array $options): void
+    {
+        if (!isset($options['proxy'])) {
+            return;
+        }
+
+        if (!\is_string($options['proxy']) && !\is_array($options['proxy'])) {
+            self::invalidRequestOptionType('proxy', 'string|array{http?: string|null, https?: string|null, no?: string|array<array-key, string>|null}', $options['proxy']);
+
+            return;
+        }
+
+        if (!\is_array($options['proxy'])) {
+            return;
+        }
+
+        foreach (['http', 'https'] as $scheme) {
+            if (\array_key_exists($scheme, $options['proxy']) && $options['proxy'][$scheme] !== null && !\is_string($options['proxy'][$scheme])) {
+                self::invalidRequestOptionType('proxy.'.$scheme, 'string|null', $options['proxy'][$scheme]);
+            }
+        }
+
+        if (!\array_key_exists('no', $options['proxy']) || $options['proxy']['no'] === null) {
+            return;
+        }
+
+        if (\is_string($options['proxy']['no'])) {
+            return;
+        }
+
+        if (!\is_array($options['proxy']['no'])) {
+            self::invalidRequestOptionType('proxy.no', 'string|array<array-key, string>|null', $options['proxy']['no']);
+
+            return;
+        }
+
+        foreach ($options['proxy']['no'] as $index => $noProxy) {
+            if (!\is_string($noProxy)) {
+                self::invalidRequestOptionType('proxy.no.'.(string) $index, 'string', $noProxy);
+            }
+        }
+    }
+
+    private static function assertTlsFileOptionTypes(array $options, string $option): void
+    {
+        if (!isset($options[$option])) {
+            return;
+        }
+
+        if (\is_string($options[$option])) {
+            return;
+        }
+
+        if (!\is_array($options[$option])) {
+            self::invalidRequestOptionType($option, 'string|array{0: string, 1?: string}', $options[$option]);
+
+            return;
+        }
+
+        if (!\array_key_exists(0, $options[$option]) || !\is_string($options[$option][0])) {
+            self::invalidRequestOptionType($option.'.0', 'string', $options[$option][0] ?? null);
+        }
+
+        if (\array_key_exists(1, $options[$option]) && $options[$option][1] !== null && !\is_string($options[$option][1])) {
+            self::invalidRequestOptionType($option.'.1', 'string|null', $options[$option][1]);
+        }
+    }
+
+    private static function assertIfPresentAndNotArray(array $options, string $option, string $expected): void
+    {
+        if (\array_key_exists($option, $options) && !\is_array($options[$option])) {
+            self::invalidRequestOptionType($option, $expected, $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotBool(array $options, string $option, ?string $path = null): void
+    {
+        if (\array_key_exists($option, $options) && !\is_bool($options[$option])) {
+            self::invalidRequestOptionType($path ?? $option, 'bool', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotBoolOrInt(array $options, string $option): void
+    {
+        if (\array_key_exists($option, $options) && !\is_bool($options[$option]) && !\is_int($options[$option])) {
+            self::invalidRequestOptionType($option, 'bool|int', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotBoolOrResource(array $options, string $option): void
+    {
+        if (\array_key_exists($option, $options) && !\is_bool($options[$option]) && !\is_resource($options[$option])) {
+            self::invalidRequestOptionType($option, 'bool|resource', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotBoolOrString(array $options, string $option): void
+    {
+        if (\array_key_exists($option, $options) && !\is_bool($options[$option]) && !\is_string($options[$option])) {
+            self::invalidRequestOptionType($option, 'bool|string', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotCallable(array $options, string $option, ?string $path = null): void
+    {
+        if (\array_key_exists($option, $options) && !\is_callable($options[$option])) {
+            self::invalidRequestOptionType($path ?? $option, 'callable', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotInt(array $options, string $option, ?string $path = null): void
+    {
+        if (\array_key_exists($option, $options) && !\is_int($options[$option])) {
+            self::invalidRequestOptionType($path ?? $option, 'int', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotNumber(array $options, string $option): void
+    {
+        if (\array_key_exists($option, $options) && !\is_int($options[$option]) && !\is_float($options[$option])) {
+            self::invalidRequestOptionType($option, 'int|float', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotString(array $options, string $option): void
+    {
+        if (\array_key_exists($option, $options) && !\is_string($options[$option])) {
+            self::invalidRequestOptionType($option, 'string', $options[$option]);
+        }
+    }
+
+    private static function assertIfPresentAndNotStringArray(array $options, string $option, bool $nonEmpty, ?string $path = null): void
+    {
+        if (!\array_key_exists($option, $options)) {
+            return;
+        }
+
+        $path = $path ?? $option;
+
+        if (!\is_array($options[$option]) || ($nonEmpty && $options[$option] === [])) {
+            self::invalidRequestOptionType($path, ($nonEmpty ? 'non-empty-' : '').'array<array-key, string>', $options[$option]);
+
+            return;
+        }
+
+        foreach ($options[$option] as $index => $item) {
+            if (!\is_string($item)) {
+                self::invalidRequestOptionType($path.'.'.(string) $index, 'string', $item);
+            }
+        }
+    }
+
+    private static function assertIfPresentAndNotStringOrNumber(array $options, string $option): void
+    {
+        if (
+            \array_key_exists($option, $options)
+            && !\is_string($options[$option])
+            && !\is_int($options[$option])
+            && !\is_float($options[$option])
+        ) {
+            self::invalidRequestOptionType($option, 'string|int|float', $options[$option]);
+        }
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private static function invalidRequestOptionType(string $option, string $expected, $value): void
+    {
+        throw new InvalidArgumentException(\sprintf(
+            'Passing %s to request option "%s" is invalid; expected %s.',
+            \get_debug_type($value),
+            $option,
+            $expected
+        ));
     }
 
     /**
@@ -299,17 +1195,24 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
      * The URI of the request is not modified and the request options are used
      * as-is without merging in default options.
      *
-     * @param array $options See \GuzzleHttp\RequestOptions.
+     * @param array $options See {@see RequestOptions}.
+     *
+     * @return PromiseInterface<ResponseInterface, mixed>
      */
     private function transfer(RequestInterface $request, array $options): PromiseInterface
     {
         $request = $this->applyOptions($request, $options);
-        /** @var HandlerStack $handler */
+
+        self::assertRequestProtocolVersion($request);
+
+        /** @var callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed> $handler */
         $handler = $options['handler'];
 
         try {
+            /** @var PromiseInterface<ResponseInterface, mixed> */
             return P\Create::promiseFor($handler($request, $options));
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            /** @var PromiseInterface<ResponseInterface, mixed> */
             return P\Create::rejectionFor($e);
         }
     }
@@ -364,36 +1267,58 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
         ) {
             // Ensure that we don't have the header in different case and set the new value.
             $options['_conditional'] = Psr7\Utils::caselessRemove(['Accept-Encoding'], $options['_conditional']);
-            $modify['set_headers']['Accept-Encoding'] = $options['decode_content'];
+            $modify['set_headers']['Accept-Encoding'] = (string) $options['decode_content'];
         }
 
         if (isset($options['body'])) {
             if (\is_array($options['body'])) {
                 throw $this->invalidBody();
             }
-            $modify['body'] = Psr7\Utils::streamFor($options['body']);
+            $streamFactory = self::requireStreamFactory($options[RequestOptions::STREAM_FACTORY] ?? new HttpFactory());
+            $modify['body'] = self::createBodyStream($options['body'], $streamFactory);
             unset($options['body']);
         }
 
-        if (!empty($options['auth']) && \is_array($options['auth'])) {
+        if (isset($options['auth']) && \is_array($options['auth']) && $options['auth'] !== []) {
             $value = $options['auth'];
-            $type = isset($value[2]) ? \strtolower($value[2]) : 'basic';
-            switch ($type) {
+
+            if (!\array_key_exists(0, $value) || !\array_key_exists(1, $value)) {
+                throw new InvalidArgumentException('auth must contain username and password strings');
+            }
+
+            $username = $value[0];
+            $password = $value[1];
+
+            if (!\is_string($username) || !\is_string($password)) {
+                throw new InvalidArgumentException('auth must contain username and password strings');
+            }
+
+            $type = 'basic';
+            if (\array_key_exists(2, $value) && $value[2] !== null) {
+                $type = $value[2];
+                if (!\is_string($type)) {
+                    throw new InvalidArgumentException('auth type must be a string');
+                }
+            }
+
+            switch (\strtolower($type)) {
                 case 'basic':
                     // Ensure that we don't have the header in different case and set the new value.
                     $modify['set_headers'] = Psr7\Utils::caselessRemove(['Authorization'], $modify['set_headers']);
                     $modify['set_headers']['Authorization'] = 'Basic '
-                        .\base64_encode("$value[0]:$value[1]");
+                        .\base64_encode($username.':'.$password);
                     break;
                 case 'digest':
                     // @todo: Do not rely on curl
                     $options['curl'][\CURLOPT_HTTPAUTH] = \CURLAUTH_DIGEST;
-                    $options['curl'][\CURLOPT_USERPWD] = "$value[0]:$value[1]";
+                    $options['curl'][\CURLOPT_USERPWD] = $username.':'.$password;
                     break;
                 case 'ntlm':
                     $options['curl'][\CURLOPT_HTTPAUTH] = \CURLAUTH_NTLM;
-                    $options['curl'][\CURLOPT_USERPWD] = "$value[0]:$value[1]";
+                    $options['curl'][\CURLOPT_USERPWD] = $username.':'.$password;
                     break;
+                default:
+                    throw new InvalidArgumentException(\sprintf('Unsupported auth type "%s"', $type));
             }
         }
 
@@ -418,7 +1343,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
         }
 
         if (isset($options['version'])) {
-            $modify['version'] = $options['version'];
+            $modify['version'] = self::normalizeProtocolVersion($options['version']);
         }
 
         $request = Psr7\Utils::modifyRequest($request, $modify);
@@ -426,8 +1351,7 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             // Use a multipart/form-data POST if a Content-Type is not set.
             // Ensure that we don't have the header in different case and set the new value.
             $options['_conditional'] = Psr7\Utils::caselessRemove(['Content-Type'], $options['_conditional']);
-            $options['_conditional']['Content-Type'] = 'multipart/form-data; boundary='
-                .$request->getBody()->getBoundary();
+            $options['_conditional']['Content-Type'] = self::getMultipartContentType($request->getBody());
         }
 
         // Merge in conditional headers if they are not present.
@@ -435,8 +1359,9 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
             // Build up the changes so it's in a single clone of the message.
             $modify = [];
             foreach ($options['_conditional'] as $k => $v) {
-                if (!$request->hasHeader($k)) {
-                    $modify['set_headers'][$k] = $v;
+                $name = (string) $k;
+                if (!$request->hasHeader($name)) {
+                    $modify['set_headers'][$name] = $v;
                 }
             }
             $request = Psr7\Utils::modifyRequest($request, $modify);
@@ -445,6 +1370,53 @@ class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
         }
 
         return $request;
+    }
+
+    /**
+     * @param string|int|float $version
+     */
+    private static function normalizeProtocolVersion($version): string
+    {
+        $version = \is_float($version) ? \number_format($version, 1, '.', '') : (string) $version;
+
+        self::assertProtocolVersion($version);
+
+        return $version;
+    }
+
+    private static function assertProtocolVersion(string $version): void
+    {
+        if ('' === $version) {
+            throw new InvalidArgumentException('HTTP protocol version must not be empty.');
+        }
+
+        if (1 !== \preg_match('/^\d+(?:\.\d+)?$/D', $version)) {
+            throw new InvalidArgumentException('HTTP protocol version must be a valid HTTP version number.');
+        }
+    }
+
+    private static function assertRequestProtocolVersion(RequestInterface $request): void
+    {
+        $version = $request->getProtocolVersion();
+
+        if ('' === $version) {
+            throw new RequestException('HTTP protocol version must not be empty.', $request);
+        }
+
+        if (1 !== \preg_match('/^\d+(?:\.\d+)?$/D', $version)) {
+            throw new RequestException('HTTP protocol version must be a valid HTTP version number.', $request);
+        }
+    }
+
+    private static function getMultipartContentType(Psr7\MultipartStream $body): string
+    {
+        $boundary = $body->getBoundary();
+
+        if (false !== \strpbrk($boundary, '()<>@,;:\"/[]?= ')) {
+            $boundary = '"'.$boundary.'"';
+        }
+
+        return 'multipart/form-data; boundary='.$boundary;
     }
 
     /**

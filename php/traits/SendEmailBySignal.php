@@ -2,8 +2,10 @@
 
 namespace TSJIPPY\SIGNAL;
 
-trait SendEmailBySignal{
-    function sendEmailBySignal($args) {
+trait SendEmailBySignal
+{
+    function sendEmailBySignal($args)
+    {
         $numbers    = [];
         if (!empty($args['submission'])) {
             $forms      = new \TSJIPPY\FORMS\Forms();
@@ -41,8 +43,8 @@ trait SendEmailBySignal{
         preg_match_all('/<a\s+href=(?:"|\')(.*?)(?:"|\')>(.*?)<\/a>/i', $message, $matches);
 
         //replace the hyperlinks with plain links
-        foreach ($matches[0] as $index=>$match) {
-            $message    = str_replace($match, $matches[2][$index]. ': ' .str_replace('https://', '', $matches[1][$index]), $message);
+        foreach ($matches[0] as $index => $match) {
+            $message    = str_replace($match, $matches[2][$index] . ': ' . str_replace('https://', '', $matches[1][$index]), $message);
         }
 
         $message        = html_entity_decode(wp_strip_all_tags(str_replace(['<br>', '</br>', '<br />', '</p>'], "\n", $message)));

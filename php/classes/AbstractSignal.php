@@ -11,7 +11,8 @@ sudo ln -sf /opt/signal-cli-"${VERSION}"/bin/signal-cli /usr/local/bin/ */
 // data is stored in $HOME/.local/share/signal-cli
 
 
-abstract class AbstractSignal extends Signal {
+abstract class AbstractSignal extends Signal
+{
     /**
      * Register a phone number with SMS or voice verification. Use the verify command to complete the verification.
      * Default verify with SMS
@@ -60,7 +61,7 @@ abstract class AbstractSignal extends Signal {
      *
      * @return bool|string
      */
-    abstract public function send($recipients, string $message, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='');
+    abstract public function send($recipients, string $message, $attachments = [], int $timeStamp = 0, $quoteAuthor = '', $quoteMessage = '');
 
     /**
      * Send a message to a group
@@ -71,7 +72,7 @@ abstract class AbstractSignal extends Signal {
      *
      * @return bool|string
      */
-    abstract public function sendGroupMessage($message, $groupId, $attachments = [], int $timeStamp=0, $quoteAuthor='', $quoteMessage='');
+    abstract public function sendGroupMessage($message, $groupId, $attachments = [], int $timeStamp = 0, $quoteAuthor = '', $quoteMessage = '');
 
     /**
      * Mark a message as read
@@ -98,11 +99,11 @@ abstract class AbstractSignal extends Signal {
      *
      * @return string               The result
      */
-    abstract public function sentTyping($recipient, $timestamp='', $groupId='');
+    abstract public function sentTyping($recipient, $timestamp = '', $groupId = '');
 
     abstract public function sendGroupTyping($groupId);
 
-    abstract public function sendReaction($recipient, $timestamp, $groupId='', $emoji='');
+    abstract public function sendReaction($recipient, $timestamp, $groupId = '', $emoji = '');
 
     /**
      * Update the name and avatar image visible by message recipients for the current users.
@@ -129,14 +130,14 @@ abstract class AbstractSignal extends Signal {
 
     abstract public function findGroupName($id);
 
-   // Send the contents of an e-mail by Signal
-   abstract public function sendEmailBySignal($args);
+    // Send the contents of an e-mail by Signal
+    abstract public function sendEmailBySignal($args);
 
-   /**
-    * Process a specific command from the queue, or the oldest command if no id is provided
-    * @param string $command The command to process
-    * @param array $params The parameters for the command
-    * @return mixed The result of the command execution
-    */
-   abstract public function doRequest($command, $params);
+    /**
+     * Process a specific command from the queue, or the oldest command if no id is provided
+     * @param string $command The command to process
+     * @param array $params The parameters for the command
+     * @return mixed The result of the command execution
+     */
+    abstract public function doRequest($command, $params);
 }

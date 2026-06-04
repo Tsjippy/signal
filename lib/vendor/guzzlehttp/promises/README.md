@@ -10,6 +10,7 @@ for a general introduction to promises.
 - [Synchronous wait](#synchronous-wait)
 - [Cancellation](#cancellation)
 - [API](#api)
+  - [Promise Collection Helpers](#promise-collection-helpers)
   - [Promise](#promise)
   - [FulfilledPromise](#fulfilledpromise)
   - [RejectedPromise](#rejectedpromise)
@@ -42,6 +43,7 @@ composer require guzzlehttp/promises
 |---------|---------------------|--------------|
 | 1.x     | Security fixes only | >=5.5,<8.3   |
 | 2.x     | Latest              | >=7.2.5,<8.6 |
+| 3.x     | Experimental        | >=7.4,<8.6   |
 
 
 ## Quick Start
@@ -53,7 +55,7 @@ why the promise cannot be fulfilled.
 
 ### Callbacks
 
-Callbacks are registered with the `then` method by providing an optional 
+Callbacks are registered with the `then` method by providing an optional
 `$onFulfilled` followed by an optional `$onRejected` function.
 
 
@@ -80,10 +82,11 @@ only once and in the order in which they were added.
 
 ### Resolving a Promise
 
-Promises are fulfilled using the `resolve($value)` method. Resolving a promise
-with any value other than a `GuzzleHttp\Promise\RejectedPromise` will trigger
-all of the onFulfilled callbacks (resolving a promise with a rejected promise
-will reject the promise and trigger the `$onRejected` callbacks).
+Promises are fulfilled using the `resolve($value = null)` method. Calling
+`resolve()` without an argument fulfills the promise with `null`. Resolving a
+promise with any value other than a `GuzzleHttp\Promise\RejectedPromise` will
+trigger all of the onFulfilled callbacks (resolving a promise with a rejected
+promise will reject the promise and trigger the `$onRejected` callbacks).
 
 ```php
 use GuzzleHttp\Promise\Promise;
@@ -227,8 +230,8 @@ $promise = new Promise(function () use (&$promise) {
 echo $promise->wait(); // outputs "foo"
 ```
 
-If an exception is encountered while invoking the wait function of a promise,
-the promise is rejected with the exception and the exception is thrown.
+If a throwable is encountered while invoking the wait function of a promise,
+the promise is rejected with the throwable and the throwable is thrown.
 
 ```php
 $promise = new Promise(function () use (&$promise) {
@@ -247,8 +250,8 @@ $promise->resolve('foo');
 echo $promise->wait(); // outputs "foo"
 ```
 
-Calling `wait` on a promise that has been rejected will throw an exception. If
-the rejection reason is an instance of `\Exception` the reason is thrown.
+Calling `wait` on a promise that has been rejected will throw. If the rejection
+reason is an instance of `\Throwable` the reason is thrown.
 Otherwise, a `GuzzleHttp\Promise\RejectionException` is thrown and the reason
 can be obtained by calling the `getReason` method of the exception.
 
@@ -287,6 +290,16 @@ wait function will be the value delivered to promise B.
 **Note**: when you do not unwrap the promise, no value is returned.
 
 
+### Inspecting a Promise
+
+`Utils::inspect($promise)` waits for a promise to settle and returns an array
+describing its final state. For rejected promises, the `reason` entry is the
+actual rejection reason delivered to rejection callbacks.
+
+This means `RejectionException` and subclasses are not unwrapped by `inspect()`.
+For example, cancelled promises inspect with a `CancellationException` reason.
+
+
 ## Cancellation
 
 You can cancel a promise that has not yet been fulfilled using the `cancel()`
@@ -296,6 +309,45 @@ of the promise.
 
 
 ## API
+
+Promise APIs are documented for static analysis as
+`PromiseInterface<TValue, TReason>`. `TValue` is the fulfillment value type and
+`TReason` is the rejection reason type. This typing is PHPDoc-only and does not
+change runtime behavior.
+
+### Promise Collection Helpers
+
+`Utils::all()` returns a promise that fulfills with all fulfillment values or
+rejects when any input promise rejects.
+
+For lazy iterables, pass `concurrency` to limit how many items are pulled from
+the iterable at one time:
+
+```php
+use GuzzleHttp\Promise\Utils;
+
+$promise = Utils::all($promises, false, ['concurrency' => 5]);
+```
+
+`Each::of()` accepts the same config when you need callbacks instead of
+collected values. Fulfillment callbacks receive the fulfilled value, the
+iterable key, and the aggregate promise. Rejection callbacks receive the
+rejection reason, the iterable key, and the aggregate promise. Callbacks may
+declare only the arguments they use, and their return values are ignored.
+
+```php
+use GuzzleHttp\Promise\Each;
+
+$promise = Each::of($promises, $onFulfilled, $onRejected, ['concurrency' => 5]);
+```
+
+This limits lazy promise creation. It does not throttle promises that have
+already been created or started. Callback config keys such as `fulfilled` and
+`rejected` are ignored by these wrappers; pass callbacks to `Each::of()`
+directly or use `EachPromise`.
+
+For HTTP request concurrency, use `GuzzleHttp\Pool` from `guzzlehttp/guzzle`.
+
 
 ### Promise
 
@@ -323,18 +375,22 @@ assert('waited' === $promise->wait());
 
 A promise has the following methods:
 
-- `then(callable $onFulfilled, callable $onRejected) : PromiseInterface`
-  
-  Appends fulfillment and rejection handlers to the promise, and returns a new promise resolving to the return value of the called handler.
+- `then(?callable $onFulfilled = null, ?callable $onRejected = null) : PromiseInterface`
+
+  Appends fulfillment and rejection handlers to the promise, and returns a new
+  promise resolving to the return value of the called handler. If a handler is
+  omitted, the original fulfillment value or rejection reason is forwarded.
 
 - `otherwise(callable $onRejected) : PromiseInterface`
-  
-  Appends a rejection handler callback to the promise, and returns a new promise resolving to the return value of the callback if it is called, or to its original fulfillment value if the promise is instead fulfilled.
+
+  Appends a rejection handler callback to the promise, and returns a new promise
+  resolving to the return value of the callback if it is called, or to its
+  original fulfillment value if the promise is instead fulfilled.
 
 - `wait($unwrap = true) : mixed`
 
   Synchronously waits on the promise to complete.
-  
+
   `$unwrap` controls whether or not the value of the promise is returned for a
   fulfilled promise or if an exception is thrown if the promise is rejected.
   This is set to `true` by default.
@@ -351,9 +407,10 @@ A promise has the following methods:
   Returns the state of the promise. One of `pending`, `fulfilled`, or
   `rejected`.
 
-- `resolve($value)`
+- `resolve($value = null)`
 
-  Fulfills the promise with the given `$value`.
+  Fulfills the promise with the given `$value`, or with `null` if no value is
+  given.
 
 - `reject($reason)`
 
@@ -438,11 +495,13 @@ $queue = GuzzleHttp\Promise\Utils::queue();
 $queue->run();
 ```
 
-For example, you could use Guzzle promises with React using a periodic timer:
+For example, you could use Guzzle promises with React using a short periodic
+timer. Avoid zero-interval timers because they may keep the loop busy even when
+there is no promise work to run.
 
 ```php
 $loop = React\EventLoop\Factory::create();
-$loop->addPeriodicTimer(0, [$queue, 'run']);
+$loop->addPeriodicTimer(0.01, [$queue, 'run']);
 ```
 
 
@@ -510,36 +569,9 @@ $promise->resolve('foo');
 ```
 
 
-## Upgrading from Function API
+## Upgrading
 
-A static API was first introduced in 1.4.0, in order to mitigate problems with
-functions conflicting between global and local copies of the package. The
-function API was removed in 2.0.0. A migration table has been provided here for
-your convenience:
-
-| Original Function | Replacement Method |
-|----------------|----------------|
-| `queue` | `Utils::queue` |
-| `task` | `Utils::task` |
-| `promise_for` | `Create::promiseFor` |
-| `rejection_for` | `Create::rejectionFor` |
-| `exception_for` | `Create::exceptionFor` |
-| `iter_for` | `Create::iterFor` |
-| `inspect` | `Utils::inspect` |
-| `inspect_all` | `Utils::inspectAll` |
-| `unwrap` | `Utils::unwrap` |
-| `all` | `Utils::all` |
-| `some` | `Utils::some` |
-| `any` | `Utils::any` |
-| `settle` | `Utils::settle` |
-| `each` | `Each::of` |
-| `each_limit` | `Each::ofLimit` |
-| `each_limit_all` | `Each::ofLimitAll` |
-| `!is_fulfilled` | `Is::pending` |
-| `is_fulfilled` | `Is::fulfilled` |
-| `is_rejected` | `Is::rejected` |
-| `is_settled` | `Is::settled` |
-| `coroutine` | `Coroutine::of` |
+See [UPGRADING.md](UPGRADING.md) for package upgrade notes.
 
 
 ## Security

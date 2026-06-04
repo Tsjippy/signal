@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Cookie;
 
 use Psr\Http\Message\RequestInterface;
@@ -13,12 +15,9 @@ class CookieJar implements CookieJarInterface
     /**
      * @var SetCookie[] Loaded cookie data
      */
-    private $cookies = [];
+    private array $cookies = [];
 
-    /**
-     * @var bool
-     */
-    private $strictMode;
+    private bool $strictMode;
 
     /**
      * @param bool  $strictMode  Set to true to throw exceptions when invalid
@@ -32,7 +31,7 @@ class CookieJar implements CookieJarInterface
         $this->strictMode = $strictMode;
 
         foreach ($cookieArray as $cookie) {
-            if (!($cookie instanceof SetCookie)) {
+            if (!$cookie instanceof SetCookie) {
                 $cookie = new SetCookie($cookie);
             }
             $this->setCookie($cookie);
@@ -49,10 +48,14 @@ class CookieJar implements CookieJarInterface
     {
         $cookieJar = new self();
         foreach ($cookies as $name => $value) {
+            if (!\is_scalar($value) && !(\is_object($value) && \method_exists($value, '__toString'))) {
+                throw new \InvalidArgumentException('Cookie value must be scalar or stringable');
+            }
+
             $cookieJar->setCookie(new SetCookie([
                 'Domain' => $domain,
-                'Name' => $name,
-                'Value' => $value,
+                'Name' => (string) $name,
+                'Value' => (string) $value,
                 'Discard' => true,
             ]));
         }
@@ -105,30 +108,32 @@ class CookieJar implements CookieJarInterface
 
     public function clear(?string $domain = null, ?string $path = null, ?string $name = null): void
     {
-        if (!$domain) {
+        if ($domain === null) {
             $this->cookies = [];
 
             return;
-        } elseif (!$path) {
+        } elseif ($path === null) {
             $this->cookies = \array_filter(
                 $this->cookies,
                 static function (SetCookie $cookie) use ($domain): bool {
-                    return !$cookie->matchesDomain($domain);
+                    return $cookie->getDomain() === null || !$cookie->matchesDomain($domain);
                 }
             );
-        } elseif (!$name) {
+        } elseif ($name === null) {
             $this->cookies = \array_filter(
                 $this->cookies,
                 static function (SetCookie $cookie) use ($path, $domain): bool {
-                    return !($cookie->matchesPath($path)
+                    return !($cookie->getDomain() !== null
+                        && $cookie->matchesPath($path)
                         && $cookie->matchesDomain($domain));
                 }
             );
         } else {
             $this->cookies = \array_filter(
                 $this->cookies,
-                static function (SetCookie $cookie) use ($path, $domain, $name) {
-                    return !($cookie->getName() == $name
+                static function (SetCookie $cookie) use ($path, $domain, $name): bool {
+                    return !($cookie->getDomain() !== null
+                        && $cookie->getName() === $name
                         && $cookie->matchesPath($path)
                         && $cookie->matchesDomain($domain));
                 }
@@ -172,6 +177,7 @@ class CookieJar implements CookieJarInterface
             // identical.
             if ($c->getPath() != $cookie->getPath()
                 || $c->getDomain() != $cookie->getDomain()
+                || $c->getHostOnly() != $cookie->getHostOnly()
                 || $c->getName() != $cookie->getName()
             ) {
                 continue;
@@ -222,15 +228,21 @@ class CookieJar implements CookieJarInterface
     public function extractCookies(RequestInterface $request, ResponseInterface $response): void
     {
         if ($cookieHeader = $response->getHeader('Set-Cookie')) {
+            $requestHost = \strtolower($request->getUri()->getHost());
+
             foreach ($cookieHeader as $cookie) {
                 $sc = SetCookie::fromString($cookie);
-                if (!$sc->getDomain()) {
-                    $sc->setDomain($request->getUri()->getHost());
+                $domain = $sc->getDomain();
+                if ($domain === null || $domain === '') {
+                    $sc->setDomain($requestHost);
+                    $sc->setHostOnly(true);
+                } else {
+                    $sc->setHostOnly(false);
                 }
                 if (0 !== \strpos($sc->getPath(), '/')) {
                     $sc->setPath($this->getCookiePathFromRequest($request));
                 }
-                if (!$sc->matchesDomain($request->getUri()->getHost())) {
+                if (!$sc->matchesDomain($requestHost)) {
                     continue;
                 }
                 // Note: At this point `$sc->getDomain()` being a public suffix should
@@ -274,7 +286,8 @@ class CookieJar implements CookieJarInterface
         $path = $uri->getPath() ?: '/';
 
         foreach ($this->cookies as $cookie) {
-            if ($cookie->matchesPath($path)
+            if ($cookie->getDomain() !== null
+                && $cookie->matchesPath($path)
                 && $cookie->matchesDomain($host)
                 && !$cookie->isExpired()
                 && (!$cookie->getSecure() || $scheme === 'https')
@@ -296,12 +309,21 @@ class CookieJar implements CookieJarInterface
     private function removeCookieIfEmpty(SetCookie $cookie): void
     {
         $cookieValue = $cookie->getValue();
-        if ($cookieValue === null || $cookieValue === '') {
-            $this->clear(
-                $cookie->getDomain(),
-                $cookie->getPath(),
-                $cookie->getName()
-            );
+        if (($cookieValue === null || $cookieValue === '') && $cookie->getDomain() !== null) {
+            $this->removeCookie($cookie);
         }
+    }
+
+    private function removeCookie(SetCookie $cookie): void
+    {
+        $this->cookies = \array_filter(
+            $this->cookies,
+            static function (SetCookie $stored) use ($cookie): bool {
+                return !($stored->getName() == $cookie->getName()
+                    && $stored->getPath() == $cookie->getPath()
+                    && $stored->getDomain() == $cookie->getDomain()
+                    && $stored->getHostOnly() == $cookie->getHostOnly());
+            }
+        );
     }
 }

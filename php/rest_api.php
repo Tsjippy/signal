@@ -1,32 +1,41 @@
 <?php
+
 namespace TSJIPPY\SIGNAL;
+
 use TSJIPPY;
 
 add_action('rest_api_init', __NAMESPACE__ . '\restApiInit');
-function restApiInit() {
+function restApiInit()
+{
     //Route for notification messages
-    register_rest_route(RESTAPIPREFIX, '/notifications', array(
-        'methods' => 'GET',
-        'callback' => __NAMESPACE__ . '\botMessages',
-        'permission_callback' => function () {
-            return current_user_can('read');
-        },
-       )
-   );
+    register_rest_route(
+        RESTAPIPREFIX,
+        '/notifications',
+        array(
+            'methods' => 'GET',
+            'callback' => __NAMESPACE__ . '\botMessages',
+            'permission_callback' => function () {
+                return current_user_can('read');
+            },
+        )
+    );
 
     //Route for first names from external signal message processor
-    register_rest_route(RESTAPIPREFIX, '/firstname', array(
-        'methods'                => 'GET',
-        'callback'                => __NAMESPACE__ . '\findFirstname',
-        'permission_callback'     => function () {
-            return current_user_can('read');
-        },
-       )
-   );
+    register_rest_route(
+        RESTAPIPREFIX,
+        '/firstname',
+        array(
+            'methods'                => 'GET',
+            'callback'                => __NAMESPACE__ . '\findFirstname',
+            'permission_callback'     => function () {
+                return current_user_can('read');
+            },
+        )
+    );
 
     // Save signal preferences
     register_rest_route(
-        RESTAPIPREFIX. '/signal',
+        RESTAPIPREFIX . '/signal',
         '/save_preferences',
         array(
             'methods'                 => \WP_REST_Server::CREATABLE,
@@ -40,13 +49,14 @@ function restApiInit() {
                     'validate_callback' => function ($userId) {
                         return is_numeric($userId);
                     }
-               )
-           )
-       )
-   );
+                )
+            )
+        )
+    );
 }
 
-function botMessages($delete = true) {
+function botMessages($delete = true)
+{
     if (is_user_logged_in()) {
         $notifications = get_option('signal_bot_messages');
         if ($delete) {
@@ -57,17 +67,18 @@ function botMessages($delete = true) {
 }
 
 //Function to return the first name of a user with a certain phone number
-function findFirstname(\WP_REST_Request $request) {
+function findFirstname(\WP_REST_Request $request)
+{
     if (is_user_logged_in() && isset($request['phone'])) {
 
         $name = "not found";
         $users = get_users(array(
             'meta_key'     => 'phonenumbers',
-       ));
+        ));
 
         foreach ($users as $user) {
-            $phonenumbers = get_user_meta($user->ID,'phonenumbers',true);
-            if (in_array($request['phone'],$phonenumbers)) {
+            $phonenumbers = get_user_meta($user->ID, 'phonenumbers', true);
+            if (in_array($request['phone'], $phonenumbers)) {
                 $name = $user->first_name;
             }
         }
@@ -76,7 +87,8 @@ function findFirstname(\WP_REST_Request $request) {
     }
 }
 
-function savePreferences() {
+function savePreferences()
+{
     $userId            = $_POST['user-id'];
     $currentUser    = wp_get_current_user();
 

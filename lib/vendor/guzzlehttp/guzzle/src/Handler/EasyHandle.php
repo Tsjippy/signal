@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp\Handler;
 
+use GuzzleHttp\Psr7\Exception\TimeoutException;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Utils;
 use Psr\Http\Message\RequestInterface;
@@ -20,45 +23,84 @@ final class EasyHandle
      */
     public $handle;
 
-    /**
-     * @var StreamInterface Where data is being written
-     */
-    public $sink;
+    public StreamInterface $sink;
+
+    public RequestInterface $request;
 
     /**
-     * @var array Received HTTP headers so far
+     * @var list<string> Received HTTP headers so far
      */
-    public $headers = [];
+    public array $headers = [];
 
     /**
      * @var ResponseInterface|null Received response (if any)
      */
-    public $response;
-
-    /**
-     * @var RequestInterface Request being sent
-     */
-    public $request;
+    public ?ResponseInterface $response = null;
 
     /**
      * @var array Request options
      */
-    public $options = [];
+    public array $options = [];
 
     /**
      * @var int cURL error number (if any)
      */
-    public $errno = 0;
+    public int $errno = 0;
 
     /**
      * @var \Throwable|null Exception during on_headers (if any)
      */
-    public $onHeadersException;
+    public ?\Throwable $onHeadersException = null;
 
     /**
-     * @var \Exception|null Exception during createResponse (if any)
+     * @var \Throwable|null Exception during progress callback (if any)
      */
-    public $createResponseException;
+    public ?\Throwable $progressException = null;
+
+    /**
+     * @var bool Whether the progress callback requested abort
+     */
+    public bool $progressAborted = false;
+
+    /**
+     * @var \Throwable|null Exception during createResponse (if any)
+     */
+    public ?\Throwable $createResponseException = null;
+
+    /**
+     * @var TimeoutException|null Exception during request body read timeout.
+     */
+    public ?TimeoutException $bodyReadTimeoutException = null;
+
+    /**
+     * @var \Throwable|null Exception during request body read.
+     */
+    public ?\Throwable $bodyReadException = null;
+
+    /**
+     * @var TimeoutException|null Exception during response sink write timeout.
+     */
+    public ?TimeoutException $sinkWriteTimeoutException = null;
+
+    /**
+     * @var \Throwable|null Exception during response sink write.
+     */
+    public ?\Throwable $sinkWriteException = null;
+
+    /**
+     * @var bool Whether the response sink accepted a different byte count.
+     */
+    public bool $sinkWriteIncomplete = false;
+
+    /**
+     * @var int Number of response body bytes accepted by the sink.
+     */
+    public int $responseBodyBytes = 0;
+
+    /**
+     * @var \OverflowException|null Unrepresentable response body size or byte count.
+     */
+    public ?\OverflowException $responseBodySizeException = null;
 
     /**
      * Attach a response to the easy handle based on the received headers.
@@ -68,7 +110,18 @@ final class EasyHandle
      */
     public function createResponse(): void
     {
+        $this->response = null;
+        $this->responseBodyBytes = 0;
+        $this->responseBodySizeException = null;
+
         [$ver, $status, $reason, $headers] = HeaderProcessor::parseHeaders($this->headers);
+
+        // Non-101 informational responses precede the final response. Do not
+        // expose them as the response for a transfer that ends before the final
+        // response arrives. 101 switches protocol and is kept as terminal.
+        if ($status < 200 && $status !== 101) {
+            return;
+        }
 
         $normalizedKeys = Utils::normalizeHeaderKeys($headers);
 
@@ -78,9 +131,13 @@ final class EasyHandle
             if (isset($normalizedKeys['content-length'])) {
                 $headers['x-encoded-content-length'] = $headers[$normalizedKeys['content-length']];
 
-                $bodyLength = (int) $this->sink->getSize();
+                try {
+                    $bodyLength = $this->sink->getSize();
+                } catch (\Exception $e) {
+                    $bodyLength = null;
+                }
                 if ($bodyLength) {
-                    $headers[$normalizedKeys['content-length']] = $bodyLength;
+                    $headers[$normalizedKeys['content-length']] = [(string) $bodyLength];
                 } else {
                     unset($headers[$normalizedKeys['content-length']]);
                 }
@@ -98,13 +155,9 @@ final class EasyHandle
     }
 
     /**
-     * @param string $name
-     *
-     * @return void
-     *
      * @throws \BadMethodCallException
      */
-    public function __get($name)
+    public function __get(string $name): void
     {
         $msg = $name === 'handle' ? 'The EasyHandle has been released' : 'Invalid property: '.$name;
         throw new \BadMethodCallException($msg);

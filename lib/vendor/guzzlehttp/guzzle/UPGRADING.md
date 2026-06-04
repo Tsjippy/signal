@@ -1,6 +1,776 @@
 Guzzle Upgrade Guide
 ====================
 
+7.0 to 8.0
+----------
+
+Guzzle 8 is a major release that raises the minimum PHP version, updates the
+Guzzle dependency stack, adopts stricter PSR-7 header and request method
+behavior, changes some network exception classification, and tightens validation
+for request options, protocols, transport settings, cookies, and native method
+signatures. It also adds generic PHPDoc types to async APIs for static analysis.
+
+#### PHP Version and Dependencies
+
+Guzzle 8 requires PHP `^7.4 || ^8.0`. Guzzle 7 supported PHP
+`^7.2.5 || ^8.0`.
+
+Guzzle 8 also requires Guzzle Promises 3.x and Guzzle PSR-7 3.x. Guzzle 7
+supported Guzzle Promises `^2.3` and Guzzle PSR-7 `^2.8`.
+
+Read the [Guzzle PSR-7 3.x upgrade guide][psr7-upgrade-guide] as part of every
+Guzzle 8 upgrade. Guzzle's normal request and response APIs use Guzzle PSR-7, so
+PSR-7 changes can affect applications even when they do not instantiate PSR-7
+classes directly. This guide calls out the most common inherited PSR-7 changes,
+but it does not repeat every PSR-7 behavior change.
+
+Pay particular attention to [that PSR-7 upgrade guide][psr7-upgrade-guide] if
+your application constructs requests, modifies responses, sets headers, uploads
+files, builds multipart requests, works with URIs, or inspects streams.
+
+Also read the [Guzzle Promises 3.x upgrade guide][promises-upgrade-guide] if you
+use async requests, custom handlers, middleware, pools, or promise helpers.
+
+Guzzle 8 now requires `psr/http-factory:^1.0` directly.
+
+[psr7-upgrade-guide]: https://github.com/guzzle/psr7/blob/3.0/UPGRADING.md
+[promises-upgrade-guide]: https://github.com/guzzle/promises/blob/3.0/UPGRADING.md
+
+#### PSR-7 Header Values and Request Methods
+
+Guzzle 8 uses Guzzle PSR-7 3.x, and several of its behavior changes surface
+through normal Guzzle client usage. This section summarizes the inherited PSR-7
+changes most likely to affect Guzzle users; read the
+[Guzzle PSR-7 3.x upgrade guide][psr7-upgrade-guide] for the complete list.
+
+The highest-impact inherited changes are stricter header value validation and
+preserved request method casing. Header values passed through the `headers`
+request option or PSR-7 request APIs must now be strings or non-empty arrays of
+strings. Empty strings remain valid explicit header values, but empty arrays,
+`null`, `false`, integers, floats, and other non-string values are no longer cast
+or accepted.
+
+If your application builds headers from configuration, user input, or typed
+domain values, normalize them before creating or sending requests:
+
+```php
+// 7.x, no longer accepted in 8.0
+$client->request('GET', '/', [
+    'headers' => ['Api-Version' => 1],
+]);
+
+// 8.0
+$client->request('GET', '/', [
+    'headers' => ['Api-Version' => '1'],
+]);
+```
+
+Guzzle 8 also preserves explicitly provided request method casing. HTTP method
+names are case-sensitive, so Guzzle now sends the method exactly as provided and
+applies built-in method-specific behavior only to exact standard method names
+such as `GET`, `HEAD`, `POST`, and `PUT`.
+
+If you previously relied on `new Request('get', ...)` or
+`$client->request('get', ...)` being sent or treated as `GET`, normalize the
+method before constructing or sending the request:
+
+```php
+$client->request('GET', 'https://example.com');
+```
+
+The convenience methods such as `$client->get()`, `$client->post()`, and their
+async variants continue to use uppercase standard methods.
+
+The built-in cURL and stream handlers now reject request `Content-Length` values
+that are malformed or conflicting before starting a transfer. Requests that
+previously succeeded after passing an invalid `Content-Length` header may now
+fail with `RequestException`. Duplicate `Content-Length` values are accepted
+only when every member has the same decimal value, including values with leading
+zeros. Valid lengths larger than `PHP_INT_MAX` now fail before the request is
+sent because built-in handlers cannot safely size such transfers on the current
+platform.
+Applications that set this header manually should send one valid non-negative
+decimal length or omit it and let Guzzle prepare the body headers.
+
+#### Exception Hierarchy and Classification
+
+Some Guzzle 8.0 exception changes add intermediate classes, while others
+intentionally reclassify specific failures. Broad `TransferException` and
+`GuzzleException` catch blocks still catch all Guzzle transfer failures, and
+`RequestException` still catches response-aware and other non-network request
+failures. More specific catch blocks need auditing: Guzzle 8.0 splits timeout
+failures into connect-phase, no-response network, and response-aware timeout
+classes, and the built-in cURL and stream handlers classify more transport
+failures by transfer phase. This section covers upgrading from Guzzle 7.x to
+Guzzle 8.0. The `ConnectException` inheritance change happened earlier, in
+Guzzle 7.0.0, when it moved out from under `RequestException`; see the 6.0 to
+7.0 notes for that migration. The hierarchy changes are easiest to compare in
+the two trees below.
+
+Guzzle 7.x uses this hierarchy:
+
+```text
+. \RuntimeException
+└── TransferException (implements GuzzleException)
+    ├── ConnectException (implements NetworkExceptionInterface)
+    └── RequestException (implements RequestExceptionInterface)
+        ├── BadResponseException
+        │   ├── ClientException
+        │   └── ServerException
+        └── TooManyRedirectsException
+```
+
+Guzzle 8.0 uses this hierarchy:
+
+```text
+. \RuntimeException
+└── TransferException (implements GuzzleException)
+    ├── HandlerClosedException
+    ├── NetworkException (implements NetworkExceptionInterface)
+    │   ├── ConnectException
+    │   │   └── ConnectTimeoutException
+    │   └── NetworkTimeoutException
+    └── RequestException (implements RequestExceptionInterface)
+        └── ResponseException
+            ├── BadResponseException
+            │   ├── ClientException
+            │   └── ServerException
+            ├── ResponseTransferException
+            │   └── ResponseTimeoutException
+            └── TooManyRedirectsException
+```
+
+`NetworkException` is new in Guzzle 8.0 as the base class for no-response
+network failures. Throughout Guzzle 7.x, `ConnectException` implements
+`Psr\Http\Client\NetworkExceptionInterface` directly and there is no
+Guzzle-specific network base class. Reusable packages that support both Guzzle
+7.x and 8.0 should catch `Psr\Http\Client\NetworkExceptionInterface` for
+no-response network failures. Applications or packages that require Guzzle 8.0
+may catch `GuzzleHttp\Exception\NetworkException` for all no-response network
+failures. Keep catching `ConnectException` only when handling connection
+establishment failures specifically.
+
+Guzzle 8.0 also makes response-aware request failures explicit. Guzzle 7.x does
+not have `ResponseException`, and response-aware request failures remain under
+`RequestException` throughout Guzzle 7.x. In Guzzle 8.0, `ResponseException` is
+the base class for request failures where response headers were received and a
+response object is available. `ResponseTransferException` is used for
+transfer-level failures after headers, including response-aware network,
+protocol, content-decoding, partial-body, and response-body transfer failures.
+`BadResponseException` and `TooManyRedirectsException` also extend
+`ResponseException`.
+
+Only this branch exposes response access: `RequestException` no longer stores
+responses, no longer accepts a response constructor argument, and no longer has
+`getResponse()` or `hasResponse()` methods. Catch `ResponseException`, or test
+with `instanceof ResponseException`, before calling `getResponse()`.
+
+Timeout exception classes are now split by the transport phase the handler can
+determine. `ConnectTimeoutException` is thrown for detected connect timeouts
+(DNS resolution, TCP connect, proxy CONNECT, or TLS handshake). It extends
+`ConnectException`, so code that catches `ConnectException` will also catch
+connect timeouts. `NetworkTimeoutException` is thrown for other detected
+transport timeouts before response headers are received. It extends
+`NetworkException`, but not `ConnectException`. `ResponseTimeoutException` is
+thrown for response transfer timeouts after response headers are received. It
+extends `ResponseTransferException` and exposes the response.
+
+Timeouts that originate from caller-supplied PSR-7 streams are not transport
+timeouts. Reading the request body stream, including size detection,
+stringification, rewind, and upload reads, is a `RequestException` before a
+response and a `ResponseException` after response headers. A slow response
+`sink` write is a `ResponseException` once a response exists, or a
+`RequestException` otherwise. Whenever the timeout comes from a PSR-7 stream,
+the original `GuzzleHttp\Psr7\Exception\TimeoutException` is available via
+`getPrevious()`.
+
+If a handler throws `Error`, `TypeError`, or another non-`Exception` `Throwable`
+before returning a promise, `Client::sendAsync()` returns a rejected promise.
+Waiting on it rethrows the original throwable. During request and response body
+handling outside native cURL callbacks, Guzzle still wraps `\Exception` failures
+as `RequestException` or `ResponseException` where appropriate, while
+non-`Exception` throwables propagate unchanged. Native cURL callbacks remain
+different. A throwable from a cURL `sink` write is wrapped as
+`ResponseException` when a response was received, or `RequestException`
+otherwise, and the cURL handlers continue to report `CURLE_WRITE_ERROR` as
+`on_stats` handler error data.
+
+`HandlerClosedException` is new in Guzzle 8.0. It extends `TransferException`
+and is used when an explicitly closed `CurlMultiHandler` rejects transfers that
+are still pending, including delayed transfers. Existing Guzzle 7.x code should
+not normally see this exception just by upgrading. Guzzle 7.x did not have this
+exception or a public cURL handler `close()` method, and destructor cleanup did
+not reject pending promises. If you add deterministic cleanup with
+`CurlMultiHandler::close()`, wait for or cancel outstanding transfers first, or
+handle `HandlerClosedException` or `TransferException` for pending promises you
+may still observe.
+
+When updating catch blocks for Guzzle 8.0, catch the more specific no-response
+and response-aware failures before `RequestException`:
+
+```php
+use GuzzleHttp\Exception\NetworkException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
+use GuzzleHttp\Exception\ResponseTransferException;
+
+try {
+    $client->request('GET', $uri);
+} catch (NetworkException $e) {
+    // No-response network failures, including reclassified cURL and stream
+    // handler failures.
+} catch (ResponseTransferException $e) {
+    $response = $e->getResponse();
+
+    // Transfer-level failures after response headers were received.
+} catch (ResponseException $e) {
+    $response = $e->getResponse();
+
+    // Other request failures after response headers were received.
+} catch (RequestException $e) {
+    // Request failures where Guzzle does not expose a response object.
+}
+```
+
+The built-in handlers also reclassify several failures that Guzzle 7.x reported
+as `RequestException` or `ConnectException`:
+
+- Connection-establishment failures (DNS and proxy resolution, TCP connect, TLS
+  setup, and QUIC connect) are `ConnectException`.
+- Other failures with no response, such as send and receive errors and
+  no-response HTTP/2 and HTTP/3 protocol errors, are `NetworkException`.
+- Response-transfer failures after response headers were received are
+  `ResponseTransferException`. This includes response-aware cURL connection,
+  network, protocol, content-decoding, partial-body, and response body transfer
+  failures. Response-body network stalls are `ResponseTimeoutException`, while
+  `sink` write failures, progress callback failures, deterministic response
+  size/platform-limit failures, or request-body stalls after headers are plain
+  `ResponseException` instances.
+- Post-transfer response finalization failures are also plain
+  `ResponseException`. A seekable response sink that fails to rewind does not
+  become a `ResponseTransferException`. Non-seekable sinks are not rewound, and
+  source close cleanup after a complete stream-handler download is best effort.
+- Other non-transfer or local failures that occur after a response was received
+  are `ResponseException`.
+
+This applies to both the cURL and stream handlers; the exact error codes and
+messages each one maps onto these classes are an implementation detail.
+
+The cURL handler no longer treats non-`101` informational responses such as
+`100 Continue`, `102 Processing`, or `103 Early Hints` as the final response. If
+a cURL transfer fails after receiving only one of those interim responses,
+Guzzle now reports a no-response failure such as `NetworkException` instead of a
+`ResponseTransferException` carrying the interim `1xx` response. Code that
+previously caught this path with `RequestException` or
+`RequestExceptionInterface` should catch `NetworkExceptionInterface` or
+`TransferException` instead. `101 Switching Protocols` is unchanged and is still
+surfaced as a response.
+
+The stream handler now rejects a drained, non-streamed response when a valid,
+positive `Content-Length` declares more bytes than the handler receives or
+cannot be represented as a PHP integer on the current platform. Short bodies
+raise `ResponseTransferException`; platform-size failures raise plain
+`ResponseException` with the underlying `OverflowException` available via
+`getPrevious()`. This matches the cURL handler for identity-coded responses,
+compressed responses with `decode_content` disabled, and unsupported compressed
+codings that the stream handler leaves raw. It does not apply to
+`stream => true` responses, decoded gzip or deflate responses after
+`Content-Length` has been removed, chunked or other `Transfer-Encoding`
+responses, or conflicting or malformed `Content-Length` values. Responses to
+`HEAD`, any `1xx`, `204`, `304`, and successful `CONNECT` requests are never
+checked because they are bodiless by framing. `205 Reset Content` is checked
+because it remains framed by `Content-Length`.
+
+The deprecated `RequestException::wrapException()` method was removed. Create a
+`RequestException` directly for request failures where Guzzle does not expose a
+response object. Its third constructor argument is now the exception code,
+followed by the previous exception. For failures with a response, create
+`ResponseException`, `ResponseTransferException`, `ResponseTimeoutException`,
+`BadResponseException`, `ClientException`, `ServerException`, or
+`TooManyRedirectsException` instead. If you used the removed
+`getHandlerContext()` methods to classify failures, use the more granular
+exception classes above instead, or use `on_stats` when you need handler timing
+or statistics. `GuzzleHttp\Exception\InvalidArgumentException` remains outside
+the transfer exception hierarchy and is still used for invalid configuration or
+request option values that can be rejected before a transfer starts.
+
+#### Body Summaries In HTTP Error Exceptions
+
+Guzzle's default `http_errors` middleware uses `BodySummarizer` to include a
+short response body summary in response-aware exception messages. In Guzzle 7,
+creating that summary rewound seekable response bodies to the beginning. In
+Guzzle 8, `BodySummarizer` still summarizes from the beginning of the body, but
+then restores the body cursor to its previous position.
+
+Most applications do not need changes. Check only code that catches
+response-aware exceptions from `http_errors` and then reads the response body
+while relying on exception creation to leave that body rewound. If you need to
+read the body from the beginning after catching the exception, call
+`Message::rewindBody()` explicitly.
+
+#### Request Protocol Versions
+
+Invalid request protocol versions are no longer treated as omitted. Passing
+`'version' => ''`, `'version' => 'HTTP/1.1'`, or sending a PSR-7 request whose
+protocol version is empty or malformed now fails before the request is sent.
+
+Omit the `version` request option to use Guzzle's default HTTP/1.1 behavior, or
+pass an explicit supported protocol version such as `'1.1'`. Do not include the
+`HTTP/` prefix.
+
+Invalid `version` request option values are still rejected with
+`GuzzleHttp\Exception\InvalidArgumentException` before a request is sent.
+Empty or malformed protocol versions returned by a `RequestInterface`, and
+well-formed but unsupported protocol versions such as HTTP/3 with the stream
+handler, now fail with `GuzzleHttp\Exception\RequestException`. If you
+previously caught `InvalidArgumentException` or `ConnectException` for request
+protocol version failures, catch `RequestException` or `GuzzleException`
+instead.
+
+#### Callback Semantics
+
+If you use the `progress` request option with the built-in cURL handlers, audit
+callbacks for return values. Any truthy return value now aborts the transfer and
+rejects the request with `ResponseException` when a response is available, or
+`RequestException` otherwise. Return `0`, `false`, or nothing to keep the
+transfer running.
+
+If a cURL `progress` callback throws, catch `ResponseException` for
+response-aware failures or `RequestException` for broader request failures, and
+inspect `getPrevious()` for the original throwable. The throwable no longer
+escapes directly from the native cURL callback.
+
+The stream handler still ignores `progress` return values.
+
+Exceptions thrown by `on_stats` remain unwrapped, so existing catch logic for
+`on_stats` exceptions does not need to change. The built-in cURL handlers now
+release native easy handles before invoking `on_stats`. Built-in handlers now
+reject non-callable `on_stats` values before starting the transfer. Raw callbacks
+passed through the `curl` request option remain low-level cURL callbacks and are
+not normalized by Guzzle.
+
+The `on_headers` request option callback now receives the request as its second
+argument. Existing userland callbacks that accept only the response continue to
+work, but callbacks that inspect all arguments, for example with
+`func_get_args()` or a variadic parameter, will observe the additional
+`Psr\Http\Message\RequestInterface` argument.
+
+The built-in handlers invoke `on_headers` for the final response headers and for
+`101 Switching Protocols`, but not for other informational `1xx` responses such
+as `100 Continue` or `103 Early Hints`. Guzzle does not expose a separate Early
+Hints API; a dedicated interim-response hook may be added in a future minor
+release.
+
+#### Sink Resource Ownership
+
+PHP resources passed as the `sink` request option are no longer closed when the
+response body is closed or garbage-collected by the built-in cURL and stream
+handlers. Applications that relied on Guzzle closing a raw resource sink should
+close the resource explicitly or pass a string path instead.
+
+#### TLS Minimum Version
+
+The built-in cURL and stream handlers now default HTTPS requests to TLS 1.2 or
+newer. Applications that must connect to legacy TLS 1.0 or TLS 1.1 endpoints can
+explicitly lower the minimum version with the `crypto_method` request option:
+
+```php
+$client->request('GET', 'https://legacy.example.com', [
+    'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT,
+]);
+```
+
+#### cURL Minimum Version
+
+Guzzle 8 requires libcurl 7.34.0 or higher when using the built-in cURL
+handlers. If the default handler stack detects an older libcurl version, it will
+not select the cURL handler automatically. Manually configured cURL handlers also
+reject requests when the linked libcurl version is lower than 7.34.0 or the PHP
+cURL extension does not expose TLS 1.2 support.
+
+#### cURL Handler Lifecycle
+
+Applications that manage built-in cURL handlers or factories directly should
+treat closed instances as unusable. Reusing a closed `CurlHandler`,
+`CurlMultiHandler`, or `CurlFactory` throws `BadMethodCallException`; create a
+new instance instead.
+
+If `CurlMultiHandler::close()` is called while transfers are pending, those
+promises are rejected with `GuzzleHttp\Exception\HandlerClosedException`.
+Destructor cleanup remains best-effort and does not reject pending promises.
+
+A custom `handle_factory` passed to a built-in cURL handler remains caller-owned.
+Closing the handler does not close an injected factory.
+
+Direct magic access to `CurlMultiHandler::$_mh` has been removed. This was an
+undocumented internal lazy cURL multi handle. Applications that used it to set
+`CURLMOPT_*` options should pass those values through the `options` key of the
+`CurlMultiHandler` constructor.
+
+#### Timeout Option Validation
+
+Built-in handlers validate timeout option values when they apply those options.
+`timeout` is applied by both built-in transports. `connect_timeout` is applied by
+cURL handlers and accepted without effect by the stream handler. `read_timeout`
+is applied by the stream handler and accepted without effect by cURL handlers.
+When a built-in handler applies a timeout option, positive values below `0.001`
+seconds now throw `InvalidArgumentException` instead of being converted to no
+timeout.
+
+#### Proxy Option Validation
+
+The `proxy` request option is validated more strictly. Proxy values must be
+strings, and the `proxy['no']` value may be either an array of strings or a
+comma-delimited string such as the value from the `NO_PROXY` environment
+variable. Other values now throw `InvalidArgumentException`.
+
+No-proxy matching is normalized more consistently. Domain entries are matched
+case-insensitively, a single trailing DNS root dot is ignored for domain
+matching, exact IP literal entries compare normalized IP addresses, and
+`NO_PROXY` environment entries are trimmed with the same parser used for request
+options. Internal spaces in `NO_PROXY` entries are preserved instead of removed.
+
+Explicit proxy options also override environment no-proxy settings. If you pass
+a `proxy` request option and want to exclude hosts, provide the `no` value
+explicitly:
+
+```php
+$noProxy = getenv('NO_PROXY');
+
+$client->request('GET', '/', [
+    'proxy' => [
+        'http' => 'http://localhost:8125',
+        'no' => $noProxy === false ? '' : $noProxy,
+    ],
+]);
+```
+
+#### Auth Option Validation
+
+The `auth` request option now validates array values before applying them. Auth
+arrays must contain username and password strings at indexes `0` and `1`. If an
+auth type is provided at index `2`, it must be one of `basic`, `digest`, or
+`ntlm`.
+
+Invalid auth arrays that previously emitted warnings, coerced values, or did
+nothing now throw `GuzzleHttp\Exception\InvalidArgumentException`.
+
+```php
+// Valid:
+$client->request('GET', '/', [
+    'auth' => ['username', 'password', 'basic'],
+]);
+
+// Invalid in 8.0:
+$client->request('GET', '/', [
+    'auth' => ['username'],
+]);
+```
+
+#### Cross-Origin Redirect Auth Cleanup
+
+Guzzle 8 no longer forwards the generic `auth` request option when automatic
+redirects cross origin. Guzzle already removed the `Authorization` and `Cookie`
+headers and cURL HTTP authentication options on cross-origin redirects; this now
+also applies to handler-visible `auth` state.
+
+Same-origin redirects continue to preserve `auth`. If an application or custom
+handler intentionally reused `auth` across redirected origins, disable automatic
+redirects or handle redirects manually so each origin receives explicit
+credentials.
+
+#### Handler-Specific Option Overrides
+
+Handler-specific overrides remain available for finer transport control when
+they do not conflict with Guzzle-managed behavior. The built-in cURL handlers
+now reject raw cURL options that override request method, URI, body, headers,
+timeouts, redirects, proxy URLs, TLS verification or client credentials,
+progress/debug callbacks, sink handling, cookies, protocols, or cURL share
+handles. Use first-class Guzzle request options for those settings.
+
+The cURL handlers also reject stream-only `stream_context` options, but accept
+`read_timeout` without effect. The stream handler rejects cURL-only options it
+cannot honor, but accepts `connect_timeout` without effect. These timeout options
+are intentionally best-effort so shared request configuration can be reused
+across transports.
+
+#### Native Type Declarations
+
+Guzzle 8 adds native parameter and return types where PHP 7.4 allows. Code
+overriding affected methods must update method signatures accordingly.
+
+`HandlerStack::__toString()` and `SetCookie::__toString()` now return `string`.
+
+`HandlerStack::remove()` now throws `TypeError` when passed a value that is
+neither a callable nor a middleware name string.
+
+`Pool::__construct()` and `Pool::batch()` now require iterable request collections.
+
+`SetCookie::setSecure()`, `SetCookie::setDiscard()`, and
+`SetCookie::setHttpOnly()` now require boolean parameters. Calls from files that
+declare strict types will throw `TypeError` for non-boolean values.
+
+`SetCookie::getExpires()` now returns `int|null`. Invalid textual expiration
+dates are treated as `null`.
+
+#### IDN Conversion Option Types
+
+The `idn_conversion` request option must be `true`, `false`, `null`, or an
+integer `IDNA_*` bitmask. Numeric strings and floats that previously worked
+through PHP scalar coercion are no longer accepted.
+
+Integer `0` remains a valid option bitmask. Use `false` or `null` to disable IDN
+conversion.
+
+#### Generic Promise and Structured PHPDoc Types
+
+Guzzle's async client APIs, handlers, and middleware callable annotations now use
+generic `PromiseInterface<ResponseInterface, mixed>` PHPDoc types. This is a
+static-analysis-only change at runtime, but projects with stricter static
+analysis may see new or different diagnostics.
+
+Code using unparameterized promise types continues to work. If your project
+implements Guzzle client interfaces, provides custom handlers or middleware, or
+uses stricter static analysis, you may need to update your PHPDoc annotations to
+include promise fulfillment and rejection types.
+
+Public client config, request option, pool option, handler, middleware, mock
+handler, and history middleware PHPDoc now uses structured array and callable
+shapes. This does not change runtime behavior, but stricter static analysis may
+now report invalid option keys, invalid option value types, or lower-arity
+callback annotations that were previously hidden behind loose `array` or
+`callable` PHPDoc.
+
+If your project implements `ClientInterface`, extends client behavior through
+traits, builds custom handlers or middleware, or documents reusable request
+option arrays, update those PHPDoc annotations to match the supported request
+option and callback shapes.
+
+#### Multipart Request Serialization
+
+Guzzle 8 uses Guzzle PSR-7 3.x for multipart request bodies. Multipart parts
+created through the `multipart` request option no longer include generated
+per-part `Content-Length` headers by default. If your tests compare raw
+multipart payloads, remove those generated part headers from expected strings.
+
+Generated multipart `Content-Disposition` header `name` and `filename`
+parameters now escape double quotes, carriage returns, and line feeds as `%22`,
+`%0D`, and `%0A`. Literal backslashes and other characters are serialized
+unchanged, matching browser multipart form submission behavior. Custom multipart
+part header names and values, and explicit PSR-7 multipart boundaries, are also
+validated by PSR-7.
+
+Custom multipart part header values also preserve trailing spaces and tabs in the
+serialized request body, so raw body snapshots or signatures may need updated
+expectations.
+
+Guzzle now quotes the `boundary` parameter in generated
+`Content-Type: multipart/form-data` headers when an explicit PSR-7
+`MultipartStream` boundary contains characters that require quoting.
+Automatically generated boundaries are unchanged.
+
+You can still pass an explicit `Content-Length` header in a multipart element's
+`headers` array if a non-standard peer requires it.
+
+#### Host-Only Cookies
+
+Cookies extracted from responses without a `Domain` attribute are now stored as
+host-only cookies. They are sent only to the exact host that set them.
+
+Previously, Guzzle stored these cookies with the request host as a normal domain
+cookie, so they could also be sent to subdomains. Applications relying on that
+behavior should use an explicit `Domain` attribute.
+
+`SetCookie::toArray()` may include `HostOnly => true` for host-only cookies.
+Existing persisted cookie files without this key load as non-host-only cookies.
+
+#### SetCookie Constructor Field Validation
+
+`SetCookie` constructor arrays no longer coerce invalid field values. Cookie
+names, values, domains, paths, max-age values, expiry values, and boolean flags
+must use the documented types. Invalid constructor values now throw
+`InvalidArgumentException`.
+
+```php
+// Valid:
+new SetCookie([
+    'Name' => 'foo',
+    'Value' => 'bar',
+    'Domain' => 'example.com',
+    'Secure' => true,
+]);
+
+// Invalid in 8.0:
+new SetCookie([
+    'Name' => false,
+    'Value' => 'bar',
+]);
+```
+
+Cookies parsed from normal `Set-Cookie` headers continue to be normalized by
+`SetCookie::fromString()`.
+
+#### CookieJar::clear Null Semantics
+
+`CookieJar::clear()` now treats only `null` as an omitted path or name.
+Previously, falsy path or name values such as `'0'` or `''` could be interpreted
+as omitted and clear a broader set of cookies than intended.
+
+If you call `clear()` to clear all cookies, continue passing no arguments:
+
+```php
+$jar->clear();
+```
+
+If you pass a path or name, that value is now treated as provided.
+
+#### FileCookieJar Serialization
+
+`FileCookieJar` instances restored with `unserialize()` no longer save cookies
+automatically on destruction. If your application intentionally unserializes a
+`FileCookieJar` and expects changes to persist, call `save()` explicitly.
+
+Saved cookie files now JSON-escape tag characters. Existing cookie files remain
+readable, and cookie values are unchanged when loaded.
+
+#### Retry Delay Callbacks
+
+The retry middleware accepts an optional delay callback as the second argument to
+`Middleware::retry()` or the third constructor argument to `RetryMiddleware`. The
+callback returns the number of milliseconds to wait before the next retry
+attempt.
+
+Delay callbacks may now explicitly use either the retry-count-only signature or
+the full retry-context signature:
+
+```php
+// Retry count only:
+$delay = static function (int $retries): int {
+    return $retries * 1000;
+};
+
+// Full retry context:
+$delay = static function (int $retries, ?ResponseInterface $response, RequestInterface $request): int {
+    return $retries * 1000;
+};
+```
+
+Callbacks that accept three arguments continue to receive the retry count, the
+response that triggered the retry when one exists, and the request being retried.
+One-argument callbacks are now called with only the retry count, which also
+allows internal PHP functions with a single-argument signature.
+
+The seeded `retries` request option must be an integer. Delay callbacks must
+return an integer number of milliseconds.
+
+#### Logging Middleware Formatter Types
+
+`GuzzleHttp\MessageFormatter` is now final. Applications that extended
+`MessageFormatter` should implement `GuzzleHttp\MessageFormatterInterface`
+instead and pass the custom formatter to `GuzzleHttp\Middleware::log()`.
+
+`Middleware::log()` now requires its formatter argument to implement
+`MessageFormatterInterface`. Passing `new MessageFormatter()` still works
+because `MessageFormatter` implements `MessageFormatterInterface`. Passing any
+other value now fails with PHP's native `TypeError` instead of Guzzle's previous
+`LogicException`.
+
+```php
+use GuzzleHttp\MessageFormatterInterface;
+use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+
+final class RedactingFormatter implements MessageFormatterInterface
+{
+    public function format(
+        RequestInterface $request,
+        ?ResponseInterface $response = null,
+        ?\Throwable $error = null
+    ): string {
+        return $request->getMethod().' '.$request->getUri()->getPath();
+    }
+}
+
+$stack->push(Middleware::log($logger, new RedactingFormatter()));
+```
+
+#### Built-in Handler Inheritance
+
+`GuzzleHttp\Handler\CurlFactory`, `GuzzleHttp\Handler\CurlHandler`,
+`GuzzleHttp\Handler\CurlMultiHandler`, `GuzzleHttp\Handler\MockHandler`, and
+`GuzzleHttp\Handler\StreamHandler` are now final.
+
+Applications that extended `CurlFactory` should implement
+`GuzzleHttp\Handler\CurlFactoryInterface` instead. Applications that extended
+`CurlHandler`, `CurlMultiHandler`, `MockHandler`, or `StreamHandler` should use
+composition instead: wrap a handler instance in a custom callable or provide a
+custom handler rather than subclassing the built-in handler.
+
+#### Custom cURL Handle Factories
+
+Custom `GuzzleHttp\Handler\CurlFactoryInterface` implementations that create or
+mutate `GuzzleHttp\Handler\EasyHandle` instances must assign values compatible
+with EasyHandle's documented public property types. Several EasyHandle
+bookkeeping properties now use native property types, so assigning incompatible
+values to those properties raises `TypeError`.
+
+Custom factories must assign the request and sink state before returning an
+EasyHandle to Guzzle because those properties are required typed invariants.
+Reading them before assignment raises PHP's uninitialized typed-property `Error`.
+
+The native cURL handle properties intentionally remain untyped because PHP 7.4
+represents cURL handles as resources while PHP 8 represents them as cURL handle
+objects. Custom factories must still unset `$easy->handle` when releasing an easy
+handle, as required by `CurlFactoryInterface::release()`.
+
+#### Progress Callback Parameter Types
+
+The built-in handlers now pass integer byte counts to `progress` callbacks.
+Callbacks with `int` parameter types continue to work, and callbacks with `float`
+parameter types can still receive integer byte counts in PHP. If a callback used
+other scalar parameter types, update it to accept integers or remove the scalar
+parameter declarations.
+
+#### CurlMultiHandler Select Timeout
+
+The `GUZZLE_CURL_SELECT_TIMEOUT` environment variable is no longer read. Pass
+the `select_timeout` option to `CurlMultiHandler` instead.
+
+#### Removed Middleware Helper APIs
+
+`RetryMiddleware::exponentialDelay()` has been removed. The retry middleware
+continues to use the same exponential backoff calculation by default. This only
+affects code that called the static helper directly; inline that calculation or
+pass a custom delay callable to `Middleware::retry()`.
+
+`RedirectMiddleware::$defaultSettings` has been removed. Use
+`RedirectMiddleware::DEFAULT_SETTINGS` instead.
+
+#### Removed Proxy Helper API
+
+`Utils::isHostInNoProxy()` has been removed.
+
+Use `ProxyOptions::resolve()` when implementing Guzzle-compatible proxy handling
+in a custom handler. Use `ProxyOptions::isUriInNoProxy()` when checking whether a
+request URI matches a no-proxy list. Use `ProxyOptions::isHostInNoProxy()` only
+when checking a host string directly.
+
+These helpers use Guzzle 8's normalized no-proxy matching rather than preserving
+the old `Utils::isHostInNoProxy()` semantics. Domain matching is
+case-insensitive and ignores a single trailing DNS root dot, IP literals are
+normalized before comparison, and CIDR entries match IP literal hosts.
+
+#### Non-instantiable Utility Classes
+
+Static utility and constant classes such as `GuzzleHttp\Middleware`,
+`GuzzleHttp\Utils`, `GuzzleHttp\RequestOptions`,
+`GuzzleHttp\Handler\HeaderProcessor`, and `GuzzleHttp\Handler\Proxy` now have
+private constructors. `GuzzleHttp\Handler\Proxy` is also declared `final`.
+
+These classes only expose static members. Replace any accidental instantiation
+with static method calls or constant access.
+
 6.0 to 7.0
 ----------
 
@@ -12,7 +782,7 @@ Please make sure:
 - You are calling a function or a method with the correct type.
 - If you extend a class of Guzzle; update all signatures on methods you override.
 
-#### Other backwards compatibility breaking changes
+#### Other Backwards Compatibility Breaking Changes
 
 - Class `GuzzleHttp\UriTemplate` is removed.
 - Class `GuzzleHttp\Exception\SeekException` is removed.
@@ -35,7 +805,7 @@ Please make sure:
 - The `log` middleware will log the errors with level `error` instead of `notice` 
 - Support for international domain names (IDN) is now disabled by default, and enabling it requires installing ext-intl, linked against a modern version of the C library (ICU 4.6 or higher).
 
-#### Native functions calls
+#### Native Functions Calls
 
 All internal native functions calls of Guzzle are now prefixed with a slash. This
 change makes it impossible for method overloading by other libraries or applications.
@@ -49,7 +819,7 @@ curl_version();
 \curl_version();
 ```
 
-For the full diff you can check [here](https://github.com/guzzle/guzzle/compare/6.5.4..master).
+For the full diff you can check [here](https://github.com/guzzle/guzzle/compare/6.5.4..7.0.0).
 
 5.0 to 6.0
 ----------
@@ -189,11 +959,11 @@ $client = new GuzzleHttp\Client(['handler' => $handler]);
 
 ## POST Requests
 
-This version added the [`form_params`](https://docs.guzzlephp.org/en/latest/request-options.html#form_params)
+This version added the [`form_params`](https://github.com/guzzle/guzzle/blob/6.5/docs/request-options.rst#form_params)
 and `multipart` request options. `form_params` is an associative array of
 strings or array of strings and is used to serialize an
 `application/x-www-form-urlencoded` POST request. The
-[`multipart`](https://docs.guzzlephp.org/en/latest/request-options.html#multipart)
+[`multipart`](https://github.com/guzzle/guzzle/blob/6.5/docs/request-options.rst#multipart)
 option is now used to send a multipart/form-data POST request.
 
 `GuzzleHttp\Post\PostFile` has been removed. Use the `multipart` option to add
@@ -209,7 +979,7 @@ The `base_url` option has been renamed to `base_uri`.
 
 ## Rewritten Adapter Layer
 
-Guzzle now uses [RingPHP](https://ringphp.readthedocs.org/en/latest) to send
+Guzzle now uses [RingPHP](https://github.com/guzzle/RingPHP) to send
 HTTP requests. The `adapter` option in a `GuzzleHttp\Client` constructor
 is still supported, but it has now been renamed to `handler`. Instead of
 passing a `GuzzleHttp\Adapter\AdapterInterface`, you must now pass a PHP
@@ -574,8 +1344,6 @@ event emits a `GuzzleHttp\Event\HeadersEvent`.
 You can intercept a request and inject a response using the `intercept()` event
 of a `GuzzleHttp\Event\BeforeEvent`, `GuzzleHttp\Event\CompleteEvent`, and
 `GuzzleHttp\Event\ErrorEvent` event.
-
-See: https://docs.guzzlephp.org/en/latest/events.html
 
 ## Inflection
 

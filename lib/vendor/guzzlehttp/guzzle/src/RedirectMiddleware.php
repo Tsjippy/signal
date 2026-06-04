@@ -1,19 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace GuzzleHttp;
 
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Exception\TooManyRedirectsException;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\HttpFactory;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Message\UriInterface;
 
 /**
  * Request redirect middleware.
  *
  * Apply this middleware like other middleware using
- * {@see \GuzzleHttp\Middleware::redirect()}.
+ * {@see Middleware::redirect()}.
  *
  * @final
  */
@@ -26,7 +32,7 @@ class RedirectMiddleware
     /**
      * @var array
      */
-    public static $defaultSettings = [
+    public const DEFAULT_SETTINGS = [
         'max' => 5,
         'protocols' => ['http', 'https'],
         'strict' => false,
@@ -35,18 +41,21 @@ class RedirectMiddleware
     ];
 
     /**
-     * @var callable(RequestInterface, array): PromiseInterface
+     * @var callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>
      */
     private $nextHandler;
 
     /**
-     * @param callable(RequestInterface, array): PromiseInterface $nextHandler Next handler to invoke.
+     * @param callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed> $nextHandler Next handler to invoke.
      */
     public function __construct(callable $nextHandler)
     {
         $this->nextHandler = $nextHandler;
     }
 
+    /**
+     * @return PromiseInterface<ResponseInterface, mixed>
+     */
     public function __invoke(RequestInterface $request, array $options): PromiseInterface
     {
         $fn = $this->nextHandler;
@@ -56,12 +65,12 @@ class RedirectMiddleware
         }
 
         if ($options['allow_redirects'] === true) {
-            $options['allow_redirects'] = self::$defaultSettings;
+            $options['allow_redirects'] = self::DEFAULT_SETTINGS;
         } elseif (!\is_array($options['allow_redirects'])) {
             throw new \InvalidArgumentException('allow_redirects must be true, false, or array');
         } else {
             // Merge the default settings with the provided settings
-            $options['allow_redirects'] += self::$defaultSettings;
+            $options['allow_redirects'] += self::DEFAULT_SETTINGS;
         }
 
         if (empty($options['allow_redirects']['max'])) {
@@ -75,7 +84,7 @@ class RedirectMiddleware
     }
 
     /**
-     * @return ResponseInterface|PromiseInterface
+     * @return ResponseInterface|PromiseInterface<ResponseInterface, mixed>
      */
     public function checkRedirect(RequestInterface $request, array $options, ResponseInterface $response)
     {
@@ -88,12 +97,16 @@ class RedirectMiddleware
         $this->guardMax($request, $response, $options);
         $nextRequest = $this->modifyRequest($request, $options, $response);
 
-        // If authorization is handled by curl, unset it if URI is cross-origin.
-        if (Psr7\UriComparator::isCrossOrigin($request->getUri(), $nextRequest->getUri()) && defined('\CURLOPT_HTTPAUTH')) {
-            unset(
-                $options['curl'][\CURLOPT_HTTPAUTH],
-                $options['curl'][\CURLOPT_USERPWD]
-            );
+        // Remove HTTP origin credentials if URI is cross-origin.
+        if (Psr7\UriComparator::isCrossOrigin($request->getUri(), $nextRequest->getUri())) {
+            unset($options['auth']);
+
+            if (defined('\CURLOPT_HTTPAUTH')) {
+                unset(
+                    $options['curl'][\CURLOPT_HTTPAUTH],
+                    $options['curl'][\CURLOPT_USERPWD]
+                );
+            }
         }
 
         if (isset($options['allow_redirects']['on_redirect'])) {
@@ -120,11 +133,15 @@ class RedirectMiddleware
 
     /**
      * Enable tracking on promise.
+     *
+     * @param PromiseInterface<ResponseInterface, mixed> $promise
+     *
+     * @return PromiseInterface<ResponseInterface, mixed>
      */
     private function withTracking(PromiseInterface $promise, string $uri, int $statusCode): PromiseInterface
     {
         return $promise->then(
-            static function (ResponseInterface $response) use ($uri, $statusCode) {
+            static function (ResponseInterface $response) use ($uri, $statusCode): ResponseInterface {
                 // Note that we are pushing to the front of the list as this
                 // would be an earlier response than what is currently present
                 // in the history header.
@@ -171,19 +188,45 @@ class RedirectMiddleware
         ) {
             $safeMethods = ['GET', 'HEAD', 'OPTIONS'];
             $requestMethod = $request->getMethod();
+            $streamFactory = $options[RequestOptions::STREAM_FACTORY] ?? new HttpFactory();
+            if (!$streamFactory instanceof StreamFactoryInterface) {
+                throw new \InvalidArgumentException(\sprintf(
+                    '%s must be an instance of %s',
+                    RequestOptions::STREAM_FACTORY,
+                    StreamFactoryInterface::class
+                ));
+            }
 
-            $modify['method'] = in_array($requestMethod, $safeMethods) ? $requestMethod : 'GET';
-            $modify['body'] = '';
+            $modify['method'] = \in_array($requestMethod, $safeMethods, true) ? $requestMethod : 'GET';
+            $modify['body'] = $streamFactory->createStream('');
         }
 
-        $uri = self::redirectUri($request, $response, $protocols);
-        if (isset($options['idn_conversion']) && ($options['idn_conversion'] !== false)) {
-            $idnOptions = ($options['idn_conversion'] === true) ? \IDNA_DEFAULT : $options['idn_conversion'];
+        $uriFactory = $options[RequestOptions::URI_FACTORY] ?? new HttpFactory();
+        if (!$uriFactory instanceof UriFactoryInterface) {
+            throw new \InvalidArgumentException(\sprintf(
+                '%s must be an instance of %s',
+                RequestOptions::URI_FACTORY,
+                UriFactoryInterface::class
+            ));
+        }
+
+        $uri = self::redirectUri($uriFactory, $request, $response, $protocols);
+        $idnOptions = Utils::normalizeIdnConversionOption($options['idn_conversion'] ?? null);
+        if ($idnOptions !== null) {
             $uri = Utils::idnUriConvert($uri, $idnOptions);
         }
 
         $modify['uri'] = $uri;
-        Psr7\Message::rewindBody($request);
+        try {
+            Psr7\Message::rewindBody($request);
+        } catch (\Exception $e) {
+            throw new ResponseException(
+                'Redirect failed because the request body could not be rewound',
+                $request,
+                $response,
+                $e
+            );
+        }
 
         // Add the Referer header if it is told to do so and only
         // add the header if we are not redirecting from https to http.
@@ -209,20 +252,35 @@ class RedirectMiddleware
      * Set the appropriate URL on the request based on the location header.
      */
     private static function redirectUri(
+        UriFactoryInterface $uriFactory,
         RequestInterface $request,
         ResponseInterface $response,
         array $protocols
     ): UriInterface {
-        $location = Psr7\UriResolver::resolve(
-            $request->getUri(),
-            new Psr7\Uri($response->getHeaderLine('Location'))
-        );
+        $location = $response->getHeaderLine('Location');
 
-        // Ensure that the redirect URI is allowed based on the protocols.
-        if (!\in_array($location->getScheme(), $protocols)) {
-            throw new BadResponseException(\sprintf('Redirect URI, %s, does not use one of the allowed redirect protocols: %s', $location, \implode(', ', $protocols)), $request, $response);
+        try {
+            $locationUri = $uriFactory->createUri($location);
+            $resolvedUri = Psr7\UriResolver::resolve(
+                $request->getUri(),
+                $locationUri
+            );
+
+            if (!$uriFactory instanceof HttpFactory
+                && $locationUri->getScheme() === ''
+                && $locationUri->getAuthority() === ''
+            ) {
+                $resolvedUri = $uriFactory->createUri((string) $resolvedUri);
+            }
+        } catch (\InvalidArgumentException $e) {
+            throw new BadResponseException(\sprintf('Redirect URI, %s, is invalid: %s', $location, $e->getMessage()), $request, $response, $e);
         }
 
-        return $location;
+        // Ensure that the redirect URI is allowed based on the protocols.
+        if (!\in_array($resolvedUri->getScheme(), $protocols, true)) {
+            throw new BadResponseException(\sprintf('Redirect URI, %s, does not use one of the allowed redirect protocols: %s', $resolvedUri, \implode(', ', $protocols)), $request, $response);
+        }
+
+        return $resolvedUri;
     }
 }

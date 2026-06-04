@@ -3,7 +3,7 @@
         'name' => 'sim/signal',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'be47c10b1fdb207f83c2d18e1030e32b11d03b6e',
+        'reference' => '8ede4271ff2cd06067baa7155314f55cc410f055',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'bacon/bacon-qr-code' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'c2fe9b34b471745d0b0a0bd4b7e4a294632e4bce',
+            'reference' => '4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2',
             'type' => 'library',
             'install_path' => __DIR__ . '/../bacon/bacon-qr-code',
             'aliases' => array(
@@ -33,25 +33,25 @@
         'guzzlehttp/guzzle' => array(
             'pretty_version' => '8.0.x-dev',
             'version' => '8.0.9999999.9999999-dev',
-            'reference' => '04ff56e86bbd1af8ce754ed538cf02948586a23b',
+            'reference' => 'b7cb32c41a369160e179835a9f9c509255fbddf4',
             'type' => 'library',
             'install_path' => __DIR__ . '/../guzzlehttp/guzzle',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'guzzlehttp/promises' => array(
-            'pretty_version' => '2.3.x-dev',
-            'version' => '2.3.9999999.9999999-dev',
-            'reference' => '481557b130ef3790cf82b713667b43030dc9c957',
+            'pretty_version' => '3.0.x-dev',
+            'version' => '3.0.9999999.9999999-dev',
+            'reference' => '3a40082d9e994c28df13beb32c446fd4a8f9b59b',
             'type' => 'library',
             'install_path' => __DIR__ . '/../guzzlehttp/promises',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
         'guzzlehttp/psr7' => array(
-            'pretty_version' => '2.8.x-dev',
-            'version' => '2.8.9999999.9999999-dev',
-            'reference' => '21dc724a0583619cd1652f673303492272778051',
+            'pretty_version' => '3.0.x-dev',
+            'version' => '3.0.9999999.9999999-dev',
+            'reference' => 'f1fee541cd8232355cc314fbed88912ec5d0ff40',
             'type' => 'library',
             'install_path' => __DIR__ . '/../guzzlehttp/psr7',
             'aliases' => array(),
@@ -60,7 +60,7 @@
         'mikehaertl/php-shellcommand' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'e79ea528be155ffdec6f3bf1a4a46307bb49e545',
+            'reference' => '45e44ae5d117c811a3b72a3c9c3b392998948db7',
             'type' => 'library',
             'install_path' => __DIR__ . '/../mikehaertl/php-shellcommand',
             'aliases' => array(
@@ -97,7 +97,7 @@
         'psr/http-factory-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '1.1',
             ),
         ),
         'psr/http-message' => array(
@@ -114,36 +114,25 @@
         'psr/http-message-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '2.0',
             ),
-        ),
-        'ralouphie/getallheaders' => array(
-            'pretty_version' => '3.0.3',
-            'version' => '3.0.3.0',
-            'reference' => '120b605dfeb996808c31b6477290a714d356e822',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../ralouphie/getallheaders',
-            'aliases' => array(),
-            'dev_requirement' => false,
         ),
         'sim/signal' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'be47c10b1fdb207f83c2d18e1030e32b11d03b6e',
+            'reference' => '8ede4271ff2cd06067baa7155314f55cc410f055',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'symfony/deprecation-contracts' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '63afe740e99a13ba87ec199bb07bbdee937a5b62',
+        'symfony/polyfill-php80' => array(
+            'pretty_version' => '1.x-dev',
+            'version' => '1.9999999.9999999.9999999-dev',
+            'reference' => 'dfb55726c3a76ea3b6459fcfda1ec2d80a682411',
             'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/deprecation-contracts',
-            'aliases' => array(
-                0 => '3.6.x-dev',
-            ),
+            'install_path' => __DIR__ . '/../symfony/polyfill-php80',
+            'aliases' => array(),
             'dev_requirement' => false,
         ),
     ),

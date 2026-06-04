@@ -26,35 +26,20 @@ use Psr\Http\Message\UriInterface;
  */
 class ServerRequest extends Request implements ServerRequestInterface
 {
-    /**
-     * @var array
-     */
-    private $attributes = [];
+    private array $attributes = [];
 
-    /**
-     * @var array
-     */
-    private $cookieParams = [];
+    private array $cookieParams = [];
 
     /**
      * @var array|object|null
      */
     private $parsedBody;
 
-    /**
-     * @var array
-     */
-    private $queryParams = [];
+    private array $queryParams = [];
 
-    /**
-     * @var array
-     */
-    private $serverParams;
+    private array $serverParams;
 
-    /**
-     * @var array
-     */
-    private $uploadedFiles = [];
+    private array $uploadedFiles = [];
 
     /**
      * @param string                               $method       HTTP method
@@ -91,7 +76,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         foreach ($files as $key => $value) {
             if ($value instanceof UploadedFileInterface) {
                 $normalized[$key] = $value;
-            } elseif (is_array($value) && isset($value['tmp_name'])) {
+            } elseif (is_array($value) && array_key_exists('tmp_name', $value)) {
                 $normalized[$key] = self::createUploadedFileFromSpec($value);
             } elseif (is_array($value)) {
                 $normalized[$key] = self::normalizeFiles($value);
@@ -116,17 +101,28 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     private static function createUploadedFileFromSpec(array $value)
     {
+        self::assertFileSpec($value);
+
         if (is_array($value['tmp_name'])) {
             return self::normalizeNestedFileSpec($value);
         }
 
         return new UploadedFile(
             $value['tmp_name'],
-            (int) $value['size'],
-            (int) $value['error'],
-            $value['name'],
-            $value['type']
+            Integers::assertNonNegativeInteger($value['size'], 'Uploaded file size'),
+            Integers::assertNonNegativeInteger($value['error'], 'Uploaded file error'),
+            $value['name'] ?? null,
+            $value['type'] ?? null
         );
+    }
+
+    private static function assertFileSpec(array $value): void
+    {
+        if (!isset($value['tmp_name'], $value['size'], $value['error'])) {
+            throw new InvalidArgumentException(
+                'Invalid file specification; expected keys "tmp_name", "size", and "error".'
+            );
+        }
     }
 
     /**
@@ -139,13 +135,21 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     private static function normalizeNestedFileSpec(array $files = []): array
     {
+        self::assertNestedFileSpec($files);
+
         $normalizedFiles = [];
 
         foreach (array_keys($files['tmp_name']) as $key) {
+            if (!array_key_exists($key, $files['size']) || !array_key_exists($key, $files['error'])) {
+                throw new InvalidArgumentException(
+                    'Invalid nested file specification; expected "tmp_name", "size", and "error" arrays to have matching keys.'
+                );
+            }
+
             $spec = [
                 'tmp_name' => $files['tmp_name'][$key],
-                'size' => $files['size'][$key] ?? null,
-                'error' => $files['error'][$key] ?? null,
+                'size' => $files['size'][$key],
+                'error' => $files['error'][$key],
                 'name' => $files['name'][$key] ?? null,
                 'type' => $files['type'][$key] ?? null,
             ];
@@ -153,6 +157,26 @@ class ServerRequest extends Request implements ServerRequestInterface
         }
 
         return $normalizedFiles;
+    }
+
+    private static function assertNestedFileSpec(array $files): void
+    {
+        foreach (['tmp_name', 'size', 'error'] as $key) {
+            if (!isset($files[$key]) || !is_array($files[$key])) {
+                throw new InvalidArgumentException(
+                    'Invalid nested file specification; expected keys "tmp_name", "size", and "error" to be arrays.'
+                );
+            }
+        }
+
+        foreach (['name', 'type'] as $key) {
+            if (isset($files[$key]) && !is_array($files[$key])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Invalid nested file specification; expected key "%s" to be an array when present.',
+                    $key
+                ));
+            }
+        }
     }
 
     /**
@@ -165,33 +189,20 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public static function fromGlobals(): ServerRequestInterface
     {
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-        $headers = getallheaders();
-        $uri = self::getUriFromGlobals();
-        $body = new CachingStream(new LazyOpenStream('php://input', 'r+'));
-        $protocol = isset($_SERVER['SERVER_PROTOCOL']) ? str_replace('HTTP/', '', $_SERVER['SERVER_PROTOCOL']) : '1.1';
+        return ServerRequestGlobalsFactory::fromArrays(
+            $_SERVER,
+            $_GET,
+            $_POST,
+            $_COOKIE,
+            $_FILES,
+            static function () {
+                if (!\function_exists('apache_request_headers')) {
+                    return false;
+                }
 
-        $serverRequest = new ServerRequest($method, $uri, $headers, $body, $protocol, $_SERVER);
-
-        return $serverRequest
-            ->withCookieParams($_COOKIE)
-            ->withQueryParams($_GET)
-            ->withParsedBody($_POST)
-            ->withUploadedFiles(self::normalizeFiles($_FILES));
-    }
-
-    private static function extractHostAndPortFromAuthority(string $authority): array
-    {
-        $uri = 'http://'.$authority;
-        $parts = parse_url($uri);
-        if (false === $parts) {
-            return [null, null];
-        }
-
-        $host = $parts['host'] ?? null;
-        $port = $parts['port'] ?? null;
-
-        return [$host, $port];
+                return \apache_request_headers();
+            }
+        );
     }
 
     /**
@@ -199,46 +210,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public static function getUriFromGlobals(): UriInterface
     {
-        $uri = new Uri('');
-
-        $uri = $uri->withScheme(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
-
-        $hasPort = false;
-        if (isset($_SERVER['HTTP_HOST'])) {
-            [$host, $port] = self::extractHostAndPortFromAuthority($_SERVER['HTTP_HOST']);
-            if ($host !== null) {
-                $uri = $uri->withHost($host);
-            }
-
-            if ($port !== null) {
-                $hasPort = true;
-                $uri = $uri->withPort($port);
-            }
-        } elseif (isset($_SERVER['SERVER_NAME'])) {
-            $uri = $uri->withHost($_SERVER['SERVER_NAME']);
-        } elseif (isset($_SERVER['SERVER_ADDR'])) {
-            $uri = $uri->withHost($_SERVER['SERVER_ADDR']);
-        }
-
-        if (!$hasPort && isset($_SERVER['SERVER_PORT'])) {
-            $uri = $uri->withPort($_SERVER['SERVER_PORT']);
-        }
-
-        $hasQuery = false;
-        if (isset($_SERVER['REQUEST_URI'])) {
-            $requestUriParts = explode('?', $_SERVER['REQUEST_URI'], 2);
-            $uri = $uri->withPath($requestUriParts[0]);
-            if (isset($requestUriParts[1])) {
-                $hasQuery = true;
-                $uri = $uri->withQuery($requestUriParts[1]);
-            }
-        }
-
-        if (!$hasQuery && isset($_SERVER['QUERY_STRING'])) {
-            $uri = $uri->withQuery($_SERVER['QUERY_STRING']);
-        }
-
-        return $uri;
+        return ServerRequestGlobalsFactory::getUriFromServerParams($_SERVER);
     }
 
     public function getServerParams(): array
@@ -253,6 +225,26 @@ class ServerRequest extends Request implements ServerRequestInterface
 
     public function withUploadedFiles(array $uploadedFiles): ServerRequestInterface
     {
+        $stack = [$uploadedFiles];
+
+        for ($i = 0; $i < \count($stack); ++$i) {
+            foreach ($stack[$i] as $uploadedFile) {
+                if ($uploadedFile instanceof UploadedFileInterface) {
+                    continue;
+                }
+
+                if (\is_array($uploadedFile)) {
+                    $stack[] = $uploadedFile;
+                    continue;
+                }
+
+                throw new InvalidArgumentException(sprintf(
+                    'Invalid uploaded file tree; expected UploadedFileInterface instances but %s provided.',
+                    \get_debug_type($uploadedFile)
+                ));
+            }
+        }
+
         $new = clone $this;
         $new->uploadedFiles = $uploadedFiles;
 
@@ -295,6 +287,10 @@ class ServerRequest extends Request implements ServerRequestInterface
 
     public function withParsedBody($data): ServerRequestInterface
     {
+        if ($data !== null && !\is_array($data) && !\is_object($data)) {
+            throw new InvalidArgumentException('Parsed body must be an array, object, or null.');
+        }
+
         $new = clone $this;
         $new->parsedBody = $data;
 
@@ -309,31 +305,31 @@ class ServerRequest extends Request implements ServerRequestInterface
     /**
      * @return mixed
      */
-    public function getAttribute($attribute, $default = null)
+    public function getAttribute(string $name, $default = null)
     {
-        if (false === array_key_exists($attribute, $this->attributes)) {
+        if (false === array_key_exists($name, $this->attributes)) {
             return $default;
         }
 
-        return $this->attributes[$attribute];
+        return $this->attributes[$name];
     }
 
-    public function withAttribute($attribute, $value): ServerRequestInterface
+    public function withAttribute(string $name, $value): ServerRequestInterface
     {
         $new = clone $this;
-        $new->attributes[$attribute] = $value;
+        $new->attributes[$name] = $value;
 
         return $new;
     }
 
-    public function withoutAttribute($attribute): ServerRequestInterface
+    public function withoutAttribute(string $name): ServerRequestInterface
     {
-        if (false === array_key_exists($attribute, $this->attributes)) {
+        if (false === array_key_exists($name, $this->attributes)) {
             return $this;
         }
 
         $new = clone $this;
-        unset($new->attributes[$attribute]);
+        unset($new->attributes[$name]);
 
         return $new;
     }
