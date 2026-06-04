@@ -37,71 +37,71 @@ class Signal{
     /**
      * Constructor
      */
-    public function __construct(){
+    public function __construct() {
         global $wpdb;
 
         /**
          * Folder containing the signal-cli executable and its data
          */
-        $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR).'/signal-cli';
-        if (!is_dir($this->basePath )) {
+        $this->basePath         = str_replace('\\','/', WP_CONTENT_DIR). '/signal-cli';
+        if (!is_dir($this->basePath)) {
             wp_mkdir_p($this->basePath);
         }
 
         /**
          * Folder where all received files are stored
          */
-        $this->attachmentsPath  = $this->basePath.'/attachments';
-        if (!is_dir($this->attachmentsPath )) {
+        $this->attachmentsPath  = $this->basePath. '/attachments';
+        if (!is_dir($this->attachmentsPath)) {
             wp_mkdir_p($this->attachmentsPath);
         }
 
         /**
          * Folder where the signal-cli config is stored i.e. the linked account
          */
-        $this->configPath  = $this->basePath.'/config';
-        if (!is_dir($this->configPath )) {
+        $this->configPath  = $this->basePath. '/config';
+        if (!is_dir($this->configPath)) {
             wp_mkdir_p($this->configPath);
         }
 
         /**
          * Folder where the signal-cli executable is stored
          */
-        $this->programPath      = $this->basePath.'/program';
-        if (!is_dir($this->programPath )) {
+        $this->programPath      = $this->basePath. '/program';
+        if (!is_dir($this->programPath)) {
             wp_mkdir_p($this->programPath);
         }
 
         $this->command          = '';
         $this->daemon           = false;
         $this->error            = '';
-        $this->path             = $this->programPath.'/signal-cli';
+        $this->path             = $this->programPath. '/signal-cli';
         $this->os               = 'macOS';
 
-        if(str_contains(php_uname(), 'Windows')){
+        if (str_contains(php_uname(), 'Windows')) {
             $this->os               = 'Windows';
 
             $this->basePath         = str_replace('\\', '/', $this->basePath);
 
-            $this->path             = $this->programPath.'/bin/signal-cli.bat';
-        }elseif(str_contains(php_uname(), 'Linux')){
+            $this->path             = $this->programPath. '/bin/signal-cli.bat';
+        }elseif (str_contains(php_uname(), 'Linux')) {
             $this->os               = 'Linux';
         }
 
         $this->osUserId         = "";
 
         $this->phoneNumber      = '';
-        if(file_exists("$this->configPath/data/accounts.json")){
+        if (file_exists("$this->configPath/data/accounts.json")) {
             $accountData        = file_get_contents("$this->configPath/data/accounts.json");
             $accountData        = json_decode($accountData);
             $this->phoneNumber  = $accountData->accounts[0]->number;
         }
 
-        $this->queueTableName   = $wpdb->prefix.'tsjippy_signal_message_queue';
+        $this->queueTableName   = $wpdb->prefix. 'tsjippy_signal_message_queue';
 
-        $this->receivedTableName= $wpdb->prefix.'tsjippy_received_signal_messages';
+        $this->receivedTableName= $wpdb->prefix. 'tsjippy_received_signal_messages';
 
-        $this->tableName        = $wpdb->prefix.'tsjippy_signal_messages';
+        $this->tableName        = $wpdb->prefix. 'tsjippy_signal_messages';
 
         $this->totalMessages    = 0;
 
@@ -114,26 +114,26 @@ class Signal{
         $this->processingQueue  = false;
 
         // check permissions
-        $path   = $this->programPath.'/signal-cli';
-        if(file_exists($path) && !is_executable($path) && function_exists('chmod')){
+        $path   = $this->programPath. '/signal-cli';
+        if (file_exists($path) && !is_executable($path) && function_exists('chmod')) {
             chmod($path, 0555);
         }
 
         // .htaccess to prevent access
-        if(!file_exists($this->basePath.'/.htaccess')){
-            file_put_contents($this->basePath.'/.htaccess', 'deny from all');
+        if (!file_exists($this->basePath. '/.htaccess')) {
+            file_put_contents($this->basePath. '/.htaccess', 'deny from all');
         }
-        if(!file_exists($this->basePath.'/index.php')){
-            file_put_contents($this->basePath.'/index.php', '<?php');
+        if (!file_exists($this->basePath. '/index.php')) {
+            file_put_contents($this->basePath. '/index.php', '<?php');
         }
-        if(!file_exists($this->attachmentsPath.'/.htaccess')){
-            file_put_contents($this->attachmentsPath.'/.htaccess', 'allow from all');
+        if (!file_exists($this->attachmentsPath. '/.htaccess')) {
+            file_put_contents($this->attachmentsPath. '/.htaccess', 'allow from all');
         }
 
-        if(file_exists("$this->path/bin/signal-cli")){
+        if (file_exists("$this->path/bin/signal-cli")) {
             $this->path = "$this->path/bin/signal-cli";
         }
-        
+
         // clean db
         delete_option('tsjippy-signal-messages');
     }
@@ -141,27 +141,27 @@ class Signal{
     /**
      * Create the sent messages table if it does not exist
      */
-    public function createDbTables(){
-		global $wpdb;
+    public function createDbTables() {
+        global $wpdb;
 
-		if ( !function_exists( 'maybe_create_table' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		}
-		
-		//only create db if it does not exist
-		$charsetCollate = $wpdb->get_charset_collate();
+        if ( !function_exists('maybe_create_table')) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        }
+
+        //only create db if it does not exist
+        $charsetCollate = $wpdb->get_charset_collate();
 
         // Sent messages log
-		$sql = "CREATE TABLE {$this->tableName} (
+        $sql = "CREATE TABLE {$this->tableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             time_send bigint(20) NOT NULL,
             recipient longtext NOT NULL,
             message longtext NOT NULL,
             status text NOT NULL,
             PRIMARY KEY  (id)
-		) $charsetCollate;";
+       ) $charsetCollate;";
 
-		maybe_create_table($this->tableName, $sql );
+        maybe_create_table($this->tableName, $sql);
 
         // Received messages log
         $sql = "CREATE TABLE {$this->receivedTableName} (
@@ -173,9 +173,9 @@ class Signal{
             attachments longtext,
             status text NOT NULL,
             PRIMARY KEY  (id)
-		) $charsetCollate;";
+       ) $charsetCollate;";
 
-		maybe_create_table($this->receivedTableName, $sql );
+        maybe_create_table($this->receivedTableName, $sql);
 
         // Command queue
         $sql = "CREATE TABLE {$this->queueTableName} (
@@ -188,10 +188,10 @@ class Signal{
             retries int NOT NULL DEFAULT 0,
             waiting boolean NOT NULL DEFAULT false,
             PRIMARY KEY  (id)
-		) $charsetCollate;";
+       ) $charsetCollate;";
 
-		maybe_create_table($this->queueTableName, $sql );
-	}
+        maybe_create_table($this->queueTableName, $sql);
+    }
 
     /**
      * Adds a send message to the log
@@ -202,11 +202,11 @@ class Signal{
      *
      * @return  int                 The db row id
      */
-    protected function addToMessageLog($recipient, $message, $timestamp){
-        if(empty($recipient) || empty($message)){
+    protected function addToMessageLog($recipient, $message, $timestamp) {
+        if (empty($recipient) || empty($message)) {
             return;
         }
-        
+
         global $wpdb;
 
         $wpdb->insert(
@@ -214,9 +214,9 @@ class Signal{
             array(
                 'time_send'      => $timestamp,
                 'recipient'     => $recipient,
-                'message'		=> $message,
-            )
-        );
+                'message'        => $message,
+           )
+       );
 
         return $wpdb->insert_id;
     }
@@ -229,15 +229,15 @@ class Signal{
      * @param   int     $time       The time the message was sent
      * @param   string  $chat       The groupId is sent in a group chat, defaults to $sender for private chats
      */
-    public function addToReceivedMessageLog($sender, $message, $time, $chat='', $attachments=''){
-        if(empty($sender) || empty($message)){
+    public function addToReceivedMessageLog($sender, $message, $time, $chat='', $attachments='') {
+        if (empty($sender) || empty($message)) {
             return;
         }
 
-        if(empty($chat) ){
+        if (empty($chat)) {
             $chat   = $sender;
         }
-        
+
         global $wpdb;
 
         $wpdb->insert(
@@ -245,11 +245,11 @@ class Signal{
             array(
                 'time_send'      => $time,
                 'sender'        => $sender,
-                'message'	    => $message,
+                'message'        => $message,
                 'chat'          => $chat,
                 'attachments'   => maybe_serialize($attachments)
-            )
-        );
+           )
+       );
 
         return $wpdb->insert_id;
     }
@@ -262,12 +262,12 @@ class Signal{
      * @param   int     $minTime    Time after which the message has been sent in EPOCH, default empty
      * @param   int     $maxTime    Time before which the message has been sent in EPOCH, default empty
      */
-    public function getSentMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $receiver=''){
+    public function getSentMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $receiver='') {
         global $wpdb;
 
         $startIndex = 0;
 
-        if($page > 1){
+        if ($page > 1) {
             $startIndex         = ($page - 1) * $amount;
         }
 
@@ -275,22 +275,22 @@ class Signal{
         $query      = "SELECT * FROM $this->tableName";
         $queryExtra = "";
 
-        if(!empty($minTime)){
+        if (!empty($minTime)) {
             $queryExtra .= " WHERE time_send > {$minTime}000";
         }
 
-        if(!empty($maxTime)){
+        if (!empty($maxTime)) {
             $combinator = 'AND';
-            if(empty($queryExtra)){
+            if (empty($queryExtra)) {
                 $combinator     = 'WHERE';
             }
 
             $queryExtra .= " $combinator time_send < {$maxTime}000";
         }
 
-        if(!empty($receiver)){
+        if (!empty($receiver)) {
             $combinator = 'AND';
-            if(empty($queryExtra)){
+            if (empty($queryExtra)) {
                 $combinator     = 'WHERE';
             }
 
@@ -301,11 +301,11 @@ class Signal{
 
         $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
-        if($this->totalMessages < $startIndex){
+        if ($this->totalMessages < $startIndex) {
             return [];
         }
-        
-        return $wpdb->get_results( $query );
+
+        return $wpdb->get_results($query);
     }
 
     /**
@@ -316,12 +316,12 @@ class Signal{
      * @param   int     $minTime    Time after which the message has been sent in EPOCH, default empty
      * @param   int     $maxTime    Time before which the message has been sent in EPOCH, default empty
      */
-    public function getReceivedMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $sender=''){
+    public function getReceivedMessageLog($amount=100, $page=1, $minTime='', $maxTime='', $sender='') {
         global $wpdb;
 
         $startIndex = 0;
 
-        if($page > 1){
+        if ($page > 1) {
             $startIndex         = ($page - 1) * $amount;
         }
 
@@ -329,22 +329,22 @@ class Signal{
         $query      = "SELECT * FROM $this->receivedTableName";
         $queryExtra = "";
 
-        if(!empty($minTime)){
+        if (!empty($minTime)) {
             $queryExtra .= " WHERE time_send > {$minTime}000";
         }
 
-        if(!empty($maxTime)){
+        if (!empty($maxTime)) {
             $combinator = 'AND';
-            if(empty($queryExtra)){
+            if (empty($queryExtra)) {
                 $combinator     = 'WHERE';
             }
 
             $queryExtra .= " $combinator time_send < {$maxTime}000";
         }
 
-        if(!empty($sender)){
+        if (!empty($sender)) {
             $combinator = 'AND';
-            if(empty($queryExtra)){
+            if (empty($queryExtra)) {
                 $combinator     = 'WHERE';
             }
 
@@ -355,11 +355,11 @@ class Signal{
 
         $this->totalMessages    = $wpdb->get_var($totalQuery.$queryExtra);
 
-        if($this->totalMessages < $startIndex){
+        if ($this->totalMessages < $startIndex) {
             return [];
         }
-        
-        return $wpdb->get_results( $query );
+
+        return $wpdb->get_results($query);
     }
 
     /**
@@ -369,11 +369,11 @@ class Signal{
      *
      * @return  array                   The messages
      */
-    public function getSendMessagesByUser($phoneNumber){
-        if(get_userdata($phoneNumber)){
+    public function getSendMessagesByUser($phoneNumber) {
+        if (get_userdata($phoneNumber)) {
             $phoneNumber    = get_user_meta($phoneNumber, 'signalnumber', true);
 
-            if(!$phoneNumber){
+            if (!$phoneNumber) {
                 return;
             }
         }
@@ -382,7 +382,7 @@ class Signal{
 
         $query      = "SELECT * FROM $this->tableName WHERE `recipient` = '$phoneNumber' ORDER BY `time_send` DESC LIMIT 5; ";
 
-        return $wpdb->get_results( $query );
+        return $wpdb->get_results($query);
     }
 
     /**
@@ -392,12 +392,12 @@ class Signal{
      *
      * @return  string                   The message
      */
-    public function getSendMessageByTimestamp($timestamp){
+    public function getSendMessageByTimestamp($timestamp) {
         global $wpdb;
 
         $query      = "SELECT message FROM $this->tableName WHERE `time_send` = '$timestamp'";
 
-        return $wpdb->get_var( $query );
+        return $wpdb->get_var($query);
     }
 
     /**
@@ -407,7 +407,7 @@ class Signal{
      *
      * @return  string                  The message
      */
-    public function clearMessageLog($maxDate){
+    public function clearMessageLog($maxDate) {
         global $wpdb;
 
         $timeSend   = strtotime(get_gmt_from_date($maxDate, 'Y-m-d'));
@@ -415,7 +415,7 @@ class Signal{
         // remove sent messages
         $query      = "DELETE FROM $this->tableName WHERE `time_send` < {$timeSend}000";
 
-        $result1    = $wpdb->query( $query );
+        $result1    = $wpdb->query($query);
 
         // remove attachment files
         $results    = $wpdb->get_results(
@@ -424,14 +424,14 @@ class Signal{
                 $this->receivedTableName,
                 "{$timeSend}000"
 
-            )
-        );
-        
-        foreach($results as $result){
+           )
+       );
+
+        foreach ($results as $result) {
             $attachments    = unserialize($result->attachments);
 
-            foreach($attachments as $attachment){
-                if(file_exists($attachment)){
+            foreach ($attachments as $attachment) {
+                if (file_exists($attachment)) {
                     unlink($attachment);
                 }
             }
@@ -440,7 +440,7 @@ class Signal{
         // remove received messages
         $query      = "DELETE FROM $this->receivedTableName WHERE `time_send` < {$timeSend}000";
 
-        $result2    = $wpdb->query( $query );
+        $result2    = $wpdb->query($query);
 
         return $result1 && $result2;
     }
@@ -451,30 +451,30 @@ class Signal{
      *
      * @return  string                  The message
      */
-    public function markAsDeleted($timeStamp){
+    public function markAsDeleted($timeStamp) {
         global $wpdb;
 
         $query      = "UPDATE $this->tableName SET `status` = 'deleted' WHERE time_send = $timeStamp";
 
-        return $wpdb->query( $query );
+        return $wpdb->query($query);
     }
 
     /**
      * Get Command to further get output, error or more details of the command.
      * @return Command
      */
-    public function getCommand(){
+    public function getCommand() {
         return $this->command;
     }
 
     /**
      * Parses signal-cli message layout
-     * 
+     *
      * @param   string  $message    The message with signal-cli layout
-     * 
+     *
      * @return  array               An array containing the message with the layout tags stripped and a style array containing the position and type of the layout to apply in signal styling
      */
-    protected function parseMessageLayout($message){
+    protected function parseMessageLayout($message) {
         $replaceTags    = [
             "&nbsp;"        => ' ',
             '&amp;'         => '&',
@@ -494,62 +494,62 @@ class Signal{
         $message    = strip_tags($message, [...array_keys($replaceTags), '<b>', '</b>']);
 
         // replace html tags with signal styling
-        $message	= str_replace(
-            array_keys($replaceTags), 
-            array_values($replaceTags), 
+        $message    = str_replace(
+            array_keys($replaceTags),
+            array_values($replaceTags),
             $message
-        );
-        
-        $style		= [];
+       );
+
+        $style        = [];
 
         // parse layout
-		$result	= preg_match_all('/<(b|i|spoiler|ss|tt)>(.*?)<\/(?:b|i|spoiler|ss|tt)>/s', $message, $matches, PREG_OFFSET_CAPTURE);
+        $result    = preg_match_all('/<(b|i|spoiler|ss|tt)>(.*?)<\/(?:b|i|spoiler|ss|tt)>/s', $message, $matches, PREG_OFFSET_CAPTURE);
 
-		// we found some layout in the text
-		if($result){
-			foreach($matches[0] as $index => $match){
-				$capture		= $match[0];
-				$typeIndicator	= $matches[1][$index][0];
-				$strWithoutType	= $matches[2][$index][0];
+        // we found some layout in the text
+        if ($result) {
+            foreach ($matches[0] as $index => $match) {
+                $capture        = $match[0];
+                $typeIndicator    = $matches[1][$index][0];
+                $strWithoutType    = $matches[2][$index][0];
 
-				switch($typeIndicator){
-					case 'b':
-						$type	= 'BOLD';
-						break;
-					case 'i':
-						$type	= 'ITALIC';
-						break;
-					case 'spoiler':
-						$type	= 'SPOILER';
-						break;
-					case 'ss':
-						$type	= 'STRIKETHROUGH';
-						break;
-					case 'tt':
-						$type	= 'MONOSPACE';
-						break;
-					default:
-						$type	= null;
-				}
+                switch($typeIndicator) {
+                    case 'b':
+                        $type    = 'BOLD';
+                        break;
+                    case 'i':
+                        $type    = 'ITALIC';
+                        break;
+                    case 'spoiler':
+                        $type    = 'SPOILER';
+                        break;
+                    case 'ss':
+                        $type    = 'STRIKETHROUGH';
+                        break;
+                    case 'tt':
+                        $type    = 'MONOSPACE';
+                        break;
+                    default:
+                        $type    = null;
+                }
 
-				if(empty($type)){
-					continue;
-				}
-
-                $start          = mb_strpos($message, $capture);
-                
-                if($start === false){
+                if (empty($type)) {
                     continue;
                 }
 
-                $length	    = mb_strlen($strWithoutType);
-                
-                $style[]	= "$start:$length:$type";
-                
+                $start          = mb_strpos($message, $capture);
+
+                if ($start === false) {
+                    continue;
+                }
+
+                $length        = mb_strlen($strWithoutType);
+
+                $style[]    = "$start:$length:$type";
+
                 // replace without layout
-                $message	= str_replace($capture, $strWithoutType, $message);
-			}
-		}
+                $message    = str_replace($capture, $strWithoutType, $message);
+            }
+        }
 
         return [
             'textStyle' => $style,
@@ -562,7 +562,7 @@ class Signal{
      *
      * @param   string  $error  The error returned from a signal actions
      */
-    public function sendCaptchaInstructions($error){
+    public function sendCaptchaInstructions($error) {
         $username       = [];
         exec("bash -c 'whoami'", $username);
         $instructions   = $error;
@@ -582,24 +582,24 @@ class Signal{
 
     /**
      * Sets the rate limit expiry time
-     * 
+     *
      * @param   string|false      $epoch  epoch when the reate limit will be lifted or false to reset
-     * 
+     *
      */
-    public function setRateLimit($epoch, $save = true){
+    public function setRateLimit($epoch, $save = true) {
         $this->rateLimitString  = '';
 
         // Conver to seconds and check if in the past
-        if(is_numeric($epoch)){
+        if (is_numeric($epoch)) {
             // Convert to seconds
-            if($epoch && strlen((string)$epoch) > 11 ){
+            if ($epoch && strlen((string)$epoch) > 11) {
                 $epoch = $epoch / 1000;
             }
 
-            if(time() >= $epoch){
+            if (time() >= $epoch) {
                 $epoch  = false;
             }else{
-                $this->rateLimitString   = gmdate(DATEFORMAT.' '.TIMEFORMAT, $epoch);
+                $this->rateLimitString   = gmdate(DATEFORMAT. ' ' .TIMEFORMAT, $epoch);
             }
         }else{
             $epoch  = false;
@@ -607,7 +607,7 @@ class Signal{
 
         $this->rateLimited      = $epoch;
 
-        if($save){
+        if ($save) {
             update_option('tsjippy-signal-rate-limit', $this->rateLimited);
         }
     }
@@ -615,18 +615,18 @@ class Signal{
     /**
      * Get uncached rate limited value
      */
-    public function getRateLimited(){
+    public function getRateLimited() {
         global $wpdb;
 
         $rateLimited    = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT option_value FROM %i WHERE `option_name`=%s",
                 $wpdb->options,
-                'tsjippy-signal-rate-limit' 
-            )
-        );
+                'tsjippy-signal-rate-limit'
+           )
+       );
 
-        if($rateLimited != $this->rateLimited){
+        if ($rateLimited != $this->rateLimited) {
             $this->setRateLimit($rateLimited, false);
         }
 
@@ -637,10 +637,10 @@ class Signal{
      * Send Captcha instructions by e-mail
      *
      * @param   string  $token      The token from the error
-     * 
-     * 
+     *
+     *
      */
-    function sendRateLimitInstructions($token){
+    function sendRateLimitInstructions($token) {
         $adminUrl       = admin_url("admin.php?page=tsjippy-signal&main-tab=functions&challenge=$token");
 
         $to             = get_option('admin_email');
@@ -655,7 +655,7 @@ class Signal{
     /**
      * Checks if signal-cli is installed and up to date
      */
-    public function checkPrerequisites(){
+    public function checkPrerequisites() {
         $this->error   = '';
 
         /**
@@ -663,36 +663,36 @@ class Signal{
          */
         $curVersion     = shell_exec('javac -version');
 
-        if(!empty($curVersion)){
+        if (!empty($curVersion)) {
             $curVersion = str_replace('javac ', '', $curVersion);
         }
 
-        if(empty($curVersion) && $this->os == 'Windows'){
+        if (empty($curVersion) && $this->os == 'Windows') {
             // Try to find the path for java in case javac is not in the PATH variable
             $basePath   = is_dir('C:/Program Files/Java') ? 'C:/Program Files/Java' : 'C:/Program Files (x86)/Java';
             $subs       = scandir($basePath);
             rsort($subs);
 
             // Find latest version of java and set the path to that
-            foreach($subs as $sub){
-                if(str_contains($sub, 'jdk') || str_contains($sub, 'openjdk')){
+            foreach ($subs as $sub) {
+                if (str_contains($sub, 'jdk') || str_contains($sub, 'openjdk')) {
                     $javaPath   = "$basePath/$sub/bin";
                     putenv("PATH=$javaPath");
                     $curVersion = trim(str_replace('javac ', '', shell_exec('javac -version')));
 
-                    if(!empty($curVersion)){
+                    if (!empty($curVersion)) {
                         break;
                     }
                 }
             }
-            
-            if(empty($curVersion)){
+
+            if (empty($curVersion)) {
                 echo "javac did not return any result<br>";
                 $this->error    .= "Please install Java JDK and make sure javac is in your PATH variable<br>";
             }
         }
 
-        if(version_compare('25.0.0.0', $curVersion) === 1){
+        if (version_compare('25.0.0.0', $curVersion) === 1) {
             $this->error    .= "Please install Java JDK, at least version 25. Current version is $curVersion";
             $this->valid    = false;
         }
@@ -703,14 +703,14 @@ class Signal{
         $github         = new TSJIPPY\GITHUB\Github();
         $release        = $github->getLatestRelease('AsamK', 'signal-cli', true);
 
-        if(is_wp_error($release)){
+        if (is_wp_error($release)) {
             return false;
         }
 
-        if(!file_exists($this->path)){
+        if (!file_exists($this->path)) {
             $this->installSignal($release);
 
-            if(!file_exists($this->path)){
+            if (!file_exists($this->path)) {
                 $this->error    .= "Please install signal-cli<br>";
                 $this->valid    = false;
             }
@@ -718,11 +718,11 @@ class Signal{
             $command         = '"' . $this->path . '" --version';
             $curVersion     = str_replace('signal-cli ', 'v', trim(shell_exec($command)));
 
-            if(empty($curVersion)){
+            if (empty($curVersion)) {
                 var_dump(shell_exec("$command 2>&1"));
-                echo esc_html($command)." did not return any result<br>";
+                echo esc_html($command). " did not return any result<br>";
             }else{
-                echo "Current Signal version is <b>".esc_attr($curVersion)."</b><br>";
+                echo "Current Signal version is <b>" .esc_attr($curVersion). "</b><br>";
             }
 
             /**
@@ -730,7 +730,7 @@ class Signal{
               */
             $publishDate    = strtotime($release['published_at']);
 
-            if($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()){
+            if ($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()) {
                 ?>
                 <strong>
                     Updating Signal to version "<?php echo esc_attr($release['tag_name']);?>
@@ -742,7 +742,7 @@ class Signal{
             }
         }
 
-        if(!empty($this->error)){
+        if (!empty($this->error)) {
             return false;
         }
 
@@ -756,12 +756,12 @@ class Signal{
      *
      * @return  bool              Whether the installation was successful
      */
-    private function installSignal($release){
+    private function installSignal($release) {
         $version    = str_replace('v', '', $release['tag_name']);
 
-        if($this->os == 'Linux'){
-            $pidFile    = __DIR__.'/installing.signal';
-            if(file_exists($pidFile)){
+        if ($this->os == 'Linux') {
+            $pidFile    = __DIR__ . '/installing.signal';
+            if (file_exists($pidFile)) {
                 echo "$pidFile exists, another installation might by running already<br>";
                 return;
             }
@@ -772,18 +772,18 @@ class Signal{
             echo "Downloading Signal version $version<br>";
             $url    = "https://github.com/AsamK/signal-cli/releases/download/v$version/signal-cli-$version-$this->os.tar.gz";
 
-            if(!empty($release['assets']) && is_array($release['assets'])){
-                foreach($release['assets'] as $asset){
-                    if(
+            if (!empty($release['assets']) && is_array($release['assets'])) {
+                foreach ($release['assets'] as $asset) {
+                    if (
                         (
                             (
                                 $this->os == 'Linux' &&
-                                str_contains($asset['browser_download_url'], $this->os) 
-                            ) ||
-                            !str_contains($asset['browser_download_url'], 'Linux') 
-                        ) && 
+                                str_contains($asset['browser_download_url'], $this->os)
+                           ) ||
+                            !str_contains($asset['browser_download_url'], 'Linux')
+                       ) &&
                         isset($asset['size']) && $asset['size'] > 10000000
-                    ){
+                   ) {
                         $url    = $asset['browser_download_url'];
                         break;
                     }
@@ -792,14 +792,14 @@ class Signal{
 
             $tempPath   = $this->downloadSignal($url);
 
-            echo "URL: ".esc_url($url)."<br>";
-            echo "Destination: ".esc_attr($tempPath)."<br>";
+            echo "URL: " .esc_url($url). "<br>";
+            echo "Destination: " .esc_attr($tempPath). "<br>";
             echo "Download finished<br>";
 
             // Unzip the gz
-            $fileName = str_replace('.gz', '', $tempPath);
+            $fileName = str_replace(' .gz', '', $tempPath);
 
-            if(!file_exists($fileName)){
+            if (!file_exists($fileName)) {
 
                 echo "Unzipping .gz archive<br>";
 
@@ -823,15 +823,15 @@ class Signal{
             }
 
             // unzip the tar
-            $folder = str_replace('.tar.gz', '', $tempPath);
+            $folder = str_replace(' .tar.gz', '', $tempPath);
 
             // Unzip if needed
-            if(
-                !file_exists($folder.'/'.basename($folder).'/bin/signal-cli') && // it does not include this file (on Windows)
-                !file_exists($folder.'/signal-cli')                              // / it does not include this file (on Linux) 
-            ){
-                if( file_exists($folder) ){
-                    if($this->os == 'Windows'){
+            if (
+                !file_exists($folder. '/' .basename($folder). '/bin/signal-cli') && // it does not include this file (on Windows)
+                !file_exists($folder. '/signal-cli')                              // / it does not include this file (on Linux)
+           ) {
+                if ( file_exists($folder)) {
+                    if ($this->os == 'Windows') {
                         // remove the folder
                         exec("rmdir \"$folder\" /s /q");
                     }else{
@@ -845,23 +845,23 @@ class Signal{
                 $phar->extractTo($folder); // extract all files
             }
         } catch (\Exception $e) {
-            echo "<div class='error'>".$e->getMessage().'</div>';
+            echo "<div class='error'>" .$e->getMessage(). '</div>';
 
             // handle errors
             $this->error    = 'Installation error';
             return $this->error;
         } finally {
-            if($this->os == 'Linux'){
+            if ($this->os == 'Linux') {
                 /** @disregard  */
                 unlink($pidFile);
             }
         }
 
         // remove the old folder
-        if(file_exists($this->programPath)){
+        if (file_exists($this->programPath)) {
             echo "Removing old version<br>";
 
-            if($this->os == 'Windows'){
+            if ($this->os == 'Windows') {
                 $path   = str_replace('/', '\\', $this->programPath);
                 // kill the process
                 exec("taskkill /IM signal-cli /F");
@@ -884,27 +884,27 @@ class Signal{
         // move the folder
         $path   = "$folder/signal-cli";
         $result = false;
-        if(file_exists("$folder/signal-cli-$version")){
+        if (file_exists("$folder/signal-cli-$version")) {
             $path   = "$folder/signal-cli-$version";
 
             if (!is_dir(dirname($this->programPath))) {
                 mkdir(dirname($this->programPath), 0777, true);
             }
 
-            if($this->os == 'Windows'){
-                $result = $this->copyfolder($path.'/', $this->programPath);
+            if ($this->os == 'Windows') {
+                $result = $this->copyfolder($path. '/', $this->programPath);
             }else{
-                $result = rename($path, $this->programPath );
+                $result = rename($path, $this->programPath);
             }
 
-        }elseif(file_exists("$folder/signal-cli")){
-            $result = rename("$folder/signal-cli", "$this->path" );
+        }elseif (file_exists("$folder/signal-cli")) {
+            $result = rename("$folder/signal-cli", "$this->path");
         }else{
             echo "$path does not exist<br>";
             TSJIPPY\printArray("$folder/signal-cli not found please check", true);
         }
 
-        if($result){
+        if ($result) {
             echo "<div class='success'>Succesfully installed Signal version $version!</div>";
         }else{
             echo "<div class='error'>Failed!<br>Could not move $path to $this->programPath/signal-cli.<br>Check the $folder folder.</div>";
@@ -913,14 +913,14 @@ class Signal{
 
     private function copyfolder ($from, $to, $ext="*") {
         // (A1) SOURCE FOLDER CHECK
-        if (!is_dir($from)) { 
-            TSJIPPY\printArray("$from does not exist"); 
+        if (!is_dir($from)) {
+            TSJIPPY\printArray("$from does not exist");
         }
 
         // (A2) CREATE DESTINATION FOLDER
         if (!is_dir($to)) {
-            if (!mkdir($to)) { 
-                TSJIPPY\printArray("Failed to create $to"); 
+            if (!mkdir($to)) {
+                TSJIPPY\printArray("Failed to create $to");
             };
         }
 
@@ -929,15 +929,15 @@ class Signal{
         print_r($all);
 
         // (A4) COPY FILES + RECURSIVE INTERNAL FOLDERS
-        if (count($all) > 0) { 
+        if (count($all) > 0) {
             foreach ($all as $a) {
                 $ff = basename($a); // CURRENT FILE/FOLDER
 
                 if (is_dir($a)) {
                     $this->copyfolder("$a", "$to/$ff/");
                 } else {
-                    if (!copy($a, "$to$ff")) { 
-                        TSJIPPY\printArray("Error copying $a to $to$ff"); 
+                    if (!copy($a, "$to$ff")) {
+                        TSJIPPY\printArray("Error copying $a to $to$ff");
                     }
                 }
             }
@@ -953,13 +953,13 @@ class Signal{
      *
      * @return  string        The path to the downloaded file
      */
-    private function downloadSignal($url){
+    private function downloadSignal($url) {
         $filename   = basename($url);
-        $tempPath   = sys_get_temp_dir().'/'.$filename;
+        $tempPath   = sys_get_temp_dir(). '/' .$filename;
 
         $tempPath = str_replace('\\', '/', $tempPath);
 
-        if(file_exists($tempPath)){
+        if (file_exists($tempPath)) {
             return $tempPath;
         }
 
@@ -969,23 +969,23 @@ class Signal{
                 'GET',
                 $url,
                 array('sink' => $tempPath)
-            );
+           );
 
-            if(file_exists($tempPath)){
+            if (file_exists($tempPath)) {
                 return $tempPath;
             }
         }catch (\GuzzleHttp\Exception\ClientException $e) {
             unlink($tempPath);
 
-            if($e->getResponse()->getStatusCode() == 404){
-                $newUrl = str_replace("-".$this->os, '', $url);
+            if ($e->getResponse()->getStatusCode() == 404) {
+                $newUrl = str_replace("-" .$this->os, '', $url);
 
-                if($newUrl != $url){
+                if ($newUrl != $url) {
                     return $this->downloadSignal($newUrl);
                 }
             }
 
-            if($e->getResponse()->getReasonPhrase() == 'Gone'){
+            if ($e->getResponse()->getReasonPhrase() == 'Gone') {
                 return "The link has expired, please get a new one";
             }
             return $e->getResponse()->getReasonPhrase();
@@ -994,7 +994,7 @@ class Signal{
         echo "Downloading $url to $tempPath failed!";
     }
 
-    protected function daemonIsRunning(){
+    protected function daemonIsRunning() {
         // check if running
         $command = new Command([
             'command' => "ps -ef | grep -v grep | grep -P 'signal-cli.*daemon'"
@@ -1003,35 +1003,35 @@ class Signal{
         $command->execute();
 
         $result             = $command->getOutput();
-        if(empty($result)){
+        if (empty($result)) {
             $this->daemon   = false;
         }else{
             $this->daemon   =  true;
 
             // Running daemon but not for this website
-            if(!str_contains($result, $this->basePath) && !str_contains($result, 'do find -name signal-daemon.php')){
+            if (!str_contains($result, $this->basePath) && !str_contains($result, 'do find -name signal-daemon.php')) {
                 $this->error    = 'The daemon is started but for another website in this user account.<br>';
                 $this->error   .= "You can send messages just fine, but not receive any.<br>";
                 $this->error   .= "To enable receiving messages add this to your crontab (crontab -e): <br>";
-                $this->error   .= '<code>@reboot export DISPLAY=:0.0; export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/'.$this->osUserId.'/bus;'.$this->path.' -o json daemon | while read -r line; do find -name signal-daemon.php 2>/dev/null -exec php "{}" "$line" \; ; done; &</code><br>';
+                $this->error   .= '<code>@reboot export DISPLAY=:0.0; export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/' .$this->osUserId. '/bus;' .$this->path. ' -o json daemon | while read -r line; do find -name signal-daemon.php 2>/dev/null -exec php "{}" "$line" \; ; done; &</code><br>';
                 $this->error   .= "Then reboot your server";
             }
         }
     }
 
-    public function startDaemon(){
+    public function startDaemon() {
         return;
-        if($this->os == 'Windows'){
+        if ($this->os == 'Windows') {
             return;
         }
 
-        if(!$this->daemon){
+        if (!$this->daemon) {
             // Messaging deamon to receive messages, needs to be running in the background to receive messages, also needs to be started with the same user that starts the daemon to prevent DB
             $display    = 'export DISPLAY=:0.0;';
             $dbus       = "export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$this->osUserId/bus;";
             $cli        = "$this->path -o json --trust-new-identities=always daemon";
-            $read       = 'while read -r line; do php '.__DIR__.'/../../daemon/signal-daemon.php "$line"; done;';
-            
+            $read       = 'while read -r line; do php ' . __DIR__ . '/../../daemon/signal-daemon.php "$line"; done;';
+
             $command = new Command([
                 'command' => "bash -c '$display $dbus $cli | $read' &"
             ]);
@@ -1039,28 +1039,28 @@ class Signal{
             $command->execute();
 
             // queue processing
-            $cmd       = 'do php '.__DIR__.'/../../daemon/signal-command-queue-daemon.php';
-            
+            $cmd       = 'do php ' . __DIR__ . '/../../daemon/signal-command-queue-daemon.php';
+
             $command = new Command([
                 'command' => "bash -c '$cmd' &"
             ]);
 
             $command->execute();
         }
- 
+
         $this->daemon   = true;
     }
 
     /**
      * Adds a message to the queue to be send to prevent rate limit issues
-     * 
+     *
      * @param   string  $method    The method to execute, e.g. send or receive
      * @param   array   $params    The parameters for the method
      * @param   int     $priority  The priority of the message, lower numbers are executed first, default 10
-     * 
+     *
      * @return  int                 The db row id
      */
-    public function addToQueue($method, $params=[], $priority=10, $waiting=false){
+    public function addToQueue($method, $params=[], $priority=10, $waiting=false) {
         global $wpdb;
 
         $wpdb->insert(
@@ -1071,8 +1071,8 @@ class Signal{
                 'params'       => maybe_serialize($params),
                 'priority'     => $priority,
                 'waiting'      => $waiting
-            )
-        );
+           )
+       );
 
         return $wpdb->insert_id;
     }
@@ -1082,41 +1082,41 @@ class Signal{
      *
      * @return  object   The oldest command in the queue, or a specific command if id is provided
      */
-    public function getQueue($id=-1){
+    public function getQueue($id=-1) {
         global $wpdb;
 
-        if($id == -1){
+        if ($id == -1) {
             // Get the oldest 1 entry without result
-            $result    = $wpdb->get_row( $wpdb->prepare(
+            $result    = $wpdb->get_row($wpdb->prepare(
                 "SELECT * FROM %i WHERE result IS NULL ORDER BY priority ASC, time_added ASC LIMIT 1;",
                 $this->queueTableName
-            ) );
+           ));
         }else{
-            $result     = $wpdb->get_row( $wpdb->prepare(
-                "SELECT * FROM $this->queueTableName WHERE id = %d", 
+            $result     = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $this->queueTableName WHERE id = %d",
                 $id
-            ) );
+           ));
         }
 
-        if(isset($result->params)){
+        if (isset($result->params)) {
             $result->params = maybe_unserialize($result->params);
         }
-        
+
         return $result;
     }
 
     /**
      * Check the queue count
      */
-    private function getQueueSize(){
+    private function getQueueSize() {
         global $wpdb;
 
         // Get the oldest 1 entry without result
-        $result    = $wpdb->get_var( $wpdb->prepare(
+        $result    = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM %i WHERE result IS NULL;",
             $this->queueTableName
-        ) );
-        
+       ));
+
         return $result;
     }
 
@@ -1128,31 +1128,31 @@ class Signal{
      * @return  bool        Whether the message was removed successfully
      */
 
-    public function removeFromQueue($id){
+    public function removeFromQueue($id) {
         global $wpdb;
 
         $query      = $wpdb->prepare("DELETE FROM $this->queueTableName WHERE id = %d", $id);
 
-        return $wpdb->query( $query );
+        return $wpdb->query($query);
     }
 
     /**
      * Updates a message in the queue with the result of the command
      * @param   object  $command    The command to update, should be the result of getQueue
      * @param   mixed  $result     The result of the command
-     * 
+     *
      * @return  bool                Whether the message was updated successfully
      */
-    public function updateQueueResult($command, $result){
+    public function updateQueueResult($command, $result) {
         global $wpdb;
 
-        if(is_wp_error($result)){
+        if (is_wp_error($result)) {
             TSJIPPY\printArray($result, false, false, true);
             $result = $result->get_error_message();
         }
 
         // the result should be a string not an object
-        if(is_object($result)){
+        if (is_object($result)) {
             TSJIPPY\printArray($command);
             TSJIPPY\printArray($result);
         }else{
@@ -1160,26 +1160,26 @@ class Signal{
             $data   = [
                 'retries'   => $command->retries + 1
             ];
-        
-            if(!empty($result)){
-                $data['result']	= $result;
+
+            if (!empty($result)) {
+                $data['result']    = $result;
             }
 
-            // Update the queue 
+            // Update the queue
             $wpdb->update(
                 $this->queueTableName,
                 $data,
                 [
-                    'id'		=> $command->id
+                    'id'        => $command->id
                 ],
-            );
+           );
         }
     }
 
-    public function processQueue(){
+    public function processQueue() {
         global $wpdb;
 
-        if(wp_get_environment_type() === 'local') {
+        if (wp_get_environment_type() === 'local') {
             return; // no point in doing this
         }
 
@@ -1194,7 +1194,7 @@ class Signal{
         $queueSize  = 0;
 
         // Loop until a new cronjob has started
-        while(true){
+        while(true) {
             /**
              * Check if we if should terminate
              */
@@ -1202,22 +1202,22 @@ class Signal{
                 $wpdb->prepare(
                     "SELECT option_value FROM %i WHERE `option_name`=%s",
                     $wpdb->options,
-                    'tsjippy-signal-processing-queue' 
-                )
-            );
+                    'tsjippy-signal-processing-queue'
+               )
+           );
 
-            if($dbStartTime != $startTime){
+            if ($dbStartTime != $startTime) {
                 break;
             }
 
             /**
              * Check Rate limit
              */
-            if( $this->getRateLimited() ){
+            if ( $this->getRateLimited()) {
                 TSJIPPY\printArray("Rate Limited till $this->rateLimitString");
 
                 // We are past the rate limit, reset it
-                if(time() > $this->rateLimited){
+                if (time() > $this->rateLimited) {
                     $this->setRateLimit(false);
                 }else{
                     // no need to run if there is a rate limit
@@ -1230,12 +1230,12 @@ class Signal{
             $command    = $this->getQueue();
 
             // Nothing in the queue
-            if(empty($command)){
+            if (empty($command)) {
                 sleep(1);
                 continue;
             }
 
-            if(!is_array($command->params)){
+            if (!is_array($command->params)) {
                 $this->removeFromQueue($command->id);
                 continue;
             }
@@ -1244,19 +1244,19 @@ class Signal{
              * Check the remaining items in the queue
              */
             // No need to query the db again if we already know that there are multiple commands awaiting execution
-            if($queueSize > 3){
+            if ($queueSize > 3) {
                 $queueSize--;
             }else{
                 $queueSize  = $this->getQueueSize();
-                if($queueSize < 3){
+                if ($queueSize < 3) {
                     $sleepTime  = 2;
                 }else{
                     $sleepTime  = 30;
                 }
             }
 
-            if(method_exists($this, $command->method)){
-                if($command->method == 'send' && isset($command->params['groupId'])){
+            if (method_exists($this, $command->method)) {
+                if ($command->method == 'send' && isset($command->params['groupId'])) {
                     $command->params['recipient']    = $command->params['groupId'];
 
                     unset($command->params['groupId']);
@@ -1269,35 +1269,35 @@ class Signal{
             }
 
             // Mark as timed out if still no result after 10 times
-            if($command->retries >= 9 && empty($result)){
+            if ($command->retries >= 9 && empty($result)) {
                 TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
                 $result = 'timed out';
             }
 
             // We got a result
-            if(!empty($result)){
+            if (!empty($result)) {
                 // Add to the message log
-                if($command->method == 'send' && !empty($result->timestamp)){
+                if ($command->method == 'send' && !empty($result->timestamp)) {
                     $this->addToMessageLog($command->params['recipient'], $command->params['message' ], $result->timestamp);
-        
+
                 }
-                
+
                 // Delete a message
-                elseif($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
+                elseif ($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
                     $this->markAsDeleted($command->param['targetTimestamp']);
                 }
-                
+
                 // Remove from the queue as none is waiting for the result or to much time has passed since adding it
-                if( !$command->waiting || time() - $command->time_added > 25){
+                if ( !$command->waiting || time() - $command->time_added > 25) {
                     $this->removeFromQueue($command->id);
-                    
+
                     sleep($sleepTime);
                     continue;
                 }
             }
 
             $this->updateQueueResult($command, $result);
-            
+
             sleep($sleepTime);
         }
 

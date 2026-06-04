@@ -4,39 +4,39 @@ use TSJIPPY;
 
 /**
  * Check returns the required signal instance: cmd, dbus or jsonrpc
- * 
+ *
  * @param   bool        $getResult  Whether we should return the result, default true
  */
-function getSignalInstance($getResult=true){
+function getSignalInstance($getResult=true) {
     global $signalTrue;
     global $signalFalse;
 
-    if($getResult && !empty($signalTrue)){
+    if ($getResult && !empty($signalTrue)) {
         return $signalTrue;
-    }elseif(!empty($signalFalse)){
+    }elseif (!empty($signalFalse)) {
         return $signalFalse;
     }
 
-    if(str_contains(php_uname(), 'Linux')){
-        include_once __DIR__.'/../php/classes/SignalJsonRpc.php';
+    if (str_contains(php_uname(), 'Linux')) {
+        include_once __DIR__ . '/../php/classes/SignalJsonRpc.php';
         $signal = new SignalJsonRpc(true, $getResult);
     }else{
-        include_once __DIR__.'/../php/classes/SignalCommandLine.php';
-		$signal = new SignalCommandLine($getResult);
-	}
+        include_once __DIR__ . '/../php/classes/SignalCommandLine.php';
+        $signal = new SignalCommandLine($getResult);
+    }
 
-    if($getResult){
+    if ($getResult) {
         $signalTrue     = $signal;
     }else{
         $signalFalse    = $signal;
     }
-    
+
     return $signal;
 }
 
  // Send an signal message before sending a mail. Do not continue sending the e-mail if not needed
- add_filter('wp_mail', __NAMESPACE__.'\sendEmailBySignal', 2);
- function sendEmailBySignal($args){
+ add_filter('wp_mail', __NAMESPACE__ . '\sendEmailBySignal', 2);
+ function sendEmailBySignal($args) {
     $signal = getSignalInstance(false);
 
     $signal->sendEmailBySignal($args);

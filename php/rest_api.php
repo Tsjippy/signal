@@ -2,100 +2,100 @@
 namespace TSJIPPY\SIGNAL;
 use TSJIPPY;
 
-add_action( 'rest_api_init', __NAMESPACE__.'\restApiInit');
+add_action('rest_api_init', __NAMESPACE__ . '\restApiInit');
 function restApiInit() {
-	//Route for notification messages
-	register_rest_route( RESTAPIPREFIX, '/notifications', array(
-		'methods' => 'GET',
-		'callback' => __NAMESPACE__.'\botMessages',
-		'permission_callback' => function(){
-			return current_user_can('read');
-		},
-		)
-	);
+    //Route for notification messages
+    register_rest_route(RESTAPIPREFIX, '/notifications', array(
+        'methods' => 'GET',
+        'callback' => __NAMESPACE__ . '\botMessages',
+        'permission_callback' => function () {
+            return current_user_can('read');
+        },
+       )
+   );
 
-	//Route for first names from external signal message processor
-	register_rest_route( RESTAPIPREFIX, '/firstname', array(
-		'methods'				=> 'GET',
-		'callback'				=> __NAMESPACE__.'\findFirstname',
-		'permission_callback' 	=> function(){
-			return current_user_can('read');
-		},
-		)
-	);
+    //Route for first names from external signal message processor
+    register_rest_route(RESTAPIPREFIX, '/firstname', array(
+        'methods'                => 'GET',
+        'callback'                => __NAMESPACE__ . '\findFirstname',
+        'permission_callback'     => function () {
+            return current_user_can('read');
+        },
+       )
+   );
 
-	// Save signal preferences
-	register_rest_route(
-		RESTAPIPREFIX.'/signal',
-		'/save_preferences',
-		array(
-			'methods' 				=> \WP_REST_Server::CREATABLE,
-			'callback' 				=> __NAMESPACE__.'\savePreferences',
-			'permission_callback' 	=> function(){
-				return current_user_can('read');
-			},
-			'args'					=> array(
-				'user-id'		=> array(
-					'required'	=> true,
-                    'validate_callback' => function($userId){
-						return is_numeric($userId);
-					}
-                )
-			)
-		)
-	);
+    // Save signal preferences
+    register_rest_route(
+        RESTAPIPREFIX. '/signal',
+        '/save_preferences',
+        array(
+            'methods'                 => \WP_REST_Server::CREATABLE,
+            'callback'                 => __NAMESPACE__ . '\savePreferences',
+            'permission_callback'     => function () {
+                return current_user_can('read');
+            },
+            'args'                    => array(
+                'user-id'        => array(
+                    'required'    => true,
+                    'validate_callback' => function ($userId) {
+                        return is_numeric($userId);
+                    }
+               )
+           )
+       )
+   );
 }
 
-function botMessages( $delete = true) {
-	if (is_user_logged_in()) {
-		$notifications = get_option('signal_bot_messages');
-		if($delete){
-			delete_option('signal_bot_messages');
-		}
-		return $notifications;
-	}
+function botMessages($delete = true) {
+    if (is_user_logged_in()) {
+        $notifications = get_option('signal_bot_messages');
+        if ($delete) {
+            delete_option('signal_bot_messages');
+        }
+        return $notifications;
+    }
 }
 
 //Function to return the first name of a user with a certain phone number
-function findFirstname(\WP_REST_Request $request ) {
-	if (is_user_logged_in() && isset($request['phone'])){
+function findFirstname(\WP_REST_Request $request) {
+    if (is_user_logged_in() && isset($request['phone'])) {
 
-		$name = "not found";
-		$users = get_users(array(
-			'meta_key'     => 'phonenumbers',
-		));
+        $name = "not found";
+        $users = get_users(array(
+            'meta_key'     => 'phonenumbers',
+       ));
 
-		foreach($users as $user){
-			$phonenumbers = get_user_meta($user->ID,'phonenumbers',true);
-			if(in_array($request['phone'],$phonenumbers)){
-				$name = $user->first_name;
-			}
-		}
+        foreach ($users as $user) {
+            $phonenumbers = get_user_meta($user->ID,'phonenumbers',true);
+            if (in_array($request['phone'],$phonenumbers)) {
+                $name = $user->first_name;
+            }
+        }
 
-		return $name;
-	}
+        return $name;
+    }
 }
 
-function savePreferences(){
-	$userId			= $_POST['user-id'];
-	$currentUser	= wp_get_current_user();
+function savePreferences() {
+    $userId            = $_POST['user-id'];
+    $currentUser    = wp_get_current_user();
 
-	// If updating for someone else, check if we have the right to do so
-	if($userId	!= $currentUser->ID && !array_intersect(['usermanagement'], $currentUser->roles)){
-		return new \WP_Error('signal', 'You have no permission to this!');
-	}
+    // If updating for someone else, check if we have the right to do so
+    if ($userId    != $currentUser->ID && !array_intersect(['usermanagement'], $currentUser->roles)) {
+        return new \WP_Error('signal', 'You have no permission to this!');
+    }
 
-	$signalPreferences	= $_POST;
-	unset($signalPreferences['user-id']);
-	unset($signalPreferences['_wpnonce']);
+    $signalPreferences    = $_POST;
+    unset($signalPreferences['user-id']);
+    unset($signalPreferences['_wpnonce']);
 
-	do_action('tsjippy_signal_before_pref_save', $userId, $signalPreferences);
+    do_action('tsjippy_signal_before_pref_save', $userId, $signalPreferences);
 
-	update_user_meta($userId, 'signal_preferences', $signalPreferences);
+    update_user_meta($userId, 'signal_preferences', $signalPreferences);
 
-	if($userId	!= $currentUser->ID){
-		$name	= get_userdata($userId)->display_name;
-		return "Succesfully saved Signal preferences for $name";
-	}
-	return 'Succesfully saved your Signal preferences';
+    if ($userId    != $currentUser->ID) {
+        $name    = get_userdata($userId)->display_name;
+        return "Succesfully saved Signal preferences for $name";
+    }
+    return 'Succesfully saved your Signal preferences';
 }

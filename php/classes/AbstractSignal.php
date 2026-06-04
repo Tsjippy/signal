@@ -27,7 +27,7 @@ abstract class AbstractSignal extends Signal {
      * @return bool|string
      */
     abstract public function verify(string $code);
-    
+
     /**
      * Link to an existing device, instead of registering a new number.
      * This shows a "tsdevice:/…" URI.
@@ -37,7 +37,7 @@ abstract class AbstractSignal extends Signal {
      * @return string
      */
     abstract public function link(string $name = ''): string;
-     
+
     /**
      * Shows if a number is registered on the Signal Servers or not.
      * @param   string          $recipient Number to check.

@@ -9,213 +9,213 @@ use TSJIPPY;
  * @param    object|int $post       Wordpress post or post id
  *
 **/
-function sendPostNotification($post){
-	if(is_numeric($post)){
-		$post = get_post($post);
-	}
+function sendPostNotification($post) {
+    if (is_numeric($post)) {
+        $post = get_post($post);
+    }
 
-	if(empty(get_post_meta($post->ID, 'send_signal', true))){
-		return;
-	}
+    if (empty(get_post_meta($post->ID, 'send_signal', true))) {
+        return;
+    }
 
-	$signalMessageType	= get_post_meta($post->ID, 'signal_message_type', true);
-	$signalUrl			= get_post_meta($post->ID, 'signal_url', true);
-	$signalExtraMessage	= get_post_meta($post->ID, 'signal_extra_message', true);
-	$recipients			= get_post_meta($post->ID, 'signal_groups', true);
+    $signalMessageType    = get_post_meta($post->ID, 'signal_message_type', true);
+    $signalUrl            = get_post_meta($post->ID, 'signal_url', true);
+    $signalExtraMessage    = get_post_meta($post->ID, 'signal_extra_message', true);
+    $recipients            = get_post_meta($post->ID, 'signal_groups', true);
 
-	delete_post_meta($post->ID, 'send_signal');
-	delete_metadata( 'post', $post->ID, 'signal_groups');
-	delete_post_meta($post->ID, 'signal_message_type');
-	delete_post_meta($post->ID, 'signal_url');
-	delete_post_meta($post->ID, 'signal_extra_message');
+    delete_post_meta($post->ID, 'send_signal');
+    delete_metadata('post', $post->ID, 'signal_groups');
+    delete_post_meta($post->ID, 'signal_message_type');
+    delete_post_meta($post->ID, 'signal_url');
+    delete_post_meta($post->ID, 'signal_extra_message');
 
-	$excerpt			= do_shortcode($post->post_content);
-	if($signalMessageType == 'all'){
+    $excerpt            = do_shortcode($post->post_content);
+    if ($signalMessageType == 'all') {
 
-		if(!empty($signalUrl)){
-			$excerpt .=	"...\n\nView it on the web:\n".get_permalink($post->ID);
-		}
-	}else{
-		$excerpt	= wp_trim_words($excerpt, 20);
-		
-		//Only add read more if the excerpt is not the whole content
-		if($excerpt != wp_strip_all_tags($post->post_content)){
-			$excerpt .=	"...\n\nRead more on:\n".get_permalink($post->ID);
-		}elseif(!empty($signalUrl)){
-			$excerpt .=	"...\n\nView it on the web:\n".get_permalink($post->ID);
-		}
-	}
+        if (!empty($signalUrl)) {
+            $excerpt .=    " ...\n\nView it on the web:\n" .get_permalink($post->ID);
+        }
+    }else{
+        $excerpt    = wp_trim_words($excerpt, 20);
 
-	$excerpt = html_entity_decode($excerpt);
-	
-	$excerpt = wp_strip_all_tags(str_replace('<br>',"\n",$excerpt));
+        //Only add read more if the excerpt is not the whole content
+        if ($excerpt != wp_strip_all_tags($post->post_content)) {
+            $excerpt .=    " ...\n\nRead more on:\n" .get_permalink($post->ID);
+        }elseif (!empty($signalUrl)) {
+            $excerpt .=    " ...\n\nView it on the web:\n" .get_permalink($post->ID);
+        }
+    }
 
-	$excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
-	
-	if($_POST['update'] ?? false){
-		$message 	= "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
-	}else{
-		$author		= get_userdata($post->post_author)->display_name;
-		$message	= "<b>'{$post->post_title}'</b> just got published by <i>$author</i>\n\n$excerpt";
-	}
+    $excerpt = html_entity_decode($excerpt);
 
-	if(!empty($signalExtraMessage)){
-		$message .=	"\n\n$signalExtraMessage";
-	}
+    $excerpt = wp_strip_all_tags(str_replace('<br>',"\n",$excerpt));
 
-	foreach($recipients as $recipient){
-		asyncSignalMessageSend($message, $recipient, $post->ID);
-	}
+    $excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
+
+    if ($_POST['update'] ?? false) {
+        $message     = "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";
+    }else{
+        $author        = get_userdata($post->post_author)->display_name;
+        $message    = "<b>'{$post->post_title}'</b> just got published by <i>$author</i>\n\n$excerpt";
+    }
+
+    if (!empty($signalExtraMessage)) {
+        $message .=    "\n\n$signalExtraMessage";
+    }
+
+    foreach ($recipients as $recipient) {
+        asyncSignalMessageSend($message, $recipient, $post->ID);
+    }
 }
 
 /**
  * Schedule a Signal message to be sent asynchronously
  *
- * @param	string		$message		The message
- * @param	string		$recipient		The recipient
- * @param	string		$postId			The post ID
+ * @param    string        $message        The message
+ * @param    string        $recipient        The recipient
+ * @param    string        $postId            The post ID
  */
-function asyncSignalMessageSend($message, $recipient, $postId=""){
-	wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
+function asyncSignalMessageSend($message, $recipient, $postId="") {
+    wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
 }
 
 /**
  * Send a message on Signal
- * 
- * @param	string				$message		The message
- * @param	string|int|\WP_User	$recipient		The recipient phone number, or user id or user object
- * @param	array|int			$images			The post id or an array of either filepaths to pictures or base64 encoded images
- * @param	int					$timeStamp		The timestam of a message to reply to
- * @param	string				$quoteAuthor	The name of the author to respond to
- * @param	string				$quoteMessage	The message to respond to
- * @param   bool        		$getResult  	Whether we should return the result, default true
- * 
- * @return	string|False|\WP_Error				the result
+ *
+ * @param    string                $message        The message
+ * @param    string|int|\WP_User    $recipient        The recipient phone number, or user id or user object
+ * @param    array|int            $images            The post id or an array of either filepaths to pictures or base64 encoded images
+ * @param    int                    $timeStamp        The timestam of a message to reply to
+ * @param    string                $quoteAuthor    The name of the author to respond to
+ * @param    string                $quoteMessage    The message to respond to
+ * @param   bool                $getResult      Whether we should return the result, default true
+ *
+ * @return    string|False|\WP_Error                the result
  */
-function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){	
-	if(is_wp_error($message)){
-		TSJIPPY\printArray("Error is:");
-		TSJIPPY\printArray($message);
-	}
+function sendSignalMessage($message, $recipient, $images=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true) {
+    if (is_wp_error($message)) {
+        TSJIPPY\printArray("Error is:");
+        TSJIPPY\printArray($message);
+    }
 
-	$phonenumber	= $recipient;
-	
-	// do not send on localhost
-	if(wp_get_environment_type() === 'local' || get_option("wpstg_is_staging_site") == "true" ){
-		//return;
-	}
+    $phonenumber    = $recipient;
 
-	if(is_object($recipient) && isset($recipient->ID)){
-		$recipient	= $recipient->ID;
-	}
+    // do not send on localhost
+    if (wp_get_environment_type() === 'local' || get_option("wpstg_is_staging_site") == "true") {
+        //return;
+    }
 
-	//Check if recipient is an existing user-id
-	if(is_numeric($recipient) && get_userdata($recipient)){
-		$phonenumber = get_user_meta( $recipient, 'signal_number', true );
-	}
+    if (is_object($recipient) && isset($recipient->ID)) {
+        $recipient    = $recipient->ID;
+    }
 
-	if(!is_string($phonenumber) || empty($phonenumber)){
-		//TSJIPPY\printArray("No Phonennumer $phonenumber", false, true);
-		return false;
-	}
+    //Check if recipient is an existing user-id
+    if (is_numeric($recipient) && get_userdata($recipient)) {
+        $phonenumber = get_user_meta($recipient, 'signal_number', true);
+    }
 
-	//remove https from site urldecode
-	$urlWithoutHttps	= str_replace('https://', '', SITEURL);
-	$message			= str_replace(SITEURL, $urlWithoutHttps, $message);
+    if (!is_string($phonenumber) || empty($phonenumber)) {
+        //TSJIPPY\printArray("No Phonennumer $phonenumber", false, true);
+        return false;
+    }
 
-	if(is_numeric($images)){
-		if( has_post_thumbnail($images)){
-			$images = [get_attached_file(get_post_thumbnail_id($images))];
-		}else{
-			$images = [];
-		}
-	}
+    //remove https from site urldecode
+    $urlWithoutHttps    = str_replace('https://', '', SITEURL);
+    $message            = str_replace(SITEURL, $urlWithoutHttps, $message);
 
-	if(SETTINGS['local'] ?? false){
-		return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $getResult);
-	}else{
-		return sendSignalFromExternal($message, $phonenumber, $images);
-	}
+    if (is_numeric($images)) {
+        if ( has_post_thumbnail($images)) {
+            $images = [get_attached_file(get_post_thumbnail_id($images))];
+        }else{
+            $images = [];
+        }
+    }
+
+    if (SETTINGS['local'] ?? false) {
+        return sendSignalFromLocal($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage, $getResult);
+    }else{
+        return sendSignalFromExternal($message, $phonenumber, $images);
+    }
 }
 
 /**
  * Send a signal message from the local machine
- * 
- * @param	string		$message		The message
- * @param	string		$recipient		The recipient
- * @param	array|int	$images			Aan array of filepaths to pictures
- * @param	int			$timeStamp		The timestam of a message to reply to
- * @param	string		$quoteAuthor	The name of the author to respond to
- * @param	string		$quoteMessage	The message to respond to
- * @param   bool        $getResult  	Whether we should return the result, default true
- * 
- * @return	string|False|\WP_Error		the result
+ *
+ * @param    string        $message        The message
+ * @param    string        $recipient        The recipient
+ * @param    array|int    $images            Aan array of filepaths to pictures
+ * @param    int            $timeStamp        The timestam of a message to reply to
+ * @param    string        $quoteAuthor    The name of the author to respond to
+ * @param    string        $quoteMessage    The message to respond to
+ * @param   bool        $getResult      Whether we should return the result, default true
+ *
+ * @return    string|False|\WP_Error        the result
  */
-function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true){
-	$phonenumber		= $recipient;
+function sendSignalFromLocal($message, $recipient, $images, int $timeStamp=0, $quoteAuthor='', $quoteMessage='', $getResult=true) {
+    $phonenumber        = $recipient;
 
-	if(strlen($phonenumber) < 10){
-		//TSJIPPY\printArray("Invalid Phonennumer $phonenumber", false, true);
-		return false;
-	}
+    if (strlen($phonenumber) < 10) {
+        //TSJIPPY\printArray("Invalid Phonennumer $phonenumber", false, true);
+        return false;
+    }
 
-	$signal					= getSignalInstance($getResult);
+    $signal                    = getSignalInstance($getResult);
 
-	if(str_contains($phonenumber, ',')){
-		return $signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage);
-	}
+    if (str_contains($phonenumber, ',')) {
+        return $signal->sendGroupMessage($message, $phonenumber, $images, $timeStamp, $quoteAuthor, $quoteMessage);
+    }
 
-	$result	= $signal->send($phonenumber, $message, $images, $timeStamp, $quoteAuthor, $quoteMessage);
+    $result    = $signal->send($phonenumber, $message, $images, $timeStamp, $quoteAuthor, $quoteMessage);
 
-	return $result;
+    return $result;
 }
 
 /**
  * Send a signal message from an external source
  *
- * @param	string		$message		The message
- * @param	string		$phonenumber	The recipient's phone number
- * @param	string		$image			The image to send
+ * @param    string        $message        The message
+ * @param    string        $phonenumber    The recipient's phone number
+ * @param    string        $image            The image to send
  *
- * @return	string|False|\WP_Error		the result
+ * @return    string|False|\WP_Error        the result
  */
-function sendSignalFromExternal($message, $phonenumber, $image){
-	if(!empty($image)){
-		if(is_array($image)){
-			$image	= $image[0];
-		}
-		$image	= base64_encode(file_get_contents($image));
-	}
-	
-	$notifications = get_option('signal_bot_messages');
+function sendSignalFromExternal($message, $phonenumber, $image) {
+    if (!empty($image)) {
+        if (is_array($image)) {
+            $image    = $image[0];
+        }
+        $image    = base64_encode(file_get_contents($image));
+    }
 
-	//Notifications should be an array of recipients
-	if(!is_array($notifications)){
-		$notifications = [];
-	}
+    $notifications = get_option('signal_bot_messages');
 
-	//The phonenumber should be an array of messages
-	if(!isset($notifications[$phonenumber]) || !is_array($notifications[$phonenumber])){
-		$notifications[$phonenumber]	= [];
-	}
+    //Notifications should be an array of recipients
+    if (!is_array($notifications)) {
+        $notifications = [];
+    }
 
-	$notifications[$phonenumber][] = [
-		$message,
-		$image
-	];
-	
-	update_option('signal_bot_messages', $notifications);
+    //The phonenumber should be an array of messages
+    if (!isset($notifications[$phonenumber]) || !is_array($notifications[$phonenumber])) {
+        $notifications[$phonenumber]    = [];
+    }
 
-	if(wp_doing_cron()){
-		return '';
-	}
+    $notifications[$phonenumber][] = [
+        $message,
+        $image
+    ];
 
-	ob_start();
-	?>
-	<div class='success'>
-		Message send succesfully
-	</div>
-	<?php
+    update_option('signal_bot_messages', $notifications);
 
-	return ob_get_clean();
+    if (wp_doing_cron()) {
+        return '';
+    }
+
+    ob_start();
+    ?>
+    <div class='success'>
+        Message send succesfully
+    </div>
+    <?php
+
+    return ob_get_clean();
 }

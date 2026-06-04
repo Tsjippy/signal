@@ -27,11 +27,11 @@ class SignalCommandLine extends AbstractSignal{
      * Constructor
      */
 
-    public function __construct(){
+    public function __construct() {
         parent::__construct();
     }
 
-    public function baseCommand(){
+    public function baseCommand() {
         $this->commandObject = new Command([
             'command' => $this->path,
             // This is required for binary to be able to find libzkgroup.dylib to support Group V2
@@ -40,7 +40,7 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->addArg('-c', $this->configPath);
 
-        if($this->os == 'Windows'){
+        if ($this->os == 'Windows') {
             $this->commandObject->useExec  = true;
         }
     }
@@ -52,12 +52,12 @@ class SignalCommandLine extends AbstractSignal{
      * @param string $captcha - from https://signalcaptchas.org/registration/generate.html
      * @return bool|string
      */
-    
+
     public function register(string $phone, string $captcha, bool $voiceVerification = false)
     {
         //dbus-send --session --dest=org.asamk.Signal --type=method_call --print-reply /org/asamk/Signal org.asamk.Signal.link string:"My secondary client" | tr '\n' '\0' | sed 's/.*string //g' | sed 's/\"//g' | qrencode -s10 -tANSI256
 
-        file_put_contents($this->basePath.'/phone.signal', $phone);
+        file_put_contents($this->basePath. '/phone.signal', $phone);
 
         $captcha    = str_replace('signalcaptcha://', '', $captcha);
 
@@ -67,18 +67,18 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->addArg('register');
 
-        if($voiceVerification){
+        if ($voiceVerification) {
             $this->commandObject->addArg('--voice', null);
         }
 
-        if(!empty($captcha)){
+        if (!empty($captcha)) {
             $this->commandObject->addArg('--captcha', $captcha);
         }
 
         $this->commandObject->execute();
 
-        if($this->commandObject->getExitCode()){
-            unlink($this->basePath.'/phone.signal');
+        if ($this->commandObject->getExitCode()) {
+            unlink($this->basePath. '/phone.signal');
         }
 
         return $this->parseResult();
@@ -100,8 +100,8 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->execute();
 
-        if(!$this->commandObject->getExitCode()){
-            unlink($this->basePath.'/phone.signal');
+        if (!$this->commandObject->getExitCode()) {
+            unlink($this->basePath. '/phone.signal');
         }
 
         return $this->parseResult();
@@ -113,10 +113,10 @@ class SignalCommandLine extends AbstractSignal{
      * @param string|array $recipients One or more numbers to check.
      * @return string|string
      */
-    
+
     public function getUserStatus($recipients)
     {
-        if(!is_array($recipients)){
+        if (!is_array($recipients)) {
             $recipients    = [$recipients];
         }
 
@@ -145,8 +145,8 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->execute();
 
-        if($this->commandObject->getExitCode()){
-            unlink($this->basePath.'/phone.signal');
+        if ($this->commandObject->getExitCode()) {
+            unlink($this->basePath. '/phone.signal');
         }
 
         return $this->parseResult();
@@ -160,10 +160,10 @@ class SignalCommandLine extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function send($recipients, string $message, $attachments = null, int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
+    public function send($recipients, string $message, $attachments = null, int $timeStamp=0, $quoteAuthor='', $quoteMessage='') {
         $groupId    = null;
-        if(!is_array($recipients)){
-            if(strpos( $recipients , '+' ) === 0){
+        if (!is_array($recipients)) {
+            if (strpos($recipients , '+') === 0) {
                 $recipients    = [$recipients];
             }else{
                 $groupId    = $recipients;
@@ -179,17 +179,17 @@ class SignalCommandLine extends AbstractSignal{
         $this->commandObject->nonBlockingMode = true;
 
         $this->commandObject->addArg('-a', $this->phoneNumber);
-        
+
         $this->commandObject->addArg('send', $recipients);
 
         $this->commandObject->addArg('-m', $message);
 
-        if($groupId){
+        if ($groupId) {
             $this->commandObject->addArg('-g', $groupId);
         }
 
-        if(!empty($attachments)){
-            if(!is_array($attachments)){
+        if (!empty($attachments)) {
+            if (!is_array($attachments)) {
                 $attachments    = [$attachments];
             }
             TSJIPPY\printArray($attachments);
@@ -210,11 +210,11 @@ class SignalCommandLine extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function sendGroupMessage($message, $groupId, $attachments='', $timeStamp='', $quoteAuthor='', $quoteMessage='', $style=''){
+    public function sendGroupMessage($message, $groupId, $attachments='', $timeStamp='', $quoteAuthor='', $quoteMessage='', $style='') {
         return $this->send($groupId, $message, $attachments, $timeStamp, $quoteAuthor, $quoteMessage);
     }
 
-    public function sendReceipt($recipient, $timestamp){
+    public function sendReceipt($recipient, $timestamp) {
         // Mark as read
         $this->baseCommand();
 
@@ -231,7 +231,7 @@ class SignalCommandLine extends AbstractSignal{
         return $this->parseResult();
     }
 
-    public function sentTyping($recipient, $timestamp='', $groupId=''){
+    public function sentTyping($recipient, $timestamp='', $groupId='') {
         // Mark as read
         $this->sendReceipt($recipient, $timestamp);
 
@@ -242,7 +242,7 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->addArg('sendTyping', $recipient);
 
-        if(!empty($groupId)){
+        if (!empty($groupId)) {
             $this->commandObject->addArg('-g', $groupId);
         }
 
@@ -251,7 +251,7 @@ class SignalCommandLine extends AbstractSignal{
         return $this->parseResult();
     }
 
-    public function sendGroupTyping($groupId){
+    public function sendGroupTyping($groupId) {
         return $this->sentTyping($groupId);
     }
 
@@ -272,11 +272,11 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->addArg('--name', $name);
 
-        if($avatarPath){
+        if ($avatarPath) {
             $this->commandObject->addArg('--avatar', $avatarPath);
         }
 
-        if($removeAvatar){
+        if ($removeAvatar) {
             $this->commandObject->addArg('--removeAvatar', null);
         }
 
@@ -296,7 +296,7 @@ class SignalCommandLine extends AbstractSignal{
     public function link(string $name = ''): string
     {
         #| tr '\n' '\0' | sed 's/.*string //g' | sed 's/\"//g' | qrencode -s10 -tANSI256
-        if(empty($name)){
+        if (empty($name)) {
             $name   = get_bloginfo('name');
         }
         $this->baseCommand();
@@ -308,15 +308,15 @@ class SignalCommandLine extends AbstractSignal{
         $this->commandObject->addArg('-n', $name);
 
         // TODO: Better response handling
-        $randFile = sys_get_temp_dir().'/'.rand() . time() . '.device';
+        $randFile = sys_get_temp_dir(). '/' .rand() . time() . ' .device';
         $this->commandObject->addArg(" > $randFile 2>&1 &", null, false); // Ugly hack!
         sleep(1); // wait for file to get populated
 
         $this->commandObject->execute();
 
-        if($this->commandObject->getExitCode()){
+        if ($this->commandObject->getExitCode()) {
             $error  = "<div class='error'>";
-                $error  .= $this->commandObject->getError()."<br>";
+                $error  .= $this->commandObject->getError(). "<br>";
                 $error  .= "Try to do the linking yourself<br><br>";
                 $error  .= "Open a command line and run this:<br>";
                 $error  .= "<code>$this->path link -n \"$name\"</code><br><br>";
@@ -325,7 +325,7 @@ class SignalCommandLine extends AbstractSignal{
         }
 
         $link   = '';
-        while(empty($link)){
+        while(empty($link)) {
             $link   = file_get_contents($randFile);
         }
         unlink($randFile);
@@ -342,14 +342,14 @@ class SignalCommandLine extends AbstractSignal{
         #https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=$link
 
         return "<img loading='lazy' src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=$link'/><br>$link";
-        if (!extension_loaded('imagick')){
+        if (!extension_loaded('imagick')) {
             return $link;
         }
 
         $renderer       = new ImageRenderer(
             new RendererStyle(400),
             new ImagickImageBackEnd()
-        );
+       );
         $writer         = new Writer($renderer);
         $qrcodeImage    = base64_encode($writer->writeString($link));
 
@@ -360,7 +360,7 @@ class SignalCommandLine extends AbstractSignal{
      * Link another device to this device.
      * Only works, if this is the master device
      * @param string $uri Specify the uri contained in the QR code shown by the new device.
-     *                    You will need the full uri enclosed in quotation marks, such as "tsdevice:/?uuid=…​.."
+     *                    You will need the full uri enclosed in quotation marks, such as "tsdevice:/?uuid=…​.. "
      * @return bool|string
      */
     public function addDevice(string $uri)
@@ -440,19 +440,19 @@ class SignalCommandLine extends AbstractSignal{
 
         $this->commandObject->addArg('updateGroup', null);
 
-        if(!empty($groupId)){
+        if (!empty($groupId)) {
             $this->commandObject->addArg('-g', $groupId);
         }
 
-        if($name){
+        if ($name) {
             $this->commandObject->addArg('-n', $name);
         }
 
-        if(!empty($members)){
+        if (!empty($members)) {
             $this->commandObject->addArg('-m', $members);
         }
 
-        if(!empty($avatarPath)){
+        if (!empty($avatarPath)) {
             $this->commandObject->addArg('-a', $avatarPath);
         }
 
@@ -562,50 +562,50 @@ class SignalCommandLine extends AbstractSignal{
         return json_decode($this->parseResult(true));
     }
 
-    protected function parseResult($returnJson=false){
-        if($this->commandObject->getExitCode()){
+    protected function parseResult($returnJson=false) {
+        if ($this->commandObject->getExitCode()) {
 
             $errorMessage  = $this->commandObject->getError();
 
             //TSJIPPY\printArray($errorMessage);
 
             // Captcha required
-            if(str_contains($errorMessage, 'CAPTCHA proof required')){
+            if (str_contains($errorMessage, 'CAPTCHA proof required')) {
                 // Store command
                 $failedCommands[]    = $this->commandObject->getCommand();
 
                 $this->sendCaptchaInstructions($errorMessage);
-            }elseif(str_contains($errorMessage, '429 Too Many Requests')){
+            }elseif (str_contains($errorMessage, '429 Too Many Requests')) {
                 // Store command
                 $failedCommands[]    = $this->commandObject->getCommand();
-            }elseif(str_contains($errorMessage, 'Unregistered user')){
+            }elseif (str_contains($errorMessage, 'Unregistered user')) {
                 // get phonenumber from the message
                 preg_match('/"(\+\d*)/m', $errorMessage, $matches);
 
-                if(isset($matches[1])){
+                if (isset($matches[1])) {
                     // delete the signal meta key
                     $users = get_users(array(
                         'meta_key'     => 'signal_number',
                         'meta_value'   => $matches[1],
-		                'meta_compare' => '=',
-                    ));
-            
-                    foreach($users as $user){
+                        'meta_compare' => '=',
+                   ));
+
+                    foreach ($users as $user) {
                         delete_user_meta($user->ID, 'signal_number');
 
                         TSJIPPY\printArray("Deleting Signal number {$matches[1]} for user $user->ID as it is not valid anymore");
                     }
                 }
-            }elseif(str_contains($errorMessage, 'Invalid group id')){
+            }elseif (str_contains($errorMessage, 'Invalid group id')) {
                 TSJIPPY\printArray($errorMessage);
-            }elseif(str_contains($errorMessage, 'Did not receive a reply.')){
-                TSJIPPY\printArray($errorMessage); 
+            }elseif (str_contains($errorMessage, 'Did not receive a reply. ')) {
+                TSJIPPY\printArray($errorMessage);
             }else{
-                TSJIPPY\printArray($this->commandObject);
+                TSJIPPY\printArray($errorMessage);
             }
-            
+
             $this->error    = $errorMessage;
-            if($returnJson){
+            if ($returnJson) {
                 return json_encode($this->error);
             }
 
@@ -617,8 +617,8 @@ class SignalCommandLine extends AbstractSignal{
         $lines  = explode("\n", $output);
 
         $output = end($lines);
-        
-        if($returnJson && (empty($output) || json_decode($output) == $output)){
+
+        if ($returnJson && (empty($output) || json_decode($output) == $output)) {
             return json_encode($output);
         }
         return $output;
@@ -630,27 +630,27 @@ class SignalCommandLine extends AbstractSignal{
      * @param   int             $targetSentTimestamp    The original timestamp
      * @param   string|array    $recipients             The original recipient(s)
      */
-    public function remoteDelete($targetSentTimestamp, $recipients){
+    public function remoteDelete($targetSentTimestamp, $recipients) {
         // to be implemented
     }
 
-    public function sendReaction($recipient, $timestamp, $groupId='', $emoji=''){
+    public function sendReaction($recipient, $timestamp, $groupId='', $emoji='') {
         // to be implemented
     }
 
-    public function submitRateLimitChallenge($challenge, $captcha){
+    public function submitRateLimitChallenge($challenge, $captcha) {
         // to be implemented
     }
 
-    public function getGroupInvitationLink($groupPath){
+    public function getGroupInvitationLink($groupPath) {
         // to be implemented
     }
 
-    public function findGroupName($id){
+    public function findGroupName($id) {
         // to be implemented
     }
 
-    public function doRequest($command, $params){
+    public function doRequest($command, $params) {
         // to be implemented
     }
 }

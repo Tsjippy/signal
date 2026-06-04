@@ -33,10 +33,10 @@ class SignalJsonRpc extends AbstractSignal{
     public mixed $socket;
     public string $socketPath;
 
-    public function __construct($shouldCloseSocket=true, $getResult=true){
+    public function __construct($shouldCloseSocket=true, $getResult=true) {
         parent::__construct();
-        
-        if($this->os == 'Windows'){
+
+        if ($this->os == 'Windows') {
             return;
         }
 
@@ -57,15 +57,15 @@ class SignalJsonRpc extends AbstractSignal{
 
         clearstatcache();
 
-        if (!is_writable($this->socketPath )) {
-            //TSJIPPY\printArray( "Please chick the file permisions to $this->socketPath");
+        if (!is_writable($this->socketPath)) {
+            //TSJIPPY\printArray("Please chick the file permisions to $this->socketPath");
         }
 
         // Windows not supported for now
         try {
             $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
-            
-            if($errno == 111){
+
+            if ($errno == 111) {
                 // remove the old socket file
                 unlink($this->socketPath);
 
@@ -73,10 +73,10 @@ class SignalJsonRpc extends AbstractSignal{
                 $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
             }
 
-            if($errno == 2){
+            if ($errno == 2) {
                 echo "Could not start, is the signal-cli jsonrpc daemon running?";
 
-            }elseif(!$this->socket){
+            }elseif (!$this->socket) {
                 echo "Unable to create socket on $this->socketPath";
 
                 //TSJIPPY\printArray("$errno: $this->error");
@@ -95,14 +95,14 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  mixed                   The result or false in case of trouble or nothing if $getResult is false
      */
-    public function doRequest($method, $params=[]){
+    public function doRequest($method, $params=[]) {
         $this->lastRequestTime = time();
 
-        if($this->shouldCloseSocket && str_contains(php_uname(), 'Linux')){
+        if ($this->shouldCloseSocket && str_contains(php_uname(), 'Linux')) {
             $this->socket   = stream_socket_client("unix:////$this->socketPath" , $errno, $this->error);
         }
 
-        if(!$this->socket){
+        if (!$this->socket) {
             //TSJIPPY\printArray("$errno: $this->error", true);
             return false;
         }
@@ -112,13 +112,13 @@ class SignalJsonRpc extends AbstractSignal{
             stream_set_timeout($this->socket, 1);
         }catch (\Error $e) {
             TSJIPPY\printArray($e);
-        
-            TSJIPPY\printArray($this->socket); 
+
+            TSJIPPY\printArray($this->socket);
         }
 
         $params["account"]  = $this->phoneNumber;
 
-        $id     = time(); 
+        $id     = time();
 
         $data   = [
             "jsonrpc"       => "2.0",
@@ -127,39 +127,39 @@ class SignalJsonRpc extends AbstractSignal{
             "id"            => $id
         ];
 
-        $json   = json_encode($data)."\n";
+        $json   = json_encode($data). "\n";
 
-        fwrite($this->socket, $json);         
+        fwrite($this->socket, $json);
 
         flush();
 
         $response   = '';
-        if($this->getResult){
+        if ($this->getResult) {
             //stream_socket_recvfrom
             $response = $this->getRequestResponse($id);
         }
 
-        if($this->shouldCloseSocket){
+        if ($this->shouldCloseSocket) {
             fclose($this->socket);
         }
 
-        if($this->getResult){
+        if ($this->getResult) {
             $this->checkForErrors($response, $method, $params, $id);
 
-            if(!empty($this->error)){
+            if (!empty($this->error)) {
                 return new \WP_Error('tsjippy-signal', $this->error);
             }
 
-            if(!is_object($response) || empty($response->result)){
-                if(!$this->invalidNumber){
+            if (!is_object($response) || empty($response->result)) {
+                if (!$this->invalidNumber) {
                     TSJIPPY\printArray(
                         [
-                            'message'   => "Got faulty result", 
+                            'message'   => "Got faulty result",
                             'method'    => $method,
                             'params'    => $params,
                             'response'  => $response
                         ]
-                    );
+                   );
                 }
 
                 return false;
@@ -174,25 +174,25 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @param   int     $id         the request id should epoch of the request
      */
-    public function getRequestResponse(int $id){
-        if(empty($id)){
+    public function getRequestResponse(int $id) {
+        if (empty($id)) {
             TSJIPPY\printArray("Got an empty Id");
             return false;
         }
 
         // maximum of listentime seconds
-        if(time() - $id > $this->listenTime){
-            TSJIPPY\printArray('Cancelling as this has been running for '.time() - $id.' seconds');
+        if (time() - $id > $this->listenTime) {
+            TSJIPPY\printArray('Cancelling as this has been running for ' .time() - $id. ' seconds');
             return false;
         }
 
         $json   = $this->getResultFromSocket($id);
 
-        if(!$json){
+        if (!$json) {
             $json   = $this->getResultFromDb($id);
-        }        
+        }
 
-        return $json; 
+        return $json;
     }
 
     /**
@@ -202,11 +202,11 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  mixed               the result or empty if no result
      */
-    public function getResultFromDb($id){
+    public function getResultFromDb($id) {
         $signalResults  = get_option('tsjippy-signal-results', []);
 
         // the id is not found in the db
-        if(!isset($signalResults[$id])){
+        if (!isset($signalResults[$id])) {
             return false;
         }
 
@@ -219,7 +219,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         return $result;
     }
-    
+
     /**
      * Get response from socket
      *
@@ -227,7 +227,7 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  string              a json result string
      */
-    public function getResultFromSocket($id){
+    public function getResultFromSocket($id) {
         // maybe the daemon is not running, lets read from the socket ourselves
         $response   = '';
         $x          = 0;
@@ -237,17 +237,17 @@ class SignalJsonRpc extends AbstractSignal{
             $response       .= fgets($this->socket, 4096);
 
             // response is a valid json response
-            if(!empty(json_decode($response))){
+            if (!empty(json_decode($response))) {
                 break;
             }
 
             // break if not broken yet and there is no more data
             $streamMetaData  = stream_get_meta_data($this->socket);
 
-            if($streamMetaData['unread_bytes'] <= 0){
+            if ($streamMetaData['unread_bytes'] <= 0) {
                 $x++;
 
-                if( $x > 10 ){
+                if ( $x > 10) {
                     break;
                 }
             }
@@ -264,23 +264,23 @@ class SignalJsonRpc extends AbstractSignal{
         $this->lastResponse     = trim($response);
         $this->invalidNumber    = false;
 
-        if(empty($this->lastResponse)){
+        if (empty($this->lastResponse)) {
             return $this->getRequestResponse($id);
         }
 
         // somehow we have red multiple responses
-        if(substr_count($this->lastResponse, $base) > 1){
+        if (substr_count($this->lastResponse, $base) > 1) {
             TSJIPPY\printArray($this->lastResponse);
 
             $results    = [];
 
             // loop over each jsonrpc response to find the ones with a result property
-            foreach(explode($base, $this->lastResponse) as $jsonString){
+            foreach (explode($base, $this->lastResponse) as $jsonString) {
                 $decoded    = json_decode($base.$jsonString);
 
-                if(!empty($decoded) && isset($decoded->result)){
+                if (!empty($decoded) && isset($decoded->result)) {
                     // this is the one we are after
-                    if($decoded->id == $id){
+                    if ($decoded->id == $id) {
                         $this->lastResponse   = json_encode($decoded);
                     }else{
                         // not this one
@@ -290,7 +290,7 @@ class SignalJsonRpc extends AbstractSignal{
             }
 
             // add the results we are not interested in to the db
-            if(!empty($results)){
+            if (!empty($results)) {
                 $signalResults              = get_option('tsjippy-signal-results', []);
 
                 array_merge($signalResults, $results);
@@ -301,37 +301,37 @@ class SignalJsonRpc extends AbstractSignal{
 
         $json       = json_decode($this->lastResponse);
 
-        if(empty($json)){
+        if (empty($json)) {
             switch (json_last_error()) {
                 case JSON_ERROR_NONE:
-                    TSJIPPY\printArray(' - No errors'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - No errors' .$this->lastResponse, true);
                     break;
                 case JSON_ERROR_DEPTH:
-                    TSJIPPY\printArray(' - Maximum stack depth exceeded'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Maximum stack depth exceeded' .$this->lastResponse, true);
                     break;
                 case JSON_ERROR_STATE_MISMATCH:
-                    TSJIPPY\printArray(' - Underflow or the modes mismatch'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Underflow or the modes mismatch' .$this->lastResponse, true);
                     break;
                 case JSON_ERROR_CTRL_CHAR:
-                    TSJIPPY\printArray(' - Unexpected control character found'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Unexpected control character found' .$this->lastResponse, true);
                     break;
                 case JSON_ERROR_SYNTAX:
-                    TSJIPPY\printArray(' - Syntax error, malformed JSON: '.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Syntax error, malformed JSON: ' .$this->lastResponse, true);
                     break;
                 case JSON_ERROR_UTF8:
-                    TSJIPPY\printArray(' - Malformed UTF-8 characters, possibly incorrectly encoded'.$this->lastResponse, true);
+                    TSJIPPY\printArray(' - Malformed UTF-8 characters, possibly incorrectly encoded' .$this->lastResponse, true);
                     break;
                 default:
                     break;
             }
         }
 
-        if(isset($json->error)){
+        if (isset($json->error)) {
             return $json;
-        }elseif(!isset($json->result)){
+        }elseif (!isset($json->result)) {
             $json2   = $this->getRequestResponse($id);
 
-            if(!isset($json->method) || $json->method != 'receive'){
+            if (!isset($json->method) || $json->method != 'receive') {
                 TSJIPPY\printArray("Trying again:");
                 TSJIPPY\printArray($json);
 
@@ -339,13 +339,13 @@ class SignalJsonRpc extends AbstractSignal{
             }
 
             $json   = $json2;
-        }elseif(!isset($json->id)){
+        }elseif (!isset($json->id)) {
             TSJIPPY\printArray("Response has no id");
             TSJIPPY\printArray($this->lastResponse);
             TSJIPPY\printArray($json);
             $json   = $this->getRequestResponse($id);
             TSJIPPY\printArray($json);
-        }elseif($json->id != $id){
+        }elseif ($json->id != $id) {
             TSJIPPY\printArray("Id '$json->id' is not the right id '$id', trying again");
             TSJIPPY\printArray($response);
             TSJIPPY\printArray($json);
@@ -366,25 +366,25 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  void
      */
-    protected function checkForErrors($json, $method, $params, $id){
+    protected function checkForErrors($json, $method, $params, $id) {
         $this->error    = "";
 
-        if(!$json){
+        if (!$json) {
             TSJIPPY\printArray(
                 [
                     'message'   => "Getting response for command $method timed out",
                     'method'    => $method,
                     'params'    => $params
                 ]
-            );
+           );
 
             $signalResults              = get_option('tsjippy-signal-results', []);
-            if(isset($signalResults[$id])){
+            if (isset($signalResults[$id])) {
                 TSJIPPY\printArray($signalResults[$id]);
             }
 
             return false;
-        }elseif(empty($json->error)){
+        }elseif (empty($json->error)) {
             // Everything went well, nothing to do
             return;
         }
@@ -392,13 +392,13 @@ class SignalJsonRpc extends AbstractSignal{
         $this->error    = $json->error->message;
 
         // unregistered number or user
-        if( ($json->error->data->response->results[0]->type ?? '') == 'UNREGISTERED_FAILURE'){
+        if ( ($json->error->data->response->results[0]->type ?? '') == 'UNREGISTERED_FAILURE') {
             $this->invalidNumber = true;
 
             // Remove the indicator that the invalid number is an valid number
-            if(isset($json->error->data->response->results[0]->recipientAddress->number)){
+            if (isset($json->error->data->response->results[0]->recipientAddress->number)) {
                 $number = $json->error->data->response->results[0]->recipientAddress->number;
-                //TSJIPPY\printArray("Deleting Signal number: ".$json->error->data->response->results[0]->recipientAddress->number);
+                //TSJIPPY\printArray("Deleting Signal number: " .$json->error->data->response->results[0]->recipientAddress->number);
                 //TSJIPPY\printArray($json);
 
                 // delete the signal meta key
@@ -406,9 +406,9 @@ class SignalJsonRpc extends AbstractSignal{
                     'meta_key'     => 'signal_number',
                     'meta_value'   => $number,
                     'meta_compare' => '=',
-                ));
-        
-                foreach($users as $user){
+               ));
+
+                foreach ($users as $user) {
                     delete_user_meta($user->ID, 'signal_number');
 
                     TSJIPPY\printArray("Deleting Signal number $number for $user->display_name with id $user->ID as it is not valid anymore");
@@ -421,20 +421,20 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         // The connected number is not registered on the Signal Servers
-        elseif(str_contains($this->error , 'Specified account does not exist')){
+        elseif (str_contains($this->error , 'Specified account does not exist')) {
             $this->invalidNumber = true;
 
             TSJIPPY\printArray("The connected number is not registered on the Signal Servers, please register the number first");
         }
 
         // Captcha required
-        elseif(str_contains($this->error, 'CAPTCHA proof required')){
+        elseif (str_contains($this->error, 'CAPTCHA proof required')) {
             $this->sendCaptchaInstructions($this->error);
         }
-        
+
         // Rate Limit
-        elseif(
-            str_contains($this->error, '429 Too Many Requests') || 
+        elseif (
+            str_contains($this->error, '429 Too Many Requests') ||
             (
                 !empty($json->error)  &&
                 !empty($json->error->data)  &&
@@ -442,29 +442,29 @@ class SignalJsonRpc extends AbstractSignal{
                 !empty($json->error->data->response->results)  &&
                 !empty($json->error->data->response->results[0]->type)  &&
                 $json->error->data->response->results[0]->type == 'RATE_LIMIT_FAILURE'
-            ) ||
+           ) ||
             (
                 !empty($json->error->code)  &&
                 $json->error->code == -5
-            ) 
-        ){
+           )
+       ) {
             TSJIPPY\printArray($json);
 
             $matches            = [];
             $rateLimitedTill    = 0;
             preg_match('/\d{10,}/', $this->error, $matches);
-            if(!empty($matches[0])){
+            if (!empty($matches[0])) {
                 $rateLimitedTill    = intval($matches[0]);
                 $token              = $json->error->data->response->results[0]->token;
-            }elseif(isset($json->error->data->response->results[0]->retryAfterSeconds)){
+            }elseif (isset($json->error->data->response->results[0]->retryAfterSeconds)) {
                 $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
                 $token              = $json->error->data->response->results[0]->token;
             }
 
             // Only update if this is higher than the current value
-            if($rateLimitedTill > $this->getRateLimited()){
+            if ($rateLimitedTill > $this->getRateLimited()) {
                 // Send rate limit instruction if this is the first time we encouter the issue
-                if(!$this->rateLimited){
+                if (!$this->rateLimited) {
                     $this->sendRateLimitInstructions($token);
                 }
 
@@ -472,27 +472,27 @@ class SignalJsonRpc extends AbstractSignal{
                 TSJIPPY\printArray("Rate limited till $this->rateLimitString");
             }
         }
-        
+
         // Group ID
-        elseif(str_contains($this->error, 'Invalid group id')){
+        elseif (str_contains($this->error, 'Invalid group id')) {
             TSJIPPY\printArray($this->error);
         }
-        
+
         // Timed Out
-        elseif(str_contains($this->error, 'Did not receive a reply.')){
-            TSJIPPY\printArray($this->error); 
+        elseif (str_contains($this->error, 'Did not receive a reply. ')) {
+            TSJIPPY\printArray($this->error);
         }
-        
+
         // Unknown
         else{
             TSJIPPY\printArray(
                 [
-                    'message'   => "Got error '$this->error' while running the '$method' command.",
+                    'message'   => "Got error '$this->error' while running the '$method' command. ",
                     'method'    => $method,
                     'params'    => $params,
                     'json'      => $json
                 ]
-            );
+           );
         }
     }
 
@@ -501,23 +501,23 @@ class SignalJsonRpc extends AbstractSignal{
      * if the queue is empty, do the command straight away, otherwise add it to the queue and wait till it is processed and a result is added to the db
      * @param   string      $method     The command to perform
      * @param   array       $params     The parameters for the command
-     * 
+     *
      * @return  mixed                   The result of the command if $waitForResult is true, otherwise true if the command is added to the queue successfully, false if there was an error
      */
-    protected function addToCommandQueue($method, $params=[]){
-        if($this->getRateLimited()){
+    protected function addToCommandQueue($method, $params=[]) {
+        if ($this->getRateLimited()) {
             TSJIPPY\printArray("Rate limited till $this->rateLimitString");
         }
 
         // only add to queue if needed
-        if( $this->processingQueue ){
+        if ( $this->processingQueue) {
             // do this straight away
             return $this->doRequest($method, $params);
         }
 
         $priority       = 10;
         $waitForResult  = false;
-        if($this->getResult){
+        if ($this->getResult) {
             $priority       = 1;
             $waitForResult  = true;
         }
@@ -526,11 +526,11 @@ class SignalJsonRpc extends AbstractSignal{
         $commandId      = $this->addToQueue($method, $params, $priority, $waitForResult);
 
         // Do not wait for the result
-        if(!$this->getResult){
+        if (!$this->getResult) {
             return $commandId;
         }
 
-        if($this->rateLimited){
+        if ($this->rateLimited) {
             return 'rate limited';
         }
 
@@ -539,7 +539,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         // Loop till we get an result or an timeout
         $i = 0;
-        while(empty($result) && $i < 5){            
+        while(empty($result) && $i < 5) {
             $result = $this->getQueue($commandId)->result;
 
             sleep(5);
@@ -548,10 +548,10 @@ class SignalJsonRpc extends AbstractSignal{
         }
 
         // Remove from queue, no point in keeping it for some commands
-        if(
-            empty($result) && 
+        if (
+            empty($result) &&
             !in_array($method, ['send', 'remoteDelete', 'sendReceipt', 'sendReaction', 'updateProfile'])
-        ){
+       ) {
             $this->removeFromQueue($commandId);
         }
 
@@ -565,11 +565,11 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function unregister(){
+    public function unregister() {
         $result = $this->doRequest('unregister');
 
-        if($result){
-            unlink($this->basePath.'/phone.signal');
+        if ($result) {
+            unlink($this->basePath. '/phone.signal');
         }
 
         return $result;
@@ -580,16 +580,16 @@ class SignalJsonRpc extends AbstractSignal{
      * Default verify with SMS
      * @param bool $voiceVerification The verification should be done over voice, not SMS.
      * @param string $captcha - from https://signalcaptchas.org/registration/generate.html
-     * 
+     *
      * @return bool|string|WP_Error
      */
-    public function register(string $phone, string $captcha, bool $voiceVerification = false){
+    public function register(string $phone, string $captcha, bool $voiceVerification = false) {
         $voice  = false;
-        if($voiceVerification){
+        if ($voiceVerification) {
             $voice  = 'false';
         }
 
-        file_put_contents($this->basePath.'/phone.signal', $phone);
+        file_put_contents($this->basePath. '/phone.signal', $phone);
 
         $this->phoneNumber = $phone;
 
@@ -608,8 +608,8 @@ class SignalJsonRpc extends AbstractSignal{
      * @param string $code The verification code e.g 123-456
      * @return bool|string|WP_Error
      */
-    public function verify(string $code){
-        $phone              = trim(file_get_contents($this->basePath.'/phone.signal'));
+    public function verify(string $code) {
+        $phone              = trim(file_get_contents($this->basePath. '/phone.signal'));
 
         $this->phoneNumber  = $phone;
 
@@ -619,27 +619,27 @@ class SignalJsonRpc extends AbstractSignal{
 
         return $this->doRequest('verify', $params);
     }
-    
+
     /**
      * Link to an existing device, instead of registering a new number.
      * This shows a "tsdevice:/…" URI.
      * If you want to connect to another signal-cli instance, you can just use this URI.
      * If you want to link to an Android/iOS device, create a QR code with the URI (e.g. with qrencode) and scan that in the Signal app.
      * @param string|null $name Optionally specify a name to describe this new device. By default "cli" will be used
-     * 
+     *
      * @return string           QR code
      */
     public function link(string $name = ''): string{
         $result = $this->doRequest('startLink');
 
-        if(!$result){
+        if (!$result) {
             return false;
         }
 
         $uri    = $result['deviceLinkUri'];
         $id     = $result['id'];
 
-        if(empty($name)){
+        if (empty($name)) {
             $name   = get_bloginfo('name');
         }
 
@@ -658,45 +658,45 @@ class SignalJsonRpc extends AbstractSignal{
         $promise  = $client->requestAsync(
             "POST",
             $this->postUrl,
-            ["json"  => $data]        
-        );
+            ["json"  => $data]
+       );
         $promise->then(
-            function ($res){
-                if($res->getStatusCode() != 200){
-                    TSJIPPY\printArray("Got ".$res->getStatusCode()." from $this->postUrl");
+            function ($res) {
+                if ($res->getStatusCode() != 200) {
+                    TSJIPPY\printArray("Got " .$res->getStatusCode(). " from $this->postUrl");
                     return false;
                 }
-        
+
                 $result = $res->getBody()->getContents();
                 $json   = json_decode($result);
             }
-        );
-        
+       );
+
 
         $link   = str_replace(['\n', '"'], ['\0', ''], $uri);
 
-        if (!extension_loaded('imagick')){
+        if (!extension_loaded('imagick')) {
             return $uri;
         }
 
         $renderer       = new ImageRenderer(
             new RendererStyle(400),
             new ImagickImageBackEnd()
-        );
+       );
         $writer         = new Writer($renderer);
         $qrcodeImage    = base64_encode($writer->writeString($link));
 
         return "<img src='data:image/png;base64, $qrcodeImage'/><br>$link";
     }
-     
+
     /**
      * Shows if a number is registered on the Signal Servers or not.
      * @param   string|array          $recipient or array of recipients number to check.
      *
      * @return  array|bool              If more than one recipient returns an array of results, if only one returns a boolean true or false
      */
-    public function getUserStatus($recipient){       
-        if(!is_array($recipient)){
+    public function getUserStatus($recipient) {
+        if (!is_array($recipient)) {
             $recipient  = [$recipient];
         }
 
@@ -706,16 +706,16 @@ class SignalJsonRpc extends AbstractSignal{
 
         $result = $this->addToCommandQueue('getUserStatus', $params);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
         }
 
-        if(is_array($result) && count($result) == 1){
+        if (is_array($result) && count($result) == 1) {
             return $result[0]->isRegistered;
-        }elseif($result == true){
+        }elseif ($result == true) {
             return $result;
         }else{
             TSJIPPY\printArray($result);
@@ -733,27 +733,27 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return bool|string
      */
-    public function send($recipient, string $message, $attachments = [], int $quoteTimestamp=0, $quoteAuthor='', $quoteMessage='', $textStyle = ''){
-        if(empty($recipient)){
+    public function send($recipient, string $message, $attachments = [], int $quoteTimestamp=0, $quoteAuthor='', $quoteMessage='', $textStyle = '') {
+        if (empty($recipient)) {
             return new WP_Error('Signal', 'You should submit at least one recipient');
         }
 
         $params = [];
 
-        if(is_array($recipient)){
+        if (is_array($recipient)) {
             $result = '';
 
-            foreach($recipient as $r){
+            foreach ($recipient as $r) {
                 $result = $this->send($r, $message, $attachments, $quoteTimestamp);
             }
 
             return $result;
         }else{
             // first character is a +
-            if(strpos( $recipient , '+' ) === 0){
+            if (strpos($recipient , '+') === 0) {
                 $params['recipient']    = $recipient;
             // invalid formatted phone number
-            }elseif(strlen($recipient) < 15){
+            }elseif (strlen($recipient) < 15) {
                 TSJIPPY\printArray("Invalid phonenumber '$recipient'");
 
                 return new WP_Error('Phonenumber invalid', "Invalid phonenumber '$recipient'");
@@ -762,7 +762,7 @@ class SignalJsonRpc extends AbstractSignal{
             }
         }
 
-        if(empty($textStyle)){
+        if (empty($textStyle)) {
             // parse any styling
             $parsed = $this->parseMessageLayout($message);
             extract($parsed);
@@ -770,12 +770,12 @@ class SignalJsonRpc extends AbstractSignal{
 
         $params["message"]  = $message;
 
-        if(!empty($attachments)){
-            if(!is_array($attachments)){
+        if (!empty($attachments)) {
+            if (!is_array($attachments)) {
                 $attachments    = [$attachments];
             }
 
-            foreach($attachments as $index => $attachment){
+            foreach ($attachments as $index => $attachment) {
                 if (empty($image)) {
                     unset($attachments[$index]);
 
@@ -783,7 +783,7 @@ class SignalJsonRpc extends AbstractSignal{
                 }
 
                 // Check if the attachment is a file
-                if(!file_exists($attachment)){
+                if (!file_exists($attachment)) {
                     TSJIPPY\printArray($attachment);
 
                     $image  = false;
@@ -791,12 +791,12 @@ class SignalJsonRpc extends AbstractSignal{
                     // Not a file, check if it is a base64 encoded string
                     if (strpos($attachment, 'data:image/') === 0) {
                         list($type, $base64String) = explode(';base64,', $attachment, 2);
-                        
-                        if(!empty($base64String)){
+
+                        if (!empty($base64String)) {
                             $binaryData = base64_decode($base64String);
                         }
 
-                        if($binaryData){
+                        if ($binaryData) {
                             $image = imagecreatefromstring($binaryData);
                         }
                     }
@@ -810,33 +810,33 @@ class SignalJsonRpc extends AbstractSignal{
                     }
                 }
             }
-        
-            if(!empty($attachments)){
+
+            if (!empty($attachments)) {
                 $params["attachments"]  = array_values($attachments);
             }
         }
 
-        if(!empty($timeStamp) && !empty($quoteAuthor) && !empty($quoteMessage)){
+        if (!empty($timeStamp) && !empty($quoteAuthor) && !empty($quoteMessage)) {
             $params['quoteTimestamp']   = $quoteTimestamp;
-       
+
             $params['quoteAuthor']      = $quoteAuthor;
-        
+
             $params['quoteMessage']     = $quoteMessage;
         }
 
-        if(!empty($textStyle)){
+        if (!empty($textStyle)) {
             $params['textStyle']   = $textStyle;
         }
 
         $result = $this->addToCommandQueue('send', $params);
 
-        if(!$result || is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
             return true;
         }
 
-        if(isset($result->timestamp)){
+        if (isset($result->timestamp)) {
             return $result->timestamp;
-        }elseif(!is_numeric($result)){
+        }elseif (!is_numeric($result)) {
             TSJIPPY\printArray($result);
         }
 
@@ -846,7 +846,7 @@ class SignalJsonRpc extends AbstractSignal{
     /**
      * Compliancy function
      */
-    public function sendGroupMessage($message, $groupId, $attachments=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage=''){
+    public function sendGroupMessage($message, $groupId, $attachments=[], int $timeStamp=0, $quoteAuthor='', $quoteMessage='') {
         return $this->send($groupId, $message, $attachments, $timeStamp, $quoteAuthor, $quoteMessage);
     }
 
@@ -858,24 +858,24 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  bool                 Whether the operation was successful
      */
-    public function sendReceipt($recipient, $targetTimestamp, $type="read"){
+    public function sendReceipt($recipient, $targetTimestamp, $type="read") {
         $params = [
             "recipient"         => $recipient,
             "targetTimestamp"   => $targetTimestamp,
             "type"              => $type
         ];
-        
+
         $result = $this->addToCommandQueue('sendReceipt', $params);
 
-        if(
+        if (
             !$result ||                                         // No result at all, assume succes
             is_wp_error($result) ||                             // it is an error
             (
                 is_object($result) &&
                 ($result->results[0]->type ?? '') == 'SUCCESS'  // Command succesfull
-            )
-        ){
-            if(is_wp_error($result)){
+           )
+       ) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
 
@@ -886,8 +886,8 @@ class SignalJsonRpc extends AbstractSignal{
             [
                 'sendReceipt result' => $result
             ]
-        );
-        
+       );
+
         return $result;
     }
 
@@ -899,35 +899,35 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return array|string
      */
-    public function listGroups($detailed = false, $groupId = false, $force=false){
-        if(!$force){
-            if(!empty($this->groups)){
+    public function listGroups($detailed = false, $groupId = false, $force=false) {
+        if (!$force) {
+            if (!empty($this->groups)) {
                 return $this->groups;
             }
 
             $transientGroups    = get_transient('tsjippy-signal-groups');
 
-            if($transientGroups && is_array($transientGroups)){
+            if ($transientGroups && is_array($transientGroups)) {
                 $this->groups   = $transientGroups;
-                
+
                 return $transientGroups;
             }
         }
 
         $params = [];
 
-        if($detailed){
-            $params['detailed'] = 1; 
+        if ($detailed) {
+            $params['detailed'] = 1;
         }
 
-        if($groupId){
-            $params['groupId'] = $groupId; 
+        if ($groupId) {
+            $params['groupId'] = $groupId;
         }
-        
+
         $result = $this->doRequest('listGroups', $params);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
@@ -945,10 +945,10 @@ class SignalJsonRpc extends AbstractSignal{
      * @param   int             $timestamp    The original timestamp
      * @param   string|array    $recipients   The original recipient(s)
      */
-    public function remoteDelete($timestamp, $recipients){
+    public function remoteDelete($timestamp, $recipients) {
 
-        if(is_array($recipients)){
-            foreach($recipients as $recipient){
+        if (is_array($recipients)) {
+            foreach ($recipients as $recipient) {
                 $this->remoteDelete($timestamp, $recipient);
             }
         }
@@ -958,24 +958,24 @@ class SignalJsonRpc extends AbstractSignal{
         ];
 
         $firstCharacter = mb_substr($recipients, 0, 1);
-        if($firstCharacter == '+'){
+        if ($firstCharacter == '+') {
             $param['recipient'] = $recipients;
         }else{
             $param['groupId']   = $recipients;
         }
 
         //TSJIPPY\printArray($param, true);
-        
+
         $result = $this->addToCommandQueue('remoteDelete', $param);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
         }
 
-        if(isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS'){
+        if (isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
             return true;
         }else{
             TSJIPPY\printArray($result, true);
@@ -992,8 +992,8 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return string               The result
      */
-    public function sentTyping($recipient, $timestamp='', $groupId=''){
-        if(!empty($timestamp)){
+    public function sentTyping($recipient, $timestamp='', $groupId='') {
+        if (!empty($timestamp)) {
             // Mark as read
             $this->sendReceipt($recipient, $timestamp);
         }
@@ -1002,34 +1002,34 @@ class SignalJsonRpc extends AbstractSignal{
             "recipient" => $recipient
         ];
 
-        if(!empty($groupId)){
+        if (!empty($groupId)) {
             $params["groupId"] = $groupId;
         }
 
         $result = $this->addToCommandQueue('sendTyping', $params);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
         }
 
         TSJIPPY\printArray($result);
-        
+
         return $result;
     }
 
     /**
      * Dummy function to be compliancy with the sendGroupTyping function, as there is no difference between sending a typing indicator to a group or an individual
-     * 
+     *
      * @param   string  $recipient  The phonenumber or group id
      * @param   int     $timestamp  Optional timestamp of a message to mark as read
      * @return string               The result
-     * 
-     * 
+     *
+     *
      */
-    public function sendGroupTyping($recipient, $timestamp='', $groupId=''){
+    public function sendGroupTyping($recipient, $timestamp='', $groupId='') {
         return $this->sentTyping($recipient, $timestamp, $groupId);
     }
 
@@ -1043,12 +1043,12 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return  mixed                       The result
      */
-    public function sendReaction($recipient, $targetTimestamp, $groupId='', $emoji='', $targetAuthor=''){
-        if(empty($emoji)){
+    public function sendReaction($recipient, $targetTimestamp, $groupId='', $emoji='', $targetAuthor='') {
+        if (empty($emoji)) {
             $emoji  = "🦘";
         }
 
-        if(empty($targetAuthor)){
+        if (empty($targetAuthor)) {
             $targetAuthor   = $recipient;
         }
 
@@ -1059,14 +1059,14 @@ class SignalJsonRpc extends AbstractSignal{
             "targetTimestamp"   => $targetTimestamp
         ];
 
-        if(!empty($groupId)){
+        if (!empty($groupId)) {
             $params['groupId']  = $groupId;
         }
 
         $result = $this->addToCommandQueue('sendReaction', $params);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
@@ -1074,10 +1074,10 @@ class SignalJsonRpc extends AbstractSignal{
 
         TSJIPPY\printArray($result);
 
-        if(isset($result->results[0]->type)){
+        if (isset($result->results[0]->type)) {
             return $result->results[0]->type;
         }
-        
+
         return $result;
     }
 
@@ -1089,36 +1089,36 @@ class SignalJsonRpc extends AbstractSignal{
      * @param string    $name           New name visible by message recipients
      * @param string    $avatarPath     Path to the new avatar visible by message recipients
      * @param bool      $removeAvatar   Remove the avatar visible by message recipients
-     * 
+     *
      * @return bool|string|WP_Error     Tehe result or an WP Error object
      */
-    public function updateProfile(string $name = '', ?string $avatarPath = '', bool $removeAvatar = false){
+    public function updateProfile(string $name = '', ?string $avatarPath = '', bool $removeAvatar = false) {
 
         $params = [];
 
-        if(!empty($name)){
+        if (!empty($name)) {
             $params['given-name'] = $name;
         }
 
-        if(!empty($avatarPath) && file_exists($avatarPath)){
+        if (!empty($avatarPath) && file_exists($avatarPath)) {
             $params['avatar'] = $avatarPath;
         }
 
-        if($removeAvatar){
+        if ($removeAvatar) {
             $params['removeAvatar'] = true;
         }
 
         $result = $this->addToCommandQueue('updateProfile', $params);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
         }
 
         TSJIPPY\printArray($result);
-        
+
         return $result;
     }
 
@@ -1130,7 +1130,7 @@ class SignalJsonRpc extends AbstractSignal{
      *
      * @return string               The result
      */
-    public function submitRateLimitChallenge($challenge, $captcha){
+    public function submitRateLimitChallenge($challenge, $captcha) {
         $params = [
             "challenge" => $challenge,
             "captcha"   => $captcha
@@ -1138,7 +1138,7 @@ class SignalJsonRpc extends AbstractSignal{
 
         $result = $this->doRequest('submitRateLimitChallenge', $params);
 
-        if(!$result){
+        if (!$result) {
             return false;
         }
 
@@ -1147,22 +1147,22 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * gets the invitation link of a specific group
-     * 
+     *
      * @param   string  $groupPath The group id or group name of the group you want the invitation link for
-     * 
+     *
      * @return  string              The invitation link of the group
      */
-    public function getGroupInvitationLink($groupPath){
+    public function getGroupInvitationLink($groupPath) {
         $result = $this->listGroups(true, $groupPath);
 
-        if(!$result || is_wp_error($result)){
-            if(is_wp_error($result)){
+        if (!$result || is_wp_error($result)) {
+            if (is_wp_error($result)) {
                 TSJIPPY\printArray($result);
             }
             return true;
         }
 
-        if(empty($result[0]->groupInviteLink)){
+        if (empty($result[0]->groupInviteLink)) {
             TSJIPPY\printArray($result, true);
         }
 
@@ -1171,20 +1171,20 @@ class SignalJsonRpc extends AbstractSignal{
 
     /**
      * Find the group name based on the group id
-     * 
+     *
      * @param   string  $id The group id of the group you want the name of
-     * 
+     *
      * @return  string      The name of the group, or an empty string if not found
      */
-    public function findGroupName($id){
+    public function findGroupName($id) {
         $groups = (array)$this->listGroups();
 
-        foreach($groups as $group){
-            if(gettype($group) == 'string'){
+        foreach ($groups as $group) {
+            if (gettype($group) == 'string') {
                 return $group;
             }
 
-            if($group->id == $id){
+            if ($group->id == $id) {
                 return $group->name;
             }
         }

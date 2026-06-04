@@ -3,31 +3,31 @@
 namespace TSJIPPY\SIGNAL;
 
 trait SendEmailBySignal{
-    function sendEmailBySignal($args){
+    function sendEmailBySignal($args) {
         $numbers    = [];
-        if(!empty($args['submission'])){
+        if (!empty($args['submission'])) {
             $forms      = new \TSJIPPY\FORMS\Forms();
 
             $numbers    = (array) $args['submission']->{$forms->findPhoneNumberElementName()} ?? [];
         }
-        
-        if(empty($numbers)){
+
+        if (empty($numbers)) {
             // try to find phone based on e-mail
             $emails     = $args['to'];
-            if(!is_array($args['to'])){
+            if (!is_array($args['to'])) {
                 $emails = explode(',', $args['to']);
             }
 
-            foreach($emails as $email){
+            foreach ($emails as $email) {
                 $user       = get_user_by('email', $email);
 
-                if(!$user){
+                if (!$user) {
                     continue;
                 }
 
                 $nrs    = get_user_meta($user->ID, 'phonenumbers', true);
 
-                if(empty($nrs)){
+                if (empty($nrs)) {
                     continue;
                 }
 
@@ -35,20 +35,20 @@ trait SendEmailBySignal{
             }
         }
 
-        $message        = $args['message']; 
+        $message        = $args['message'];
 
         // Find any hyperlinks in the text
         preg_match_all('/<a\s+href=(?:"|\')(.*?)(?:"|\')>(.*?)<\/a>/i', $message, $matches);
 
         //replace the hyperlinks with plain links
-        foreach($matches[0] as $index=>$match){
-            $message    = str_replace($match, $matches[2][$index].': '.str_replace('https://', '', $matches[1][$index]), $message);
+        foreach ($matches[0] as $index=>$match) {
+            $message    = str_replace($match, $matches[2][$index]. ': ' .str_replace('https://', '', $matches[1][$index]), $message);
         }
 
         $message        = html_entity_decode(wp_strip_all_tags(str_replace(['<br>', '</br>', '<br />', '</p>'], "\n", $message)));
 
         //Send Signal message
-        foreach($numbers as $number){
+        foreach ($numbers as $number) {
             $this->send($number, $message);
         }
     }
