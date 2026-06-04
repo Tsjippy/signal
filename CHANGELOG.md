@@ -5,6 +5,7 @@
 - usage of wpdb->prepare for all queries
 
 ### Changed
+- comply to coding standards
 
 ### Fixed
 
