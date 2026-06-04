@@ -6,6 +6,7 @@
 
 ### Changed
 - comply to coding standards
+- code layout
 
 ### Fixed
 
