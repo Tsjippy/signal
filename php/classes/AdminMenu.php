@@ -761,7 +761,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 header('Content-Length: ' . filesize($zipFilePath));
                 readfile($zipFilePath); // Output the file content
 
-                unlink($zipFilePath);
+                wp_delete_file($zipFilePath);
                 exit;
             }
         }

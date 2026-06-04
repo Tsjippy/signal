@@ -70,7 +70,7 @@ class SignalJsonRpc extends AbstractSignal
 
             if ($errno == 111) {
                 // remove the old socket file
-                unlink($this->socketPath);
+                wp_delete_file($this->socketPath);
 
                 // try again
                 $this->socket   = stream_socket_client("unix:///$this->socketPath", $errno, $this->error);
@@ -578,7 +578,7 @@ class SignalJsonRpc extends AbstractSignal
         $result = $this->doRequest('unregister');
 
         if ($result) {
-            unlink($this->basePath . '/phone.signal');
+            wp_delete_file($this->basePath . '/phone.signal');
         }
 
         return $result;

@@ -36,16 +36,16 @@ function sendPostNotification($post)
     if ($signalMessageType == 'all') {
 
         if (!empty($signalUrl)) {
-            $excerpt .=    " ...\n\nView it on the web:\n" . get_permalink($post->ID);
+            $excerpt .=    "...\n\nView it on the web:\n" . get_permalink($post->ID);
         }
     } else {
         $excerpt    = wp_trim_words($excerpt, 20);
 
         //Only add read more if the excerpt is not the whole content
         if ($excerpt != wp_strip_all_tags($post->post_content)) {
-            $excerpt .=    " ...\n\nRead more on:\n" . get_permalink($post->ID);
+            $excerpt .=    "...\n\nRead more on:\n" . get_permalink($post->ID);
         } elseif (!empty($signalUrl)) {
-            $excerpt .=    " ...\n\nView it on the web:\n" . get_permalink($post->ID);
+            $excerpt .=    "...\n\nView it on the web:\n" . get_permalink($post->ID);
         }
     }
 

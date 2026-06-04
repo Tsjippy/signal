@@ -82,7 +82,7 @@ class SignalCommandLine extends AbstractSignal
         $this->commandObject->execute();
 
         if ($this->commandObject->getExitCode()) {
-            unlink($this->basePath . '/phone.signal');
+            wp_delete_file($this->basePath . '/phone.signal');
         }
 
         return $this->parseResult();
@@ -105,7 +105,7 @@ class SignalCommandLine extends AbstractSignal
         $this->commandObject->execute();
 
         if (!$this->commandObject->getExitCode()) {
-            unlink($this->basePath . '/phone.signal');
+            wp_delete_file($this->basePath . '/phone.signal');
         }
 
         return $this->parseResult();
@@ -150,7 +150,7 @@ class SignalCommandLine extends AbstractSignal
         $this->commandObject->execute();
 
         if ($this->commandObject->getExitCode()) {
-            unlink($this->basePath . '/phone.signal');
+            wp_delete_file($this->basePath . '/phone.signal');
         }
 
         return $this->parseResult();
@@ -337,7 +337,7 @@ class SignalCommandLine extends AbstractSignal
         while (empty($link)) {
             $link   = file_get_contents($randFile);
         }
-        unlink($randFile);
+        wp_delete_file($randFile);
 
         TSJIPPY\clearOutput();
         header("X-Accel-Buffering: no");

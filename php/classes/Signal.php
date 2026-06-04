@@ -443,7 +443,7 @@ class Signal
 
             foreach ($attachments as $attachment) {
                 if (file_exists($attachment)) {
-                    unlink($attachment);
+                    wp_delete_file($attachment);
                 }
             }
         }
@@ -873,7 +873,7 @@ class Signal
         } finally {
             if ($this->os == 'Linux') {
                 /** @disregard  */
-                unlink($pidFile);
+                wp_delete_file($pidFile);
             }
         }
 
@@ -996,7 +996,7 @@ class Signal
                 return $tempPath;
             }
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            unlink($tempPath);
+            wp_delete_file($tempPath);
 
             if ($e->getResponse()->getStatusCode() == 404) {
                 $newUrl = str_replace("-" . $this->os, '', $url);
