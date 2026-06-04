@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- usage of wpdb->prepare for all queries
 
 ### Changed
 
