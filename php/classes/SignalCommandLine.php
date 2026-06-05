@@ -317,7 +317,7 @@ class SignalCommandLine extends AbstractSignal
         $this->commandObject->addArg('-n', $name);
 
         // TODO: Better response handling
-        $randFile = sys_get_temp_dir() . '/' . rand() . time() . ' .device';
+        $randFile = sys_get_temp_dir() . '/' . rand() . time() . '.device';
         $this->commandObject->addArg(" > $randFile 2>&1 &", null, false); // Ugly hack!
         sleep(1); // wait for file to get populated
 

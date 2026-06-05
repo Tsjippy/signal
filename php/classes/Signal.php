@@ -817,7 +817,7 @@ class Signal
             echo "Download finished<br>";
 
             // Unzip the gz
-            $fileName = str_replace(' .gz', '', $tempPath);
+            $fileName = str_replace('.gz', '', $tempPath);
 
             if (!file_exists($fileName)) {
 
@@ -843,7 +843,7 @@ class Signal
             }
 
             // unzip the tar
-            $folder = str_replace(' .tar.gz', '', $tempPath);
+            $folder = str_replace('.tar.gz', '', $tempPath);
 
             // Unzip if needed
             if (

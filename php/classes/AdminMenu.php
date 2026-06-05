@@ -1111,7 +1111,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             document.addEventListener("click", function(ev) {
                 let target = ev.target;
 
-                if (target.matches(' .expand')) {
+                if (target.matches('.expand')) {
 
                     let rowspan = target.closest('td').dataset.rowspan;
 
@@ -1119,7 +1119,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
                     let row = target.closest('tr').nextElementSibling;
 
-                    while (row.matches(' .hidden')) {
+                    while (row.matches('.hidden')) {
                         row.classList.remove('hidden');
                         row = row.nextElementSibling;
 
@@ -1130,7 +1130,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
                     target.textContent = '-';
                     target.classList.replace('expand', 'condense');
-                } else if (target.matches(' .condense')) {
+                } else if (target.matches('.condense')) {
 
                     let rowspan = target.closest('td').rowSpan = 1;
 
