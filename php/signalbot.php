@@ -125,8 +125,8 @@ function sendSignalMessage($message, $recipient, $images = [], int $timeStamp = 
     }
 
     //remove https from site urldecode
-    $urlWithoutHttps    = str_replace('https://', '', SITEURL);
-    $message            = str_replace(SITEURL, $urlWithoutHttps, $message);
+    $urlWithoutHttps    = str_replace('https://', '', TSJIPPY\SITEURL);
+    $message            = str_replace(TSJIPPY\SITEURL, $urlWithoutHttps, $message);
 
     if (is_numeric($images)) {
         if (has_post_thumbnail($images)) {

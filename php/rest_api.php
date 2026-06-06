@@ -9,7 +9,7 @@ function restApiInit()
 {
     //Route for notification messages
     register_rest_route(
-        RESTAPIPREFIX,
+        TSJIPPY\RESTAPIPREFIX,
         '/notifications',
         array(
             'methods' => 'GET',
@@ -22,7 +22,7 @@ function restApiInit()
 
     //Route for first names from external signal message processor
     register_rest_route(
-        RESTAPIPREFIX,
+        TSJIPPY\RESTAPIPREFIX,
         '/firstname',
         array(
             'methods'                => 'GET',
@@ -35,7 +35,7 @@ function restApiInit()
 
     // Save signal preferences
     register_rest_route(
-        RESTAPIPREFIX . '/signal',
+        TSJIPPY\RESTAPIPREFIX . '/signal',
         '/save_preferences',
         array(
             'methods'                 => \WP_REST_Server::CREATABLE,

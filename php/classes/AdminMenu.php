@@ -1002,8 +1002,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         foreach ($messages as $message) {
             $isoDate    = gmdate('Y-m-d H:i:s', intval($message->time_send / 1000));
-            $date        = get_date_from_gmt($isoDate, DATEFORMAT);
-            $time        = get_date_from_gmt($isoDate, TIMEFORMAT);
+            $date        = get_date_from_gmt($isoDate, TSJIPPY\DATEFORMAT);
+            $time        = get_date_from_gmt($isoDate, TSJIPPY\TIMEFORMAT);
 
             $recipient    = '';
             if ($message->recipient[0] === '+') {
@@ -1197,8 +1197,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             foreach ($group as $index => $message) {
                 $isoDate    = gmdate('Y-m-d H:i:s', intval($message['timesent'] / 1000));
-                $date        = get_date_from_gmt($isoDate, DATEFORMAT);
-                $time        = get_date_from_gmt($isoDate, TIMEFORMAT);
+                $date        = get_date_from_gmt($isoDate, TSJIPPY\DATEFORMAT);
+                $time        = get_date_from_gmt($isoDate, TSJIPPY\TIMEFORMAT);
 
                 $sender    = $wpdb->get_results(
                     $wpdb->prepare(

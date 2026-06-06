@@ -615,7 +615,7 @@ class Signal
             if (time() >= $epoch) {
                 $epoch  = false;
             } else {
-                $this->rateLimitString   = gmdate(DATEFORMAT . ' ' . TIMEFORMAT, $epoch);
+                $this->rateLimitString   = gmdate(TSJIPPY\DATEFORMAT . ' ' . TSJIPPY\TIMEFORMAT, $epoch);
             }
         } else {
             $epoch  = false;
