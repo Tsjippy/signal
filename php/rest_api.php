@@ -89,7 +89,7 @@ function findFirstname(\WP_REST_Request $request)
 
 function savePreferences()
 {
-    $userId            = $_POST['user-id'];
+    $userId         = (int) $_POST['user-id'];
     $currentUser    = wp_get_current_user();
 
     // If updating for someone else, check if we have the right to do so
@@ -97,7 +97,7 @@ function savePreferences()
         return new \WP_Error('signal', 'You have no permission to this!');
     }
 
-    $signalPreferences    = $_POST;
+    $signalPreferences    = TSJIPPY\sanitize($_POST);
     unset($signalPreferences['user-id']);
     unset($signalPreferences['_wpnonce']);
 

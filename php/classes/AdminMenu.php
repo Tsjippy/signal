@@ -148,7 +148,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         $tab      = 'sent';
         if (isset($_GET['second-tab'])) {
-            $tab  = sanitize_key(wp_unslash($_GET['second-tab']));
+            $tab  = TSJIPPY\sanitize($_GET['second-tab'], 'key');
         }
 
         foreach ($buttons as $id => $text) {
@@ -207,7 +207,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $label  = TSJIPPY\addElement('label', $form);
             TSJIPPY\addElement('h4', $label, [], 'Challenge string');
 
-            TSJIPPY\addElement('input', $label, ['type' => "text", 'name' => "challenge", 'value' => sanitize_text_field(wp_unslash($_REQUEST['challenge'])), 'style' => "width:100%", 'required' => "required"]);
+            TSJIPPY\addElement('input', $label, ['type' => "text", 'name' => "challenge", 'value' => TSJIPPY\sanitize($_REQUEST['challenge']), 'style' => "width:100%", 'required' => "required"]);
 
             $label  = TSJIPPY\addElement('label', $form, [], 'Get the captcha from ');
             TSJIPPY\addElement('h4', $label, [], 'Captcha string', 'afterBegin');
@@ -258,27 +258,18 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Message succesfully send' . esc_html($result));
             }
         }
-
-        $author            = '';
-        $prevMessage    = '';
+;
         $timeStamp        = '';
-        $chat            = '';
 
         if (!empty($_GET['timesent'])) {
-            $timeStamp    = $_GET['timesent'];
+            $timeStamp    = (int) $_GET['timesent'];
         }
 
-        if (!empty($_GET['replymessage'])) {
-            $prevMessage    = $_GET['replymessage'];
-        }
+        $prevMessage    = TSJIPPY\sanitize($_GET['replymessage'] ?? '');
 
-        if (!empty($_GET['author'])) {
-            $author    = $_GET['author'];
-        }
+        $author         = TSJIPPY\sanitize($_GET['author'] ?? '');
 
-        if (!empty($_GET['recipient'])) {
-            $chat    = $_GET['recipient'];
-        }
+        $chat           = TSJIPPY\sanitize($_GET['recipient'] ?? '');
 
         $form   = TSJIPPY\addElement('form', $parent, ['method' => 'post']);
 
@@ -428,7 +419,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $message    = '';
 
             if (isset($_POST['display-name'])) {
-                $displayName    = sanitize_text_field(wp_unslash($_POST['display-name']));
+                $displayName    = TSJIPPY\sanitize($_POST['display-name']);
 
                 if ($displayName != $this->settings['display-name']) {
                     $result    = $signal->updateProfile($displayName);
@@ -444,7 +435,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
 
             if (isset($_POST['picture-ids']['avatar'])) {
-                $avatarAttachmentId    = sanitize_text_field(wp_unslash($_POST['picture-ids']['avatar']));
+                $avatarAttachmentId    = TSJIPPY\sanitize($_POST['picture-ids']['avatar']);
 
                 if ($avatarAttachmentId != $this->settings['picture-ids']['avatar']) {
                     if (empty($avatarAttachmentId)) {
@@ -477,7 +468,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         } elseif (isset($_GET['unregister'])) {
             $signal->unregister();
         } elseif (!empty($_POST['captcha'])) {
-            $result = $signal->register($_POST['phone'], $_POST['captcha'], isset($_POST['voice']));
+            $result = $signal->register(TSJIPPY\sanitize($_POST['phone']), TSJIPPY\sanitize($_POST['captcha']), isset($_POST['voice']));
 
             if (is_wp_error($result)) {
                 return "<div class='error'>" . $result->get_error_message() . "</div>";
@@ -503,7 +494,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 return ob_get_clean();
             }
         } elseif (!empty($_POST['verification-code'])) {
-            $result    = $signal->verify($_POST['verification-code']);
+            $result    = $signal->verify(TSJIPPY\sanitize($_POST['verification-code']));
 
             if (is_wp_error($result)) {
                 return "<div class='error'>" . $result->get_error_message() . "</div>" . $this->registerForm();
@@ -532,7 +523,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         ob_start();
         ?>
-        <form method='post' action='<?php echo admin_url("admin.php?page={$_GET['page']}&main-tab={$_GET['main-tab']}"); ?>'>
+        <form method='post' action='<?php echo admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=".TSJIPPY\sanitize($_GET['main-tab'])); ?>'>
             <h4>Register with Signal</h4>
             <br>
             <label>
@@ -571,9 +562,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         $tab        = '';
         if (!empty($_GET['main-tab'])) {
-            $tab    = "&main-tab={$_GET['main-tab']}";
+            $tab    = "&main-tab=".TSJIPPY\sanitize($_GET['main-tab']);
         }
-        $url        = admin_url("admin.php?page={$_GET['page']}$tab");
+        $url        = admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page']).$tab);
 
         if (isset($_GET['force'])) {
             $signalGroups    = $signal->listGroups(false, false, true);
@@ -665,9 +656,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
      */
     public function notConnectedOptions()
     {
-        $url        = admin_url("admin.php?page={$_GET['page']}");
+        $url        = admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page']));
         if (!empty($_GET['tab'])) {
-            $url    .= "&main-tab={$_GET['main-tab']}";
+            $url    .= "&main-tab=".TSJIPPY\sanitize($_GET['main-tab']);
         }
 
         ?>
@@ -981,7 +972,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             'id'    => 'sent'
         ];
 
-        if (!empty($_GET['second-tab']) && $_GET['second-tab'] == 'received') {
+        if (($_GET['second-tab'] ?? '') == 'received') {
             $attributes['class']    .= ' hidden';
         }
 
@@ -1007,7 +998,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             $recipient    = '';
             if ($message->recipient[0] === '+') {
-                $recipient    = $wpdb->get_var("SELECT display_name FROM $wpdb->users WHERE ID in (SELECT user_id FROM `{$wpdb->prefix}usermeta` WHERE `meta_value` LIKE '%$message->recipient%')");
+                $recipient    = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
+                        $wpdb->users,
+                        "{$wpdb->prefix}usermeta",
+                        "%".$wpdb->esc_like($message->recipient)."%"
+                    )
+                );
             } else {
                 $signal->listGroups();
                 if (gettype($signal->groups) == 'array') {
@@ -1061,7 +1059,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         global $wpdb;
 
-        if (!empty($_GET['second-tab']) && $_GET['second-tab'] == 'received') {
+        if (($_GET['second-tab'] ?? '') == 'received') {
             $hidden    = '';
         }
 
@@ -1297,7 +1295,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'emoji']);
                     TSJIPPY\addElement('input', $form, ['type' => 'submit', 'name' => 'action', 'value' => 'Reply']);
 
-                    TSJIPPY\addElement('a', $td, ['href' => admin_url("admin.php?page={$_GET['page']}&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author"), 'class' => 'button small'], 'Reply');
+                    TSJIPPY\addElement('a', $td, ['href' => admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author"), 'class' => 'button small'], 'Reply');
                 }
             }
         }

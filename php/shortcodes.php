@@ -21,9 +21,9 @@ function signalMessages()
         } else {
             $html .= '<div class="success">Succesfully removed the message</div>';
 
-            unset($signalMessages[$_POST['recipient-number']][$_POST['key']]);
+            unset($signalMessages[TSJIPPY\sanitize($_POST['recipient-number'])][TSJIPPY\sanitize($_POST['key'], 'key')]);
 
-            if (count($signalMessages[$_POST['recipient-number']]) == 0) unset($signalMessages[$_POST['recipient-number']]);
+            if (count($signalMessages[$_POST['recipient-number'] ?? []]) == 0) unset($signalMessages[$_POST['recipient-number']]);
 
             update_option('signal_bot_messages', $signalMessages);
         }

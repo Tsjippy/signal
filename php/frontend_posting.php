@@ -127,10 +127,10 @@ function afterPostSave($post)
 {
     if (isset($_POST['send-signal']) && $_POST['send-signal']) {
         update_metadata('post', $post->ID, 'send_signal', true);
-        update_metadata('post', $post->ID, 'signal_groups', $_POST['signal-groups']);
-        update_metadata('post', $post->ID, 'signal_message_type', $_POST['signal-message-type']);
+        update_metadata('post', $post->ID, 'signal_groups', TSJIPPY\sanitize($_POST['signal-groups']));
+        update_metadata('post', $post->ID, 'signal_message_type', TSJIPPY\sanitize($_POST['signal-message-type']));
         update_metadata('post', $post->ID, 'signal_url', true);
-        update_metadata('post', $post->ID, 'signal_extra_message', $_POST['signal-extra-message']);
+        update_metadata('post', $post->ID, 'signal_extra_message', TSJIPPY\sanitize($_POST['signal-extra-message']));
     } else {
         delete_metadata('post', $post->ID, 'send_signal');
         delete_metadata('post', $post->ID, 'signal_groups');
