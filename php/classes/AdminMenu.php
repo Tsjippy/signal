@@ -948,7 +948,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             return false;
         }
 
-        wp_enqueue_style('tsjippy_signal_admin', TSJIPPY\pathToUrl(TSJIPPY\PLUGINPATH . 'css/admin.min.css'), array(), STYLEVERSION);
+        wp_enqueue_style('tsjippy_signal_admin', TSJIPPY\pathToUrl(TSJIPPY\PLUGINPATH . 'css/admin.min.css'), array(), PLUGINVERSION);
 
         $attributes    = [
             'class' => 'send-signal-messages tabcontent',
