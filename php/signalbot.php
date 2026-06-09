@@ -17,20 +17,20 @@ function sendPostNotification($post)
         $post = get_post($post);
     }
 
-    if (empty(get_post_meta($post->ID, 'send_signal', true))) {
+    if (empty(get_post_meta($post->ID, 'tsjippy_send_signal', true))) {
         return;
     }
 
-    $signalMessageType    = get_post_meta($post->ID, 'signal_message_type', true);
-    $signalUrl            = get_post_meta($post->ID, 'signal_url', true);
-    $signalExtraMessage    = get_post_meta($post->ID, 'signal_extra_message', true);
-    $recipients            = get_post_meta($post->ID, 'signal_groups', true);
+    $signalMessageType    = get_post_meta($post->ID, 'tsjippy_signal_message_type', true);
+    $signalUrl            = get_post_meta($post->ID, 'tsjippy_signal_url', true);
+    $signalExtraMessage   = get_post_meta($post->ID, 'tsjippy_signal_extra_message', true);
+    $recipients           = get_post_meta($post->ID, 'tsjippy_signal_groups', true);
 
-    delete_post_meta($post->ID, 'send_signal');
-    delete_metadata('post', $post->ID, 'signal_groups');
-    delete_post_meta($post->ID, 'signal_message_type');
-    delete_post_meta($post->ID, 'signal_url');
-    delete_post_meta($post->ID, 'signal_extra_message');
+    delete_post_meta($post->ID, 'tsjippy_send_signal');
+    delete_metadata('post', $post->ID, 'tsjippy_signal_groups');
+    delete_post_meta($post->ID, 'tsjippy_signal_message_type');
+    delete_post_meta($post->ID, 'tsjippy_signal_url');
+    delete_post_meta($post->ID, 'tsjippy_signal_extra_message');
 
     $excerpt            = do_shortcode($post->post_content);
     if ($signalMessageType == 'all') {

@@ -6,7 +6,7 @@ use TSJIPPY;
 
 
 //Add Signal messages overview shortcode
-add_shortcode('signal_messages', __NAMESPACE__ . '\signalMessages');
+add_shortcode('tsjippy_signal_messages', __NAMESPACE__ . '\signalMessages');
 function signalMessages()
 {
     $signalMessages = get_option('signal_bot_messages');
