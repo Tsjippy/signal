@@ -10,6 +10,7 @@
 - code layout
 - namespaced all constants
 - sanitize all posts and get vars
+- moved inline js to js file
 
 ### Fixed
 - spacing problem
