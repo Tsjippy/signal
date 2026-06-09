@@ -948,24 +948,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             return false;
         }
 
-    ?>
-        <style>
-            .flex-container {
-                display: flex;
-            }
-
-            .flex {
-                padding: 20px;
-            }
-
-            .signal-table td.message {
-                max-width: 500px;
-                word-break: break-word;
-                white-space: break-spaces;
-            }
-        </style>
-
-        <?php
+        wp_enqueue_style('tsjippy_signal_admin', TSJIPPY\pathToUrl(TSJIPPY\PLUGINPATH . 'css/admin.min.css'), array(), STYLEVERSION);
 
         $attributes    = [
             'class' => 'send-signal-messages tabcontent',
@@ -1093,21 +1076,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             ];
         }
 
-        ob_start();
-
-        ?>
-        <style>
-            .flex-container {
-                display: flex;
-            }
-
-            .flex {
-                padding: 20px;
-            }
-        </style>
-
-<?php
-
         $div    = TSJIPPY\addElement('div', $parent, ['class' => "send-signal-messages tabcontent $hidden", 'id' => 'received']);
 
         /**
@@ -1218,8 +1186,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     $td->append("Already Replied");
                 } else {
                     $msg    = urlencode($message['message']);
-                    $author    = urlencode($message['sender']);
-                    $chat    = urlencode($chat);
+                    $author = urlencode($message['sender']);
+                    $chat   = urlencode($chat);
 
                     TSJIPPY\addElement(
                         'button',
@@ -1247,7 +1215,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 }
             }
         }
-
 
         return true;
     }
