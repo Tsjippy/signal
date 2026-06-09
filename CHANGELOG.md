@@ -11,6 +11,7 @@
 - namespaced all constants
 - sanitize all posts and get vars
 - moved inline js to js file
+- moved inline style to scss file
 
 ### Fixed
 - spacing problem
