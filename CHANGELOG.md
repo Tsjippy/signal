@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- user, post and rest_meta prefixing
 
 ### Changed
 - prefixed post metas and shortcodes
