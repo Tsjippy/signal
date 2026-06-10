@@ -33,7 +33,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
             <input type='hidden' class='no-reset' name='user-id' value='<?php echo esc_attr($user->ID); ?>'>
             <h3>Signal Options</h3>
             <?php
-            $prefs      = get_user_meta($user->ID, 'signal_preferences', true);
+            $prefs      = get_user_meta($user->ID, 'tsjippy_signal_preferences', true);
             echo apply_filters('tsjippy_personal_signal_settings', '', $user, $prefs);
 
             TSJIPPY\addSaveButton('save_signal_preferences', 'Update Preferences');

@@ -33,7 +33,7 @@ function phoneNumberUpdated($phonenumber, $userId)
         // check if valid signal number
         if ($signal->getUserStatus($phonenumber)) {
             // Mark this number as the signal number
-            update_user_meta($userId, 'signal_number', $phonenumber);
+            update_user_meta($userId, 'tsjippy_signal_number', $phonenumber);
         } else {
             $valid    = false;
         }
@@ -41,11 +41,11 @@ function phoneNumberUpdated($phonenumber, $userId)
 
     // check if we need to remove the signal numbers
     if (!$valid) {
-        $signalNumber   = get_user_meta($userId, 'signal_number');
-        $phoneNumbers   = (array)get_user_meta($userId, 'phonenumbers');
+        $signalNumber   = get_user_meta($userId, 'tsjippy_signal_number');
+        $phoneNumbers   = (array)get_user_meta($userId, 'tsjippy_phonenumbers');
 
         if (!in_array($signalNumber, $phoneNumbers)) {
-            delete_user_meta($userId, 'signal_number');
+            delete_user_meta($userId, 'tsjippy_signal_number');
         }
     }
 

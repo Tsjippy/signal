@@ -77,7 +77,7 @@ function findFirstname(\WP_REST_Request $request)
         ));
 
         foreach ($users as $user) {
-            $phonenumbers = get_user_meta($user->ID, 'phonenumbers', true);
+            $phonenumbers = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
             if (in_array($request['phone'], $phonenumbers)) {
                 $name = $user->first_name;
             }
@@ -103,7 +103,7 @@ function savePreferences()
 
     do_action('tsjippy_signal_before_pref_save', $userId, $signalPreferences);
 
-    update_user_meta($userId, 'signal_preferences', $signalPreferences);
+    update_user_meta($userId, 'tsjippy_signal_preferences', $signalPreferences);
 
     if ($userId    != $currentUser->ID) {
         $name    = get_userdata($userId)->display_name;

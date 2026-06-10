@@ -16,7 +16,7 @@ function afterPdf($cellText, $pdf, $x, $y, $cellWidth)
                 ));
 
                 if (!empty($users)) {
-                    $signalNr         = get_user_meta($users[0]->ID, 'signal_number', true);
+                    $signalNr         = get_user_meta($users[0]->ID, 'tsjippy_signal_number', true);
                     $pdf->addCellPicture(PLUGINPATH . 'pictures/signal.png', $x + $cellWidth - 4, $y + ($index * 6), "https://signal.me/#p/$signalNr", 4);
                 }
             }

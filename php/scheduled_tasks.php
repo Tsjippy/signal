@@ -57,21 +57,21 @@ function checkSignalNumbers()
     $signal    = getSignalInstance();
 
     foreach (TSJIPPY\getUserAccounts() as $user) {
-        $phonenumber    = get_user_meta($user->ID, 'signal_number', true);
+        $phonenumber    = get_user_meta($user->ID, 'tsjippy_signal_number', true);
 
         // check if valid signal number
         if (empty($phonenumber) || !$signal->getUserStatus($phonenumber)) {
             // remove the stored signal number
-            delete_user_meta($user->ID, 'signal_number');
+            delete_user_meta($user->ID, 'tsjippy_signal_number');
 
             // loop over all phonenumbers to find the one connected with signal
-            $phoneNumbers   = get_user_meta($user->ID, 'phonenumbers', true);
+            $phoneNumbers   = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
 
             if (!empty($phoneNumbers)) {
                 foreach ($phoneNumbers as $phonenumber) {
                     // store if registered
                     if ($signal->getUserStatus($phonenumber)) {
-                        update_user_meta($user->ID, 'signal_number', $phonenumber);
+                        update_user_meta($user->ID, 'tsjippy_signal_number', $phonenumber);
 
                         // go to the next user
                         continue 2;

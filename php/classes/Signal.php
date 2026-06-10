@@ -380,7 +380,7 @@ class Signal
     public function getSendMessagesByUser($phoneNumber)
     {
         if (get_userdata($phoneNumber)) {
-            $phoneNumber    = get_user_meta($phoneNumber, 'signalnumber', true);
+            $phoneNumber    = get_user_meta($phoneNumber, 'tsjippy_signalnumber', true);
 
             if (!$phoneNumber) {
                 return;

@@ -601,7 +601,7 @@ class SignalCommandLine extends AbstractSignal
                     ));
 
                     foreach ($users as $user) {
-                        delete_user_meta($user->ID, 'signal_number');
+                        delete_user_meta($user->ID, 'tsjippy_signal_number');
 
                         TSJIPPY\printArray("Deleting Signal number {$matches[1]} for user $user->ID as it is not valid anymore");
                     }

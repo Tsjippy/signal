@@ -27,7 +27,7 @@ trait SendEmailBySignal
                     continue;
                 }
 
-                $nrs    = get_user_meta($user->ID, 'phonenumbers', true);
+                $nrs    = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
 
                 if (empty($nrs)) {
                     continue;

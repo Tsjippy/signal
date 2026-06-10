@@ -10,7 +10,7 @@ function elmentHtml($node, $object)
     $element    = $object->element;
 
     if ($element->slug == 'phonenumbers') {
-        $signalNr   = get_user_meta($object->userId, 'signal_number', true);
+        $signalNr   = get_user_meta($object->userId, 'tsjippy_signal_number', true);
 
         if (!empty($signalNr)) {
             // create the icon
