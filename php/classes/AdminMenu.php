@@ -352,7 +352,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         $users            = get_users([
             'meta_query' => array(
                 array(
-                    'key'     => 'phonenumbers',
+                    'key'     => 'tsjippy_phonenumbers',
                     'compare' => 'EXISTS'
                 )
             ),
