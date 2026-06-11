@@ -7,6 +7,7 @@
 
 ### Fixed
 - shared code loader
+- activation hook
 
 ### Updated
 
