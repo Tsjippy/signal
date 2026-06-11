@@ -29,7 +29,6 @@ if(file_exists(__DIR__  . '/shared-functionality/loader.php')){
     require_once(__DIR__  . '/shared-functionality/loader.php');
 }
 
-
 // Define constants
 define(__NAMESPACE__ . '\PLUGIN', plugin_basename(__FILE__));
 define(__NAMESPACE__ . '\PLUGINPATH', __DIR__ . '/');
@@ -39,6 +38,11 @@ define(__NAMESPACE__ . '\SETTINGS', get_option('tsjippy_' . PLUGINSLUG . '_setti
 
 // run right before activation
 register_activation_hook(__FILE__, function () {
+    // Load shared code
+    if(file_exists(__DIR__  . '/shared-functionality/loader.php')){
+        require_once(__DIR__  . '/shared-functionality/loader.php');
+    }
+    
     $signal    = new Signal();
 
     $signal->createDbTables();
