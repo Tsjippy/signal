@@ -8,6 +8,7 @@
 - prefixed post metas and shortcodes
 
 ### Fixed
+- prefix meta_query
 
 ### Updated
 
