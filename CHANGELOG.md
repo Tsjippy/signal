@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- removed smiley script
 
 ### Fixed
 - shared code loader
