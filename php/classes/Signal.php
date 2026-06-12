@@ -757,7 +757,8 @@ class Signal
                 <br>
 <?php
 
-                $this->installSignal($release);
+                // Disabled for now
+                #$this->installSignal($release);
             }
         }
 
