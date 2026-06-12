@@ -235,8 +235,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             return true;
         }
 
-        wp_enqueue_script('smiley');
-
         // check if we need to send a message
         if (!empty($_REQUEST['message']) && !empty($_REQUEST['recipient'])) {
             $message    = stripslashes($_REQUEST['message']);
