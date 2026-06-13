@@ -6,6 +6,7 @@
 
 ### Changed
 - removed smiley script
+- prefix meta key in get_users
 
 ### Fixed
 - shared code loader
