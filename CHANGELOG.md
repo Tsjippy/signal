@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- transform string to clickable signal number
 
 ### Changed
 - removed smiley script
