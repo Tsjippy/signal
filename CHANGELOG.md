@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.4.2] - 2026-06-13
+
+
+### Added
 - transform string to clickable signal number
 
 ### Changed
@@ -11,8 +22,6 @@
 ### Fixed
 - shared code loader
 - activation hook
-
-### Updated
 
 ## [10.4.1] - 2026-06-11
 
