@@ -595,7 +595,7 @@ class SignalCommandLine extends AbstractSignal
                 if (isset($matches[1])) {
                     // delete the signal meta key
                     $users = get_users(array(
-                        'meta_key'     => 'signal_number',
+                        'meta_key'     => 'tsjippy_signal_number',
                         'meta_value'   => $matches[1],
                         'meta_compare' => '=',
                     ));

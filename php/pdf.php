@@ -11,7 +11,7 @@ function afterPdf($cellText, $pdf, $x, $y, $cellWidth)
         foreach ($cellText as $index => $phoneNr) {
             if ($phoneNr[0] == '+') {
                 $users = get_users(array(
-                    'meta_key'     => 'signal_number',
+                    'meta_key'     => 'tsjippy_signal_number',
                     'meta_value'   => $phoneNr,
                 ));
 

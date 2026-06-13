@@ -410,7 +410,7 @@ class SignalJsonRpc extends AbstractSignal
 
                 // delete the signal meta key
                 $users = get_users(array(
-                    'meta_key'     => 'signal_number',
+                    'meta_key'     => 'tsjippy_signal_number',
                     'meta_value'   => $number,
                     'meta_compare' => '=',
                 ));

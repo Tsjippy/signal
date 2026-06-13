@@ -88,7 +88,7 @@ function checkSignalNumbers()
 function signalNumberReminder()
 {
     $users = get_users([
-        'meta_key'     => 'signal_number',
+        'meta_key'     => 'tsjippy_signal_number',
         'meta_compare' => 'NOT EXISTS',
     ]);
 

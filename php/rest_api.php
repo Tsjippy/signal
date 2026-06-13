@@ -73,11 +73,11 @@ function findFirstname(\WP_REST_Request $request)
 
         $name = "not found";
         $users = get_users(array(
-            'meta_key'     => 'phonenumbers',
+            'meta_key'     => 'tsjippy_phonenumbers',
         ));
 
         foreach ($users as $user) {
-            $phonenumbers = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
+            $phonenumbers = get_user_meta($user->ID, 'tsjippy_phonenumbers');
             if (in_array($request['phone'], $phonenumbers)) {
                 $name = $user->first_name;
             }
