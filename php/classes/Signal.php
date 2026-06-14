@@ -46,7 +46,7 @@ class Signal
         /**
          * Folder containing the signal-cli executable and its data
          */
-        $this->basePath         = str_replace('\\', '/', WP_CONTENT_DIR) . '/signal-cli';
+        $this->basePath         = wp_normalize_path( WP_CONTENT_DIR) . '/signal-cli';
         if (!is_dir($this->basePath)) {
             wp_mkdir_p($this->basePath);
         }
@@ -84,7 +84,7 @@ class Signal
         if (str_contains(php_uname(), 'Windows')) {
             $this->os               = 'Windows';
 
-            $this->basePath         = str_replace('\\', '/', $this->basePath);
+            $this->basePath         = wp_normalize_path($this->basePath);
 
             $this->path             = $this->programPath . '/bin/signal-cli.bat';
         } elseif (str_contains(php_uname(), 'Linux')) {
@@ -883,7 +883,7 @@ class Signal
             echo "Removing old version<br>";
 
             if ($this->os == 'Windows') {
-                $path   = str_replace('/', '\\', $this->programPath);
+                $path   = wp_normalize_path($this->programPath);
                 // kill the process
                 exec("taskkill /IM signal-cli /F");
 
@@ -979,7 +979,7 @@ class Signal
         $filename   = basename($url);
         $tempPath   = sys_get_temp_dir() . '/' . $filename;
 
-        $tempPath = str_replace('\\', '/', $tempPath);
+        $tempPath = wp_normalize_path($tempPath);
 
         if (file_exists($tempPath)) {
             return $tempPath;
