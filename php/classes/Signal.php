@@ -572,30 +572,6 @@ class Signal
     }
 
     /**
-     * Send Captcha instructions by e-mail
-     *
-     * @param   string  $error  The error returned from a signal actions
-     */
-    public function sendCaptchaInstructions($error)
-    {
-        $username       = [];
-        exec("bash -c 'whoami'", $username);
-        $instructions   = $error;
-        $instructions   = str_replace('signal-cli', "$this->path --config /home/{$username[0]}/.local/share/signal-cli", $instructions);
-        $adminUrl       = admin_url("admin.php?page=tsjippy-signal&main-tab=functions&challenge=");
-
-        $to             = get_option('admin_email');
-        $subject        = "Signal captcha required";
-        $message        = "Hi admin,<br><br>";
-        $message        .= "Signal messages are currently not been send from the website as you need to submit a captcha.<br>";
-        $message        .= "Use the following instructions to submit the captacha:<br><br>";
-        $message        .= "<code>$instructions</code><br>";
-        $message        .= "Submit the challenge and captcha <a href='$adminUrl'>here</a>";
-
-        wp_mail($to, $subject, $message);
-    }
-
-    /**
      * Sets the rate limit expiry time
      *
      * @param   string|false      $epoch  epoch when the reate limit will be lifted or false to reset
@@ -609,7 +585,7 @@ class Signal
         if (is_numeric($epoch)) {
             // Convert to seconds
             if ($epoch && strlen((string)$epoch) > 11) {
-                $epoch = $epoch / 1000;
+                $epoch = intval($epoch / 1000);
             }
 
             if (time() >= $epoch) {

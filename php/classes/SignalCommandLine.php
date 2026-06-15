@@ -32,6 +32,8 @@ class SignalCommandLine extends AbstractSignal
     public function __construct()
     {
         parent::__construct();
+
+        $this->receive();
     }
 
     public function baseCommand()
@@ -584,7 +586,7 @@ class SignalCommandLine extends AbstractSignal
                 // Store command
                 $failedCommands[]    = $this->commandObject->getCommand();
 
-                $this->sendCaptchaInstructions($errorMessage);
+                $this->sendRateLimitInstructions($errorMessage);
             } elseif (str_contains($errorMessage, '429 Too Many Requests')) {
                 // Store command
                 $failedCommands[]    = $this->commandObject->getCommand();

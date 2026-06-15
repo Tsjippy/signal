@@ -436,7 +436,7 @@ class SignalJsonRpc extends AbstractSignal
 
         // Captcha required
         elseif (str_contains($this->error, 'CAPTCHA proof required')) {
-            $this->sendCaptchaInstructions($this->error);
+            $this->sendRateLimitInstructions($this->error);
         }
 
         // Rate Limit
@@ -462,6 +462,9 @@ class SignalJsonRpc extends AbstractSignal
             preg_match('/\d{10,}/', $this->error, $matches);
             if (!empty($matches[0])) {
                 $rateLimitedTill    = intval($matches[0]);
+                if(empty($json->error->data->response->results[0]->token)){
+                    TSJIPPY\printArray($json);
+                }
                 $token              = $json->error->data->response->results[0]->token;
             } elseif (isset($json->error->data->response->results[0]->retryAfterSeconds)) {
                 $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
