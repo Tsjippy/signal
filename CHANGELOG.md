@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- removed duplicate captcha function
 
 ### Fixed
 
