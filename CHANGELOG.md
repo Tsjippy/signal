@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- removed duplicate captcha function
 
 ### Fixed
 
 ### Updated
+
+## [10.4.4] - 2026-06-15
+
+
+### Changed
+- removed duplicate captcha function
 
 ## [10.4.3] - 2026-06-15
 
