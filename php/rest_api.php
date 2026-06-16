@@ -101,7 +101,7 @@ function savePreferences()
     unset($signalPreferences['user-id']);
     unset($signalPreferences['_wpnonce']);
 
-    do_action('tsjippy_signal_before_pref_save', $userId, $signalPreferences);
+    do_action('tsjippy-signal-before-pref-save', $userId, $signalPreferences);
 
     update_user_meta($userId, 'tsjippy_signal_preferences', $signalPreferences);
 

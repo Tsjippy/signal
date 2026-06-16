@@ -8,18 +8,18 @@ add_action('init', __NAMESPACE__ . '\taskInit');
 function taskInit()
 {
     //add action for use in scheduled task
-    add_action('check_signal_action', __NAMESPACE__ . '\checkSignal');
+    add_action('tsjippy-check-signal', __NAMESPACE__ . '\checkSignal');
 
     // needed for async signal messages
-    add_action('schedule_signal_message_action', __NAMESPACE__ . '\sendSignalMessage', 10, 8);
+    add_action('tsjippy-schedule-signal-message', __NAMESPACE__ . '\sendSignalMessage', 10, 8);
 
-    add_action('check_signal_numbers_action', __NAMESPACE__ . '\checkSignalNumbers', 10, 3);
+    add_action('tsjippy-check-signal-numbers', __NAMESPACE__ . '\checkSignalNumbers', 10, 3);
 
-    add_action('clean_signal_log_action', __NAMESPACE__ . '\cleanSignalLog');
+    add_action('tsjippy-clean-signal-log', __NAMESPACE__ . '\cleanSignalLog');
 
-    add_action('signal_number_reminder_action', __NAMESPACE__ . '\signalNumberReminder');
+    add_action('tsjippy-signal-number-reminder', __NAMESPACE__ . '\signalNumberReminder');
 
-    add_action('tsjippy_signal_process_queue', __NAMESPACE__ . '\processQueue');
+    add_action('tsjippy-signal-process-queue', __NAMESPACE__ . '\processQueue');
 }
 
 function checkSignal()
@@ -30,17 +30,17 @@ function checkSignal()
 
 function scheduleTasks()
 {
-    TSJIPPY\scheduleTask('check_signal_action', 'daily');
+    TSJIPPY\scheduleTask('check_signal', 'daily');
 
-    TSJIPPY\scheduleTask('clean_signal_log_action', 'daily');
+    TSJIPPY\scheduleTask('clean_signal_log', 'daily');
 
-    TSJIPPY\scheduleTask('check_signal_numbers_action', 'daily');
+    TSJIPPY\scheduleTask('check_signal_numbers', 'daily');
 
     TSJIPPY\scheduleTask('tsjippy_signal_process_queue', 'hourly');
 
     $freq   = SETTINGS['reminder-freq'] ?? false;
     if ($freq) {
-        TSJIPPY\scheduleTask('signal_number_reminder_action', $freq);
+        TSJIPPY\scheduleTask('signal_number_reminder', $freq);
     }
 }
 

@@ -4,7 +4,7 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
-add_action('tsjippy_after_pdf_text', __NAMESPACE__ . '\afterPdf', 10, 5);
+add_action('tsjippy-after-pdf-text', __NAMESPACE__ . '\afterPdf', 10, 5);
 function afterPdf($cellText, $pdf, $x, $y, $cellWidth)
 {
     if (is_array($cellText)) {

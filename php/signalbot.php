@@ -53,7 +53,7 @@ function sendPostNotification($post)
 
     $excerpt = wp_strip_all_tags(str_replace('<br>', "\n", $excerpt));
 
-    $excerpt = apply_filters('tsjippy_signal_post_notification_message', $excerpt, $post);
+    $excerpt = apply_filters('tsjippy-signal-post-notification-message', $excerpt, $post);
 
     if ($_POST['update'] ?? false) {
         $message     = "<b>'{$post->post_title}'</b> just got updated\n\n$excerpt";

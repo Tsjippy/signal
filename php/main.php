@@ -51,7 +51,7 @@ function sendEmailBySignal($args)
 /**
  * Show phonenumber
  */
-add_filter('tsjippy_transform_formtable_data', function($string, $element, $submission, $object){
+add_filter('tsjippy-transform-formtable-data', function($string, $element, $submission, $object){
     if (gettype($string) == 'string' && $string[0] == '+') {
         $numbers      = explode(" ", $string);
         $output       = '';
