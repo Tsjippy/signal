@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- hook and filter name update
 
 ### Fixed
 
