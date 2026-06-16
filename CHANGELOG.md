@@ -5,6 +5,7 @@
 
 ### Changed
 - hook and filter name update
+- hook and filter name update
 
 ### Fixed
 
