@@ -30,17 +30,17 @@ function checkSignal()
 
 function scheduleTasks()
 {
-    TSJIPPY\scheduleTask('check_signal', 'daily');
+    TSJIPPY\scheduleTask('check-signal', 'daily');
 
-    TSJIPPY\scheduleTask('clean_signal_log', 'daily');
+    TSJIPPY\scheduleTask('clean-signal-log', 'daily');
 
-    TSJIPPY\scheduleTask('check_signal_numbers', 'daily');
+    TSJIPPY\scheduleTask('check-signal-numbers', 'daily');
 
-    TSJIPPY\scheduleTask('tsjippy_signal_process_queue', 'hourly');
+    TSJIPPY\scheduleTask('tsjippy-signal-process-queue', 'hourly');
 
     $freq   = SETTINGS['reminder-freq'] ?? false;
     if ($freq) {
-        TSJIPPY\scheduleTask('signal_number_reminder', $freq);
+        TSJIPPY\scheduleTask('signal-number-reminder', $freq);
     }
 }
 
