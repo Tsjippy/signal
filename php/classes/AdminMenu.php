@@ -508,15 +508,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         }
     }
 
-    /**
-     * Schedules the tasks for this plugin
-     *
-     */
-    public function postSettingsSave()
-    {
-        scheduleTasks();
-    }
-
     public function registerForm()
     {
         ob_start();
@@ -1124,7 +1115,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     $sender    = $message['sender'];
                 } else {
                     $sender    = $sender[0];
-                    $sender    = apply_filters('signal-admin-display-name', $sender->display_name, $sender);
+                    $sender    = apply_filters('tsjippy-tsjippy-signal-admin-display-name', $sender->display_name, $sender);
                 }
 
                 // in case of private message replace the phonenumber in the chat for the name as well

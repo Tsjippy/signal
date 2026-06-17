@@ -4,7 +4,7 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
-add_action('tsjippy-frontend-post-after-content', __NAMESPACE__ . '\afterContent');
+add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent');
 function afterContent($frontendContend)
 {
     $hidden            = 'hidden';
@@ -122,7 +122,7 @@ function afterContent($frontendContend)
 }
 
 // Send Signal message about the new or updated post
-add_action('tsjippy-after-post-save', __NAMESPACE__ . '\afterPostSave', 999);
+add_action('tsjippy-frontend-content-after-post-save', __NAMESPACE__ . '\afterPostSave', 999);
 function afterPostSave($post)
 {
     if (isset($_POST['send-signal']) && $_POST['send-signal']) {

@@ -80,7 +80,7 @@ function sendPostNotification($post)
  */
 function asyncSignalMessageSend($message, $recipient, $postId = "")
 {
-    wp_schedule_single_event(time(), 'schedule_signal_message_action', [$message, $recipient, $postId]);
+    wp_schedule_single_event(time(), 'tsjippy-schedule-signal-message', [$message, $recipient, $postId]);
 }
 
 /**

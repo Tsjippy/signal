@@ -8,7 +8,7 @@ use TSJIPPY;
     Add a signal page to user management screen
 */
 
-add_filter('tsjippy-user-info-page', __NAMESPACE__ . '\userInfoPage', 10, 4);
+add_filter('tsjippy-user-management-user-info-page', __NAMESPACE__ . '\userInfoPage', 10, 4);
 /**
  * Add a signal page to user management screen
  * @param array $filteredHtml The existing html for the user info page
@@ -34,7 +34,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
             <h3>Signal Options</h3>
             <?php
             $prefs      = get_user_meta($user->ID, 'tsjippy_signal_preferences', true);
-            echo apply_filters('tsjippy-personal-signal-settings', '', $user, $prefs);
+            echo apply_filters('tsjippy-signal-personal-settings', '', $user, $prefs);
 
             TSJIPPY\addSaveButton('save_signal_preferences', 'Update Preferences');
             ?>

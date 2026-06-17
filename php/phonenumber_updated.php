@@ -4,7 +4,7 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
-add_action('tsjippy-phonenumber-updated', __NAMESPACE__ . '\phoneNumberUpdated', 10, 2);
+add_action('tsjippy-user-management-phonenumber-updated', __NAMESPACE__ . '\phoneNumberUpdated', 10, 2);
 function phoneNumberUpdated($phonenumber, $userId)
 {
 

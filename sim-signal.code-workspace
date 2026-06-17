@@ -1,19 +1,9 @@
 {
 	"folders": [
 		{
-			"name": "signal",
 			"path": "."
 		},
 		{
-			"name": "tsjippy-modules",
-			"path": ".."
-		},
-		{
-			"name": "tsjippy-shared-functionality
-			"path": "../../plugins/tsjippy-shared-functionality
-		},
-		{
-			"name": "simnigeria",
 			"path": "../../.."
 		}
 	],

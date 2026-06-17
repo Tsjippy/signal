@@ -4,44 +4,30 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
-add_action('init', __NAMESPACE__ . '\taskInit');
-function taskInit()
+add_action('init', __NAMESPACE__ . '\scheduleTasks');
+function scheduleTasks()
 {
-    //add action for use in scheduled task
-    add_action('tsjippy-check-signal', __NAMESPACE__ . '\checkSignal');
+    TSJIPPY\scheduleTask('tsjippy-signal-check-signal', 'daily', __NAMESPACE__, 'checkSignal');
+
+    TSJIPPY\scheduleTask('tsjippy-signal-clean-signal-log', 'daily', __NAMESPACE__, 'cleanSignalLog');
+
+    TSJIPPY\scheduleTask('tsjippy-signal-check-signal-numbers', 'daily', __NAMESPACE__, 'checkSignalNumbers');
+
+    TSJIPPY\scheduleTask('tsjippy-signal-process-queue', 'hourly', __NAMESPACE__, 'processQueue');
+
+    $freq   = SETTINGS['reminder-freq'] ?? false;
+    if ($freq) {
+        TSJIPPY\scheduleTask('tsjippy-signal-number-reminder', $freq, __NAMESPACE__, 'signalNumberReminder');
+    }
 
     // needed for async signal messages
-    add_action('tsjippy-schedule-signal-message', __NAMESPACE__ . '\sendSignalMessage', 10, 8);
-
-    add_action('tsjippy-check-signal-numbers', __NAMESPACE__ . '\checkSignalNumbers', 10, 3);
-
-    add_action('tsjippy-clean-signal-log', __NAMESPACE__ . '\cleanSignalLog');
-
-    add_action('tsjippy-signal-number-reminder', __NAMESPACE__ . '\signalNumberReminder');
-
-    add_action('tsjippy-signal-process-queue', __NAMESPACE__ . '\processQueue');
+    add_action('tsjippy-signal-schedule-signal-message', __NAMESPACE__ . '\sendSignalMessage', 10, 8);
 }
 
 function checkSignal()
 {
     $signal         = TSJIPPY\SIGNAL\getSignalInstance();
     $signal->checkPrerequisites();
-}
-
-function scheduleTasks()
-{
-    TSJIPPY\scheduleTask('check-signal', 'daily');
-
-    TSJIPPY\scheduleTask('clean-signal-log', 'daily');
-
-    TSJIPPY\scheduleTask('check-signal-numbers', 'daily');
-
-    TSJIPPY\scheduleTask('tsjippy-signal-process-queue', 'hourly');
-
-    $freq   = SETTINGS['reminder-freq'] ?? false;
-    if ($freq) {
-        TSJIPPY\scheduleTask('signal-number-reminder', $freq);
-    }
 }
 
 /**
