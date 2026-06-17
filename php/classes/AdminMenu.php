@@ -995,7 +995,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             TSJIPPY\addElement('td', $tr, ['class' => 'date'], $date);
             TSJIPPY\addElement('td', $tr, ['class' => 'time'], $time);
             TSJIPPY\addElement('td', $tr, ['class' => 'recipient'], $recipient);
-            TSJIPPY\addElement('td', $tr, ['class' => 'message'], $message->message);
+            $td = TSJIPPY\addElement('td', $tr, ['class' => 'message', 'style'=>'text-align:left;']);
+            TSJIPPY\addRawHtml(str_replace("\n", "<br>", $message->message), $td);
+
 
             $delete = TSJIPPY\addElement('td', $tr);
             if ($message->status == 'deleted') {

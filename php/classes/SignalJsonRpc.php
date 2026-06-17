@@ -25,7 +25,6 @@ class SignalJsonRpc extends AbstractSignal
 {
     use SendEmailBySignal;
     public bool $getResult;
-    public array $groups;
     public bool $invalidNumber;
     public int $lastRequestTime;
     public string $lastResponse;
@@ -44,7 +43,6 @@ class SignalJsonRpc extends AbstractSignal
         }
 
         $this->getResult            = $getResult;
-        $this->groups               = [];
         $this->invalidNumber        = false;
         $this->lastRequestTime      = time();
         $this->lastResponse         = '';

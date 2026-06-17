@@ -35,6 +35,7 @@ class Signal
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
     public bool     $processingQueue;
+    public array    $groups;
 
     /**
      * Constructor
@@ -80,6 +81,7 @@ class Signal
         $this->error            = '';
         $this->path             = $this->programPath . '/signal-cli';
         $this->os               = 'macOS';
+        $this->groups           = [];
 
         if (str_contains(php_uname(), 'Windows')) {
             $this->os               = 'Windows';
@@ -726,12 +728,12 @@ class Signal
             $publishDate    = strtotime($release['published_at']);
 
             if ($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()) {
-?>
+                ?>
                 <strong>
                     Updating Signal to version "<?php echo esc_attr($release['tag_name']); ?>
                 </strong>
                 <br>
-<?php
+                <?php
 
                 // Disabled for now
                 #$this->installSignal($release);

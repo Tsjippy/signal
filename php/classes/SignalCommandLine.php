@@ -498,8 +498,22 @@ class SignalCommandLine extends AbstractSignal
      * List Groups
      * @return array|string
      */
-    public function listGroups()
+    public function listGroups($force=false)
     {
+        if (!$force) {
+            if (!empty($this->groups)) {
+                return $this->groups;
+            }
+
+            $transientGroups    = get_transient('tsjippy-signal-groups');
+
+            if ($transientGroups && is_array($transientGroups)) {
+                $this->groups   = $transientGroups;
+
+                return $transientGroups;
+            }
+        }
+
         $this->baseCommand();
 
         $this->commandObject->addArg('-a', $this->phoneNumber);
@@ -510,7 +524,16 @@ class SignalCommandLine extends AbstractSignal
 
         $this->commandObject->execute();
 
-        return json_decode($this->parseResult(true));
+        $result = $this->parseResult(true);
+
+        if(is_wp_error($result)){
+            return $result;
+        }
+
+        $this->groups   = json_decode($result);
+        set_transient('tsjippy-signal-groups', $this->groups, WEEK_IN_SECONDS);
+
+        return $this->groups;
     }
 
     /**
@@ -570,7 +593,13 @@ class SignalCommandLine extends AbstractSignal
 
         $this->commandObject->execute();
 
-        return json_decode($this->parseResult(true));
+        $result = $this->parseResult(true);
+
+        if(is_wp_error($result)){
+            return $result;
+        }
+
+        return json_decode($result);
     }
 
     protected function parseResult($returnJson = false)
@@ -617,11 +646,8 @@ class SignalCommandLine extends AbstractSignal
             }
 
             $this->error    = $errorMessage;
-            if ($returnJson) {
-                return json_encode($this->error);
-            }
 
-            return $this->error;
+            return new \WP_Error('signal', $this->error);
         }
 
         $output = $this->commandObject->getOutput();
