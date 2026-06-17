@@ -9,6 +9,7 @@
 - prefix all hooks with plugin name
 
 ### Fixed
+- sent message table
 
 ### Updated
 
