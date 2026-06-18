@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.4.8] - 2026-06-18
+
+
+### Changed
 - hook and filter name update
 - hook and filter name update
 - prefix all hooks with plugin name
 
 ### Fixed
 - sent message table
-
-### Updated
 
 ## [10.4.5] - 2026-06-15
 
