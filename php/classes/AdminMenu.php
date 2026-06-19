@@ -122,17 +122,17 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         $amount    = 100;
         if (isset($_REQUEST['amount'])) {
-            $amount    = $_REQUEST['amount'];
+            $amount    = (int) $_REQUEST['amount'];
         }
 
-        $startDate    = gmdate('Y-m-d', strtotime('-3 month'));
+        $startDate     = gmdate('Y-m-d', strtotime('-3 month'));
         if (isset($_REQUEST['start-date'])) {
-            $startDate    = $_REQUEST['start-date'];
+            $startDate = TSJIPPY\sanitize($_REQUEST['start-date'] ?? '');
         }
 
         $endDate    = gmdate('Y-m-d', strtotime('+1 day'));
         if (isset($_REQUEST['end-date'])) {
-            $endDate    = $_REQUEST['end-date'];
+            $endDate   = TSJIPPY\sanitize($_REQUEST['end-date'] ?? '');
         }
 
         $this->messagesHeader($startDate, $endDate, $amount, $parent);
@@ -512,7 +512,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         ob_start();
         ?>
-        <form method='post' action='<?php echo admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=".TSJIPPY\sanitize($_GET['main-tab'])); ?>'>
+        <form method='post' action='<?php echo esc_url(admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=".TSJIPPY\sanitize($_GET['main-tab']))); ?>'>
             <h4>Register with Signal</h4>
             <br>
             <label>
@@ -575,7 +575,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 return $this->notConnectedOptions();
             }
 
-            echo $signal->error;
+            echo wp_kses_post($signal->error);
         }
         ?>
         <h4>Connection details</h4>
@@ -586,7 +586,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         <label>
             Signal Messenger Display name<br>
-            <input type='text' name='display-name' value='<?php echo $this->settings['display-name']; ?>' style='width:310px'>
+            <input type='text' name='display-name' value='<?php echo esc_attr($this->settings['display-name']); ?>' style='width:310px'>
         </label>
         <br>
         <label>
@@ -676,7 +676,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     ?>
         <label>
             Link to join the Signal group
-            <input type='url' name='group-link' value='<?php echo $this->settings["group-link"]; ?>' style='width:100%'>
+            <input type='url' name='group-link' value='<?php echo esc_attr($this->settings["group-link"]); ?>' style='width:100%'>
         </label>
 
         <div class="">
@@ -687,7 +687,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 ?>
                     <div class="clone-div" data-div-id="<?php echo esc_attr($index); ?>">
                         <label>
-                            <h4 style='margin: 0px;'>Signal groupname <?php echo $index + 1; ?></h4>
+                            <h4 style='margin: 0px;'>Signal groupname <?php echo esc_attr($index + 1); ?></h4>
                             <input type='text' name="groups[<?php echo esc_attr($index); ?>]" value='<?php echo esc_attr($group); ?>'>
                         </label>
                         <span class='button-wrapper' style='margin:auto;'>
@@ -725,7 +725,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 $zipFilePath     = get_temp_dir() . $zipFileName; // Use a temporary directory
 
                 if ($zip->open($zipFilePath, \ZipArchive::CREATE) !== TRUE) {
-                    exit("Cannot open <$zipFilePath>");
+                    exit(esc_attr("Cannot open <$zipFilePath>"));
                 }
 
                 foreach (scandir("$signal->configPath/data") as $file) {
@@ -739,7 +739,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 header('Content-Type: application/zip');
                 header('Content-Disposition: attachment; filename="' . $zipFileName . '"');
                 header('Content-Length: ' . filesize($zipFilePath));
-                readfile($zipFilePath); // Output the file content
+
+                $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+                echo($wpFileSystem->get_contents($zipFilePath)); // Output the file content
 
                 wp_delete_file($zipFilePath);
                 exit;
@@ -776,8 +778,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 }
             }
         } elseif ($_REQUEST['action'] == 'Save') {
-            $this->settings['clean-period']    = $_REQUEST['clean-period'];
-            $this->settings['clean-amount']    = $_REQUEST['clean-amount'];
+            $this->settings['clean-period']    = TSJIPPY\sanitize($_REQUEST['clean-period'] ?? '');
+            $this->settings['clean-amount']    = TSJIPPY\sanitize($_REQUEST['clean-amount'] ?? '');
 
             update_option('tsjippy_signal_settings', $this->settings);
         } elseif ($_REQUEST['action'] == 'Reply') {
@@ -785,7 +787,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             $groupId    = '';
             if ($_REQUEST['sender'] != $_REQUEST['chat']) {
-                $groupId    = $_REQUEST['chat'];
+                $groupId    = TSJIPPY\sanitize($_REQUEST['chat'] ?? '');
             }
 
             $result    = $signal->sendReaction($_REQUEST['sender'], $_REQUEST['timesent'], $groupId, $_REQUEST['emoji']);
@@ -824,7 +826,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Show Messages send between <input type='date' name='start-date' value='<?php echo esc_attr($startDate); ?>' max='<?php echo gmdate('Y-m-d'); ?>'> and <input type='date' name='end-date' value='<?php echo esc_attr($endDate); ?>' max='<?php echo gmdate('Y-m-d', strtotime('+1 day')); ?>'>
+                        Show Messages send between <input type='date' name='start-date' value='<?php echo esc_attr($startDate); ?>' max='<?php echo esc_attr(gmdate('Y-m-d')); ?>'> and <input type='date' name='end-date' value='<?php echo esc_attr($endDate); ?>' max='<?php echo esc_attr(gmdate('Y-m-d', strtotime('+1 day'))); ?>'>
                     </label>
                     <br>
                     <label>
@@ -843,7 +845,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo gmdate('Y-m-d', strtotime('-1 month')); ?>' max='<?php echo gmdate('Y-m-d'); ?>'>
+                        Delete Messages send before <input type='date' name='delete-date' value='<?php echo esc_attr(gmdate('Y-m-d', strtotime('-1 month'))); ?>' max='<?php echo esc_attr(gmdate('Y-m-d')); ?>'>
                     </label>
                     <br>
                     <input type='submit' name='action' value='Delete'>
@@ -858,7 +860,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <input type="hidden" class="no-reset" name="tab" value="data" />
 
                     <label>
-                        Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo $this->settings['clean-amount']; ?>' style='width:60px;'>
+                        Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo esc_attr($this->settings['clean-amount']); ?>' style='width:60px;'>
                         <select name='clean-period' class='inline'>
                             <option value='days' <?php if ($this->settings['clean-period'] == 'days') {
                                                         echo 'selected="selected"';
@@ -927,7 +929,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         $page    = 1;
         if (isset($_REQUEST['nr'])) {
-            $page    = $_REQUEST['nr'];
+            $page    = (int) $_REQUEST['nr'];
         }
 
         $signal        = getSignalInstance();
@@ -1039,7 +1041,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         $page    = 1;
         if (isset($_REQUEST['nr'])) {
-            $page    = $_REQUEST['nr'];
+            $page    = (int) $_REQUEST['nr'];
         }
 
         $signal        = getSignalInstance();
@@ -1107,9 +1109,10 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
                 $sender    = $wpdb->get_results(
                     $wpdb->prepare(
-                        "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE '%{$message['sender']}')",
+                        "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
                         $wpdb->users,
-                        $wpdb->usermeta
+                        $wpdb->usermeta,
+                        '%'.$wpdb->esc_like($message['sender'])
                     )
                 );
 

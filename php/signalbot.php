@@ -107,7 +107,7 @@ function sendSignalMessage($message, $recipient, $images = [], int $timeStamp = 
 
     // do not send on localhost
     if (wp_get_environment_type() === 'local' || get_option("wpstg_is_staging_site") == "true") {
-        //return;
+        return;
     }
 
     if (is_object($recipient) && isset($recipient->ID)) {

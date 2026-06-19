@@ -34,7 +34,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
             <h3>Signal Options</h3>
             <?php
             $prefs      = get_user_meta($user->ID, 'tsjippy_signal_preferences', true);
-            echo apply_filters('tsjippy-signal-personal-settings', '', $user, $prefs);
+            echo wp_kses_post(apply_filters('tsjippy-signal-personal-settings', '', $user, $prefs));
 
             TSJIPPY\addSaveButton('save_signal_preferences', 'Update Preferences');
             ?>

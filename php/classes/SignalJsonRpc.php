@@ -77,12 +77,12 @@ class SignalJsonRpc extends AbstractSignal
             if ($errno == 2) {
                 echo "Could not start, is the signal-cli jsonrpc daemon running?";
             } elseif (!$this->socket) {
-                echo "Unable to create socket on $this->socketPath";
+                echo "Unable to create socket on ".esc_attr($this->socketPath);
 
                 //TSJIPPY\printArray("$errno: $this->error");
             }
         } catch (\ErrorException $e) {
-            echo "Socket Connection Failed: " . $e->getMessage();
+            echo "Socket Connection Failed: " . wp_kses_post($e->getMessage());
             // Use $e->getCode() to get system level error codes
         }
     }

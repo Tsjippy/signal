@@ -21,14 +21,13 @@ $tsjippySignal<?php
                 //print(ob_get_clean());
 
                 /* Remove the execution time limit */
-                set_time_limit(0);
+                //set_time_limit(0);
 
                 include_once __DIR__ . '/../php/classes/SignalJsonRpc.php';
 
                 $tsjippySignal = new SIGNAL\SignalJsonRpc(false, true);
 
                 if (!$tsjippySignal->socket) {
-                    print("Invalid socket: $tsjippySignal->error\n");
                     TSJIPPY\printArray("Invalid socket: $tsjippySignal->error\n", true);
                     return;
                 }
@@ -163,7 +162,8 @@ $tsjippySignal<?php
                             $newPath    = "$tsjippySignal->attachmentsPath/{$attachment->filename}";
 
                             // move the attachment
-                            $result = rename($path, $newPath);
+                            $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+                            $result = $wpFileSystem->move($path, $newPath);
                             if ($result) {
                                 $attachments[]      = $newPath;
                             } else {

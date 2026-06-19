@@ -51,14 +51,9 @@ function afterContent($frontendContend)
                             if (empty($group->name)) {
                                 continue;
                             }
-
-                            $checked    = '';
-                            if (in_array($group->id, $defaultGroups)) {
-                                $checked = 'checked';
-                            }
-                    ?>
+                            ?>
                             <label>
-                                <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php echo $checked; ?>>
+                                <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) { echo  'checked';} ?>>
                                 <?php echo esc_attr($group->name); ?>
                             </label>
                         <?php
@@ -71,13 +66,8 @@ function afterContent($frontendContend)
                                 if (empty($group->name)) {
                                     continue;
                                 }
-
-                                $selected    = '';
-                                if (in_array($group->id, $defaultGroups)) {
-                                    $selected = 'selected';
-                                }
-                            ?>
-                                <option value='<?php echo esc_attr($group->id); ?>' <?php echo $selected; ?>><?php echo esc_attr($group->name); ?></option>
+                                ?>
+                                <option value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) {echo 'selected'; } ?>><?php echo esc_attr($group->name); ?></option>
                             <?php
                             }
                             ?>

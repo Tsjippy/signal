@@ -319,7 +319,7 @@ class SignalCommandLine extends AbstractSignal
         $this->commandObject->addArg('-n', $name);
 
         // TODO: Better response handling
-        $randFile = sys_get_temp_dir() . '/' . rand() . time() . '.device';
+        $randFile = sys_get_temp_dir() . '/' . wp_rand() . time() . '.device';
         $this->commandObject->addArg(" > $randFile 2>&1 &", null, false); // Ugly hack!
         sleep(1); // wait for file to get populated
 
@@ -348,7 +348,7 @@ class SignalCommandLine extends AbstractSignal
         // Turn on implicit flushing
         ob_implicit_flush(1);
 
-        echo "Link is <code>$link</code>";
+        echo "Link is <code>".esc_attr($link)."</code>";
 
         #https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=$link
 

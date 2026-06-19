@@ -120,8 +120,9 @@ class Signal
 
         // check permissions
         $path   = $this->programPath . '/signal-cli';
-        if (file_exists($path) && !is_executable($path) && function_exists('chmod')) {
-            chmod($path, 0555);
+        if (file_exists($path) && !is_executable($path)) {
+            $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+            $wpFileSystem->chmod($path, 0555);
         }
 
         // .htaccess to prevent access
@@ -280,41 +281,35 @@ class Signal
             $startIndex         = ($page - 1) * $amount;
         }
 
-        $totalQuery = "SELECT COUNT(id) as total FROM $this->tableName";
-        $query      = "SELECT * FROM $this->tableName";
-        $queryExtra = "";
+        $query          = "SELECT * FROM %i where 1";
+        $values         = [$this->tableName];
 
         if (!empty($minTime)) {
-            $queryExtra .= " WHERE time_send > {$minTime}000";
+            $query      .= " and time_send > %d";
+            $values[]      = $minTime."000";
         }
 
         if (!empty($maxTime)) {
-            $combinator = 'AND';
-            if (empty($queryExtra)) {
-                $combinator     = 'WHERE';
-            }
-
-            $queryExtra .= " $combinator time_send < {$maxTime}000";
+            $query .= " andr time_send < %d";
+            $values[]      = $maxTime."000";
         }
 
         if (!empty($receiver)) {
-            $combinator = 'AND';
-            if (empty($queryExtra)) {
-                $combinator     = 'WHERE';
-            }
-
-            $queryExtra .= " $combinator recipient = '$receiver'";
+            $query .= " and recipient = %s";
+            $values[] = $receiver;
         }
 
-        $query      .= "$queryExtra ORDER BY `time_send` DESC LIMIT $startIndex,$amount;";
+        // phpcs:ignore
+        $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
 
-        $this->totalMessages    = $wpdb->get_var($totalQuery . $queryExtra);
+        $query      .= " ORDER BY `time_send` DESC LIMIT $startIndex, $amount;";
 
         if ($this->totalMessages < $startIndex) {
             return [];
         }
 
-        return $wpdb->get_results($query);
+        // phpcs:ignore
+        return $wpdb->get_results($wpdb->prepare($query, $values));
     }
 
     /**
@@ -336,40 +331,35 @@ class Signal
         }
 
         $totalQuery = "SELECT COUNT(id) as total FROM $this->receivedTableName";
-        $query      = "SELECT * FROM $this->receivedTableName";
-        $queryExtra = "";
+        $query      = "SELECT * FROM %i where 1";
+        $values     = [$this->receivedTableName];
 
         if (!empty($minTime)) {
-            $queryExtra .= " WHERE time_send > {$minTime}000";
+            $query      .= " and time_send > %d";
+            $values[]    = $minTime."000";
         }
 
         if (!empty($maxTime)) {
-            $combinator = 'AND';
-            if (empty($queryExtra)) {
-                $combinator     = 'WHERE';
-            }
-
-            $queryExtra .= " $combinator time_send < {$maxTime}000";
+            $query      .= " and time_send < %d";
+            $values[]    = $maxTime."000";
         }
 
         if (!empty($sender)) {
-            $combinator = 'AND';
-            if (empty($queryExtra)) {
-                $combinator     = 'WHERE';
-            }
-
-            $queryExtra .= " $combinator sender = '$sender'";
+            $query      .= " and sender = %s";
+            $values[]    = $sender;
         }
 
-        $query      .= " $queryExtra ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex,$amount;";
+        // phpcs:ignore
+        $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total ', $query), $values));
 
-        $this->totalMessages    = $wpdb->get_var($totalQuery . $queryExtra);
+        $query      .= " $query ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex,$amount;";
 
         if ($this->totalMessages < $startIndex) {
             return [];
         }
 
-        return $wpdb->get_results($query);
+        // phpcs:ignore
+        return $wpdb->get_results($wpdb->prepare($query, $values));
     }
 
     /**
@@ -391,9 +381,11 @@ class Signal
 
         global $wpdb;
 
-        $query      = "SELECT * FROM $this->tableName WHERE `recipient` = '$phoneNumber' ORDER BY `time_send` DESC LIMIT 5; ";
-
-        return $wpdb->get_results($query);
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM %i WHERE `recipient` = %s ORDER BY `time_send` DESC LIMIT 5; ",
+            $this->tableName,
+            $phoneNumber
+        ));
     }
 
     /**
@@ -407,9 +399,11 @@ class Signal
     {
         global $wpdb;
 
-        $query      = "SELECT message FROM $this->tableName WHERE `time_send` = '$timestamp'";
-
-        return $wpdb->get_var($query);
+        return $wpdb->get_var($wpdb->prepare(
+            "SELECT message FROM %i WHERE `time_send` = %d",
+            $this->tableName,
+            $timestamp
+        ));
     }
 
     /**
@@ -451,9 +445,11 @@ class Signal
         }
 
         // remove received messages
-        $query      = "DELETE FROM $this->receivedTableName WHERE `time_send` < {$timeSend}000";
-
-        $result2    = $wpdb->query($query);
+        $result2    = $wpdb->query($wpdb->prepare(
+            "DELETE FROM %i WHERE `time_send` < %d",
+            $this->receivedTableName,
+            "{$timeSend}000"
+        ));
 
         return $result1 && $result2;
     }
@@ -468,9 +464,11 @@ class Signal
     {
         global $wpdb;
 
-        $query      = "UPDATE $this->tableName SET `status` = 'deleted' WHERE time_send = $timeStamp";
-
-        return $wpdb->query($query);
+        return $wpdb->query($wpdb->prepare(
+            "UPDATE %i SET `status` = 'deleted' WHERE time_send = %d",
+            $this->tableName,
+            $timeStamp
+        ));
     }
 
     /**
@@ -761,14 +759,14 @@ class Signal
         if ($this->os == 'Linux') {
             $pidFile    = __DIR__ . '/installing.signal';
             if (file_exists($pidFile)) {
-                echo "$pidFile exists, another installation might by running already<br>";
+                echo esc_attr($pidFile)." exists, another installation might by running already<br>";
                 return;
             }
             file_put_contents($pidFile, 'running');
         }
 
         try {
-            echo "Downloading Signal version $version<br>";
+            echo "Downloading Signal version ".esc_attr($version)."<br>";
             $url    = "https://github.com/AsamK/signal-cli/releases/download/v$version/signal-cli-$version-$this->os.tar.gz";
 
             if (!empty($release['assets']) && is_array($release['assets'])) {
@@ -838,13 +836,13 @@ class Signal
                     }
                 }
 
-                echo "Unzipping .tar archive to $folder<br>";
+                echo "Unzipping .tar archive to ".esc_attr($folder)."<br>";
 
                 $phar = new \PharData($fileName);
                 $phar->extractTo($folder); // extract all files
             }
         } catch (\Exception $e) {
-            echo "<div class='error'>" . $e->getMessage() . '</div>';
+            echo "<div class='error'>" . wp_kses_post($e->getMessage()) . '</div>';
 
             // handle errors
             $this->error    = 'Installation error';
@@ -871,7 +869,7 @@ class Signal
                 // stop the deamon
                 #exec("kill $(ps -ef | grep -v grep | grep -P 'signal-cli.*daemon'| awk '{print $2}')");
 
-                echo "Removing from $this->programPath<br>";
+                echo "Removing from ".esc_attr($this->programPath)."<br>";
 
                 exec("rm -rfd $this->programPath");
 
@@ -893,19 +891,21 @@ class Signal
             if ($this->os == 'Windows') {
                 $result = $this->copyfolder($path . '/', $this->programPath);
             } else {
-                $result = rename($path, $this->programPath);
+                $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+                $result = $wpFileSystem->move($path, $this->programPath);
             }
         } elseif (file_exists("$folder/signal-cli")) {
-            $result = rename("$folder/signal-cli", "$this->path");
+            $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+            $result = $wpFileSystem->move("$folder/signal-cli", "$this->path");
         } else {
-            echo "$path does not exist<br>";
+            echo esc_attr($path)." does not exist<br>";
             TSJIPPY\printArray("$folder/signal-cli not found please check", true);
         }
 
         if ($result) {
-            echo "<div class='success'>Succesfully installed Signal version $version!</div>";
+            echo "<div class='success'>Succesfully installed Signal version ".esc_attr($version)."!</div>";
         } else {
-            echo "<div class='error'>Failed!<br>Could not move $path to $this->programPath/signal-cli.<br>Check the $folder folder.</div>";
+            echo "<div class='error'>Failed!<br>Could not move ".esc_attr($path)." to ".esc_attr($this->programPath)."/signal-cli.<br>Check the ".esc_attr($folder)." folder.</div>";
         }
     }
 
@@ -991,7 +991,7 @@ class Signal
             return $e->getResponse()->getReasonPhrase();
         }
 
-        echo "Downloading $url to $tempPath failed!";
+        echo "Downloading ".esc_url($url)." to ". esc_attr($tempPath)." failed!";
     }
 
     protected function daemonIsRunning()
