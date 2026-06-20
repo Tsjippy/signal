@@ -641,7 +641,7 @@ class SignalCommandLine extends AbstractSignal
                 TSJIPPY\printArray($errorMessage);
             } elseif (str_contains($errorMessage, 'Did not receive a reply. ')) {
                 TSJIPPY\printArray($errorMessage);
-            } else {
+            } elseif($errorMessage != "Command failed") {
                 TSJIPPY\printArray($errorMessage);
             }
 
