@@ -460,13 +460,16 @@ class SignalJsonRpc extends AbstractSignal
             preg_match('/\d{10,}/', $this->error, $matches);
             if (!empty($matches[0])) {
                 $rateLimitedTill    = intval($matches[0]);
-                if(empty($json->error->data->response->results[0]->token)){
-                    TSJIPPY\printArray($json);
+                if(!empty($json->error->data->response->results[0]->token)){
+                    $token              = $json->error->data->response->results[0]->token;
                 }
-                $token              = $json->error->data->response->results[0]->token;
             } elseif (isset($json->error->data->response->results[0]->retryAfterSeconds)) {
                 $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
-                $token              = $json->error->data->response->results[0]->token;
+
+                if(!empty($json->error->data->response->results[0]->token)){
+                    $token              = $json->error->data->response->results[0]->token;
+                }
+                
             }
 
             // Only update if this is higher than the current value
