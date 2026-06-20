@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- check for token if rate limited
 
 ### Updated
 
