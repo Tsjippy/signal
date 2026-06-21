@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- command history log to be able to track down reasons for rate limit issues
 
 ### Changed
 
