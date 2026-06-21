@@ -34,7 +34,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
         ob_start();
 
-?>
+        ?>
         <strong>Server type</strong><br>
         Indicate if you can install signal-cli on this server or not<br>
         I have root access on this server

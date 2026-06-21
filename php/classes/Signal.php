@@ -30,6 +30,7 @@ class Signal
     public string   $queueTableName;
     public string   $receivedTableName;
     public string   $tableName;
+    public string   $commandTableName;
     public int      $totalMessages;
     public bool     $valid;
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
@@ -107,6 +108,8 @@ class Signal
         $this->receivedTableName = $wpdb->prefix . 'tsjippy_received_signal_messages';
 
         $this->tableName        = $wpdb->prefix . 'tsjippy_signal_messages';
+
+        $this->commandTableName = $wpdb->prefix . 'tsjippy_signal_command_history';
 
         $this->totalMessages    = 0;
 
@@ -198,6 +201,17 @@ class Signal
        ) $charsetCollate;";
 
         maybe_create_table($this->queueTableName, $sql);
+
+        // Command queue
+        $sql = "CREATE TABLE {$this->commandTableName} (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            time_added bigint(20) NOT NULL,
+            method longtext NOT NULL,
+            params longtext
+            PRIMARY KEY  (id)
+       ) $charsetCollate;";
+
+        maybe_create_table($this->queueTableName, $sql);
     }
 
     /**
@@ -264,6 +278,26 @@ class Signal
     }
 
     /**
+     * Adds a command to the command history table
+     *
+     * @param   string  $method
+     * @param   array   $params 
+     */
+    protected function addToCommandLog($method, $params)
+    {        
+        global $wpdb;
+
+        $wpdb->insert(
+            $this->commandTableName,
+            array(
+                'time_send' => time(),
+                'recipient' => $method,
+                'message'   => $params,
+            )
+        );
+    }
+
+    /**
      * Retrieves the sent messages from the log
      *
      * @param   int     $amount     The amount of rows to get per page, default 100
@@ -298,6 +332,8 @@ class Signal
             $query .= " and recipient = %s";
             $values[] = $receiver;
         }
+
+        TSJIPPY\printArray($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
 
         // phpcs:ignore
         $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
@@ -1191,8 +1227,6 @@ class Signal
             return; // no point in doing this
         }
 
-        //TSJIPPY\printArray('Processing queue');
-
         $this->processingQueue     = true;
 
         // Mark the start of this option
@@ -1200,6 +1234,7 @@ class Signal
         update_option('tsjippy-signal-processing-queue', $startTime);
 
         $queueSize  = 0;
+        $sleepTime  = 30;
 
         // Loop until a new cronjob has started
         while (true) {
@@ -1258,8 +1293,6 @@ class Signal
                 $queueSize  = $this->getQueueSize();
                 if ($queueSize < 3) {
                     $sleepTime  = 2;
-                } else {
-                    $sleepTime  = 30;
                 }
             }
 
@@ -1269,9 +1302,9 @@ class Signal
 
                     unset($command->params['groupId']);
                 }
-                //TSJIPPY\printArray("Calling the function $command->method");
                 $result = call_user_func_array(array($this, $command->method), $command->params);
-                //TSJIPPY\printArray($result);
+
+                $this->addToCommandLog($command->method, $command->params);
             } else {
                 TSJIPPY\printArray($command);
             }
