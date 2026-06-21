@@ -2,14 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- command history log to be able to track down reasons for rate limit issues
 
 ### Changed
 
 ### Fixed
-- check for token if rate limited
 
 ### Updated
+
+## [10.5.0] - 2026-06-21
+
+
+### Added
+- command history log to be able to track down reasons for rate limit issues
+
+### Fixed
+- check for token if rate limited
 
 ## [10.4.9] - 2026-06-19
 
