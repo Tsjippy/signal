@@ -9,6 +9,7 @@
 - replaced wpdb->update with updateDbFunction
 
 ### Fixed
+- send e-mail by signal
 
 ### Updated
 
