@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- implemented db caching
 
 ### Fixed
 
