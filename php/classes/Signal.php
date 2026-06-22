@@ -1243,22 +1243,16 @@ class Signal
             }
 
             // Update the queue
-            $wpdb->update(
+            $result = TSJIPPY\updateDbValue(
                 $this->queueTableName,
                 $data,
                 [
                     'id'        => $command->id
                 ],
+                [],
+                ['%d'],
+                'signal'
             );
-
-             /**
-             * Flush db cache
-             */
-            if(wp_cache_supports( 'flush_group' )){
-                wp_cache_flush_group('signal');
-            }else{
-                wp_cache_flush();
-            }
         }
     }
 
