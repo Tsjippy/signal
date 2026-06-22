@@ -8,7 +8,7 @@ trait SendEmailBySignal
     {
         $numbers    = [];
         if (!empty($args['submission'])) {
-            $forms      = new \TSJIPPY\FORMS\Forms();
+            $forms      = new \TSJIPPY\FORMS\Forms(['formid' => $args['submission']->form_id]);
 
             $numbers    = (array) ($args['submission']->{$forms->findPhoneNumberElementName()} ?? []);
         }
@@ -27,7 +27,7 @@ trait SendEmailBySignal
                     continue;
                 }
 
-                $nrs    = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
+                $nrs    = get_user_meta($user->ID, 'tsjippy_phonenumbers');
 
                 if (empty($nrs)) {
                     continue;
