@@ -225,18 +225,20 @@ class Signal
             return;
         }
 
-        global $wpdb;
-
-        $wpdb->insert(
+        return TSJIPPY\insertInDb(
             $this->tableName,
             array(
-                'time_send'      => $timestamp,
-                'recipient'     => $recipient,
-                'message'        => $message,
-            )
+                'time_send' => $timestamp,
+                'recipient' => $recipient,
+                'message'   => $message,
+            ),
+            [
+                '%d',
+                '%s',
+                '%s'
+            ],
+            'signal'
         );
-
-        return $wpdb->insert_id;
     }
 
     /**
@@ -257,20 +259,24 @@ class Signal
             $chat   = $sender;
         }
 
-        global $wpdb;
-
-        $wpdb->insert(
+        return TSJIPPY\insertInDb(
             $this->receivedTableName,
             array(
-                'time_send'      => $time,
-                'sender'        => $sender,
-                'message'        => $message,
-                'chat'          => $chat,
-                'attachments'   => maybe_serialize($attachments)
-            )
+                'time_send'   => $time,
+                'sender'      => $sender,
+                'message'     => $message,
+                'chat'        => $chat,
+                'attachments' => maybe_serialize($attachments)
+            ),
+            [
+                '%d',
+                '%s',
+                '%s',
+                '%s',
+                '%s',
+            ],
+            'signal'
         );
-
-        return $wpdb->insert_id;
     }
 
     /**
@@ -281,15 +287,19 @@ class Signal
      */
     protected function addToCommandLog($method, $params)
     {        
-        global $wpdb;
-
-        $wpdb->insert(
+        TSJIPPY\insertInDb(
             $this->commandTableName,
             array(
                 'time_send' => time(),
                 'recipient' => $method,
                 'message'   => $params,
-            )
+            ),
+            [
+                '%d',
+                '%s',
+                '%s'
+            ],
+            'signal'
         );
     }
 
@@ -480,6 +490,15 @@ class Signal
             "{$timeSend}000"
         ));
 
+        /**
+         * Flush db cache
+         */
+        if(wp_cache_supports( 'flush_group' )){
+            wp_cache_flush_group('signal');
+        }else{
+            wp_cache_flush();
+        }
+
         return $result1 && $result2;
     }
 
@@ -493,11 +512,20 @@ class Signal
     {
         global $wpdb;
 
-        return $wpdb->query($wpdb->prepare(
+        $wpdb->query($wpdb->prepare(
             "UPDATE %i SET `status` = 'deleted' WHERE time_send = %d",
             $this->tableName,
             $timeStamp
         ));
+
+        /**
+         * Flush db cache
+         */
+        if(wp_cache_supports( 'flush_group' )){
+            wp_cache_flush_group('signal');
+        }else{
+            wp_cache_flush();
+        }
     }
 
     /**
@@ -1093,9 +1121,7 @@ class Signal
      */
     public function addToQueue($method, $params = [], $priority = 10, $waiting = false)
     {
-        global $wpdb;
-
-        $wpdb->insert(
+        return TSJIPPY\insertInDb(
             $this->queueTableName,
             array(
                 'time_added'   => time(),
@@ -1103,10 +1129,16 @@ class Signal
                 'params'       => maybe_serialize($params),
                 'priority'     => $priority,
                 'waiting'      => $waiting
-            )
+            ),
+            [
+                '%d',
+                '%s',
+                '%s',
+                '%d',
+                '%d',
+            ],
+            'signal'
         );
-
-        return $wpdb->insert_id;
     }
 
     /**
@@ -1168,7 +1200,16 @@ class Signal
 
         $query      = $wpdb->prepare("DELETE FROM $this->queueTableName WHERE id = %d", $id);
 
-        return $wpdb->query($query);
+        $wpdb->query($query);
+
+        /**
+         * Flush db cache
+         */
+        if(wp_cache_supports( 'flush_group' )){
+            wp_cache_flush_group('signal');
+        }else{
+            wp_cache_flush();
+        }
     }
 
     /**
@@ -1209,6 +1250,15 @@ class Signal
                     'id'        => $command->id
                 ],
             );
+
+             /**
+             * Flush db cache
+             */
+            if(wp_cache_supports( 'flush_group' )){
+                wp_cache_flush_group('signal');
+            }else{
+                wp_cache_flush();
+            }
         }
     }
 
