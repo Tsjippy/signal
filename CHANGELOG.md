@@ -5,6 +5,7 @@
 
 ### Changed
 - implemented db caching
+- implemented db caching
 
 ### Fixed
 
