@@ -32,23 +32,32 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $local    = true;
         }
 
-        ob_start();
+        addElement('strong', $parent, [], 'Server type');
+        addElement('br', $parent);
 
-        ?>
-        <strong>Server type</strong><br>
-        Indicate if you can install signal-cli on this server or not<br>
-        I have root access on this server
-        <label class="switch">
-            <input type="checkbox" name="local" value=1 <?php if ($local) {
-                                                            echo 'checked';
-                                                        } ?>>
-            <span class="slider round"></span>
-        </label>
-        <br>
-        <br>
-        <?php
+        $parent->append('Indicate if you can install signal-cli on this server or not');
+        addElement('br', $parent);
+        $parent->append('I have root access on this server');
 
-        addRawHtml(ob_get_clean(), $parent);
+        $label  = addElement('label', $parent, ['class' => 'switch']);
+
+        $attributes = [
+            'type' => "checkbox",
+            'name' => "local",
+            'value'=> 1
+        ];
+
+        if ($local) {
+            $attributes['checked']  = 'checked';
+        }
+
+        addElement('input', $label, $attributes );
+
+        addElement('span', $label, ['class' => "slider round"]);
+
+        addElement('br', $parent);
+
+        addElement('br', $parent);
 
         ob_start();
 
@@ -225,8 +234,6 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             return true;
         }
-
-        return false;
     }
 
     public function functions($parent)
@@ -255,8 +262,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             } else {
                 TSJIPPY\addElement('div', $parent, ['class' => 'success'], 'Message succesfully send' . esc_html($result));
             }
-        }
-;
+        };
         $timeStamp        = '';
 
         if (!empty($_GET['timesent'])) {
@@ -512,7 +518,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         ob_start();
         ?>
-        <form method='post' action='<?php echo esc_url(admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=".TSJIPPY\sanitize($_GET['main-tab']))); ?>'>
+        <form method='post' action='<?php echo esc_url(admin_url("admin.php?page=" . TSJIPPY\sanitize($_GET['page']) . "&main-tab=" . TSJIPPY\sanitize($_GET['main-tab']))); ?>'>
             <h4>Register with Signal</h4>
             <br>
             <label>
@@ -551,9 +557,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     {
         $tab        = '';
         if (!empty($_GET['main-tab'])) {
-            $tab    = "&main-tab=".TSJIPPY\sanitize($_GET['main-tab']);
+            $tab    = "&main-tab=" . TSJIPPY\sanitize($_GET['main-tab']);
         }
-        $url        = admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page']).$tab);
+        $url        = admin_url("admin.php?page=" . TSJIPPY\sanitize($_GET['page']) . $tab);
 
         if (isset($_GET['force'])) {
             $signalGroups    = $signal->listGroups(false, false, true);
@@ -645,9 +651,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
      */
     public function notConnectedOptions()
     {
-        $url        = admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page']));
+        $url        = admin_url("admin.php?page=" . TSJIPPY\sanitize($_GET['page']));
         if (!empty($_GET['tab'])) {
-            $url    .= "&main-tab=".TSJIPPY\sanitize($_GET['main-tab']);
+            $url    .= "&main-tab=" . TSJIPPY\sanitize($_GET['main-tab']);
         }
 
         ?>
@@ -741,7 +747,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 header('Content-Length: ' . filesize($zipFilePath));
 
                 $wpFileSystem   = TSJIPPY\loadWpFileSystem();
-                echo($wpFileSystem->get_contents($zipFilePath)); // Output the file content
+                echo ($wpFileSystem->get_contents($zipFilePath)); // Output the file content
 
                 wp_delete_file($zipFilePath);
                 exit;
@@ -878,7 +884,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 </form>
             </div>
         </div>
-    <?php
+<?php
 
         addRawHtml(ob_get_clean(), $parent);
     }
@@ -972,13 +978,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             $recipient    = '';
             if ($message->recipient[0] === '+') {
-                $recipient    = $wpdb->get_var(
-                    $wpdb->prepare(
-                        "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
-                        $wpdb->users,
-                        "{$wpdb->prefix}usermeta",
-                        "%".$wpdb->esc_like($message->recipient)."%"
-                    )
+                $recipient    = TSJIPPY\getFromDb(
+                    "get_display_name_for_".$message->recipient,
+                    "signal",
+                    "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s) LIMIT 1",
+                    $wpdb->users,
+                    $wpdb->usermeta,
+                    "%" . $wpdb->esc_like($message->recipient) . "%"
                 );
             } else {
                 $signal->listGroups();
@@ -997,7 +1003,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             TSJIPPY\addElement('td', $tr, ['class' => 'date'], $date);
             TSJIPPY\addElement('td', $tr, ['class' => 'time'], $time);
             TSJIPPY\addElement('td', $tr, ['class' => 'recipient'], $recipient);
-            $td = TSJIPPY\addElement('td', $tr, ['class' => 'message', 'style'=>'text-align:left;']);
+            $td = TSJIPPY\addElement('td', $tr, ['class' => 'message', 'style' => 'text-align:left;']);
             TSJIPPY\addRawHtml(str_replace("\n", "<br>", $message->message), $td);
 
 
@@ -1044,7 +1050,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $page    = (int) $_REQUEST['nr'];
         }
 
-        $signal        = getSignalInstance();
+        $signal      = getSignalInstance();
         $messages    = $signal->getReceivedMessageLog($amount, $page, strtotime($startDate), strtotime($endDate));
 
         if (empty($messages)) {
@@ -1107,13 +1113,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 $date        = get_date_from_gmt($isoDate, TSJIPPY\DATEFORMAT);
                 $time        = get_date_from_gmt($isoDate, TSJIPPY\TIMEFORMAT);
 
-                $sender    = $wpdb->get_results(
-                    $wpdb->prepare(
-                        "SELECT * FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
-                        $wpdb->users,
-                        $wpdb->usermeta,
-                        '%'.$wpdb->esc_like($message['sender'])
-                    )
+                $sender    = TSJIPPY\getFromDb(
+                    "get_display_name_for_".$message['sender'],
+                    "signal",
+                    "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
+                    $wpdb->users,
+                    $wpdb->usermeta,
+                    '%' . $wpdb->esc_like($message['sender'])
                 );
 
                 if (empty($sender)) {
@@ -1205,7 +1211,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     TSJIPPY\addElement('input', $form, ['type' => 'hidden', 'class' => 'no-reset', 'name' => 'emoji']);
                     TSJIPPY\addElement('input', $form, ['type' => 'submit', 'name' => 'action', 'value' => 'Reply']);
 
-                    TSJIPPY\addElement('a', $td, ['href' => admin_url("admin.php?page=".TSJIPPY\sanitize($_GET['page'])."&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author"), 'class' => 'button small'], 'Reply');
+                    TSJIPPY\addElement('a', $td, ['href' => admin_url("admin.php?page=" . TSJIPPY\sanitize($_GET['page']) . "&main-tab=functions&recipient=$chat&timesent={$message['timesent']}&replymessage=$msg&author=$author"), 'class' => 'button small'], 'Reply');
                 }
             }
         }

@@ -31,7 +31,7 @@ class Signal
     public string   $receivedTableName;
     public string   $tableName;
     public string   $commandTableName;
-    public int      $totalMessages;
+    public int|null $totalMessages;
     public bool     $valid;
     public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
@@ -163,52 +163,48 @@ class Signal
 
         // Sent messages log
         $sql = "CREATE TABLE {$this->tableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_send bigint(20) NOT NULL,
             recipient longtext NOT NULL,
             message longtext NOT NULL,
-            status text NOT NULL,
-            PRIMARY KEY  (id)
+            status text NOT NULL
        ) $charsetCollate;";
 
         maybe_create_table($this->tableName, $sql);
 
         // Received messages log
         $sql = "CREATE TABLE {$this->receivedTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_send bigint(20) NOT NULL,
             sender longtext NOT NULL,
             message longtext NOT NULL,
             chat longtext,
             attachments longtext,
-            status text NOT NULL,
-            PRIMARY KEY  (id)
+            status text NOT NULL
        ) $charsetCollate;";
 
         maybe_create_table($this->receivedTableName, $sql);
 
         // Command queue
         $sql = "CREATE TABLE {$this->queueTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_added bigint(20) NOT NULL,
             method longtext NOT NULL,
             params longtext,
             priority int,
             result longtext,
             retries int NOT NULL DEFAULT 0,
-            waiting boolean NOT NULL DEFAULT false,
-            PRIMARY KEY  (id)
+            waiting boolean NOT NULL DEFAULT false
        ) $charsetCollate;";
 
         maybe_create_table($this->queueTableName, $sql);
 
         // Command queue
         $sql = "CREATE TABLE {$this->commandTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_added bigint(20) NOT NULL,
             method longtext NOT NULL,
             params longtext
-            PRIMARY KEY  (id)
        ) $charsetCollate;";
 
         maybe_create_table($this->queueTableName, $sql);
@@ -324,7 +320,7 @@ class Signal
         }
 
         if (!empty($maxTime)) {
-            $query .= " andr time_send < %d";
+            $query .= " and time_send < %d";
             $values[]      = $maxTime."000";
         }
 
@@ -332,8 +328,6 @@ class Signal
             $query .= " and recipient = %s";
             $values[] = $receiver;
         }
-
-        TSJIPPY\printArray($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
 
         // phpcs:ignore
         $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
@@ -366,7 +360,6 @@ class Signal
             $startIndex         = ($page - 1) * $amount;
         }
 
-        $totalQuery = "SELECT COUNT(id) as total FROM $this->receivedTableName";
         $query      = "SELECT * FROM %i where 1";
         $values     = [$this->receivedTableName];
 
@@ -388,7 +381,7 @@ class Signal
         // phpcs:ignore
         $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total ', $query), $values));
 
-        $query      .= " $query ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex,$amount;";
+        $query      .= " ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex, $amount;";
 
         if ($this->totalMessages < $startIndex) {
             return [];
@@ -415,13 +408,13 @@ class Signal
             }
         }
 
-        global $wpdb;
-
-        return $wpdb->get_results($wpdb->prepare(
+        return TSJIPPY\getFromDb(
+            "get_messages_from_$phoneNumber",
+            "signal",
             "SELECT * FROM %i WHERE `recipient` = %s ORDER BY `time_send` DESC LIMIT 5; ",
             $this->tableName,
             $phoneNumber
-        ));
+        );
     }
 
     /**
@@ -433,13 +426,13 @@ class Signal
      */
     public function getSendMessageByTimestamp($timestamp)
     {
-        global $wpdb;
-
-        return $wpdb->get_var($wpdb->prepare(
-            "SELECT message FROM %i WHERE `time_send` = %d",
+        return TSJIPPY\getFromDb(
+            "get_message_$timestamp",
+            "signal",
+            "SELECT message FROM %i WHERE `time_send` = %d LIMIT 1",
             $this->tableName,
             $timestamp
-        ));
+        );
     }
 
     /**
