@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- addElementFunction
 
 ### Fixed
 - phonenumbers bug
