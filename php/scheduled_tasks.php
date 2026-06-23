@@ -51,7 +51,7 @@ function checkSignalNumbers()
             delete_user_meta($user->ID, 'tsjippy_signal_number');
 
             // loop over all phonenumbers to find the one connected with signal
-            $phoneNumbers   = get_user_meta($user->ID, 'tsjippy_phonenumbers', true);
+            $phoneNumbers   = get_user_meta($user->ID, 'tsjippy_phonenumbers');
 
             if (!empty($phoneNumbers)) {
                 foreach ($phoneNumbers as $phonenumber) {
