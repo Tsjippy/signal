@@ -5,7 +5,7 @@ namespace TSJIPPY\SIGNAL;
 /**
  * Plugin Name:          Tsjippy Signal
  * Description:          This plugin adds the possibility to send Signal messages to users or groups.
- * Version:              10.5.3
+ * Version:              10.5.4
  * Author:               Ewald Harmsen
  * AuthorURI:            harmseninnigeria.nl
  * Requires at least:    7.0
