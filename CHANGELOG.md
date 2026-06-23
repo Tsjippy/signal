@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.5.2] - 2026-06-23
+
+
+### Changed
 - implemented db caching
 - implemented db caching
 - replaced wpdb->update with updateDbFunction
 
 ### Fixed
 - send e-mail by signal
-
-### Updated
 
 ## [10.5.1] - 2026-06-21
 
