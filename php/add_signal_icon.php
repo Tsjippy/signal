@@ -4,6 +4,8 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
+use function TSJIPPY\addElement as addElement;
+
 add_filter('tsjippy-form-element-html', __NAMESPACE__ . '\elmentHtml', 10, 3);
 function elmentHtml($node, $object)
 {
@@ -14,7 +16,7 @@ function elmentHtml($node, $object)
 
         if (!empty($signalNr)) {
             // create the icon
-            $icon   = $object->addELement(
+            $icon   = addElement(
                 'svg',
                 $node,
                 [
@@ -24,10 +26,10 @@ function elmentHtml($node, $object)
                 ]
             );
 
-            $g  = $object->addElement('g', $icon, ['transform' => "matrix(0.15625 0 0 0.15625 0 0)"]);
+            $g  = addElement('g', $icon, ['transform' => "matrix(0.15625 0 0 0.15625 0 0)"]);
 
-            $object->addElement('title', $g, [], 'Connected to Signal Messenger');
-            $object->addElement(
+            addElement('title', $g, [], 'Connected to Signal Messenger');
+            addElement(
                 'path',
                 $g,
                 [
