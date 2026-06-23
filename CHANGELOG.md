@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.5.4] - 2026-06-23
+
+
+### Changed
 - addElementFunction
 
 ### Fixed
 - phonenumbers bug
-
-### Updated
 
 ## [10.5.3] - 2026-06-23
 
