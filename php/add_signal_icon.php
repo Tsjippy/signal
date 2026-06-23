@@ -6,7 +6,7 @@ use TSJIPPY;
 
 use function TSJIPPY\addElement as addElement;
 
-add_filter('tsjippy-form-element-html', __NAMESPACE__ . '\elmentHtml', 10, 3);
+add_filter('tsjippy-forms-element-html', __NAMESPACE__ . '\elmentHtml', 10, 3);
 function elmentHtml($node, $object)
 {
     $element    = $object->element;

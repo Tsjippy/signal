@@ -459,9 +459,16 @@ class Signal
         $timeSend   = strtotime(get_gmt_from_date($maxDate, 'Y-m-d'));
 
         // remove sent messages
-        $query      = "DELETE FROM $this->tableName WHERE `time_send` < {$timeSend}000";
-
-        $result1    = $wpdb->query($query);
+        TSJIPPY\removeFromDb(
+            $this->tableName,
+            [
+                "DELETE FROM %i WHERE `time_send` < %s",
+                $this->tableName,
+                "{$timeSend}000"
+            ],
+            [],
+            'signal'
+        );
 
         // remove attachment files
         $results    = $wpdb->get_results(
@@ -484,11 +491,16 @@ class Signal
         }
 
         // remove received messages
-        $result2    = $wpdb->query($wpdb->prepare(
-            "DELETE FROM %i WHERE `time_send` < %d",
-            $this->receivedTableName,
-            "{$timeSend}000"
-        ));
+        TSJIPPY\removeFromDb(
+            '',
+            [
+                "DELETE FROM %i WHERE `time_send` < %d",
+                $this->receivedTableName,
+                "{$timeSend}000"
+            ],
+            [],
+            'signal'
+        );
 
         /**
          * Flush db cache
@@ -499,7 +511,7 @@ class Signal
             wp_cache_flush();
         }
 
-        return $result1 && $result2;
+        return true;
     }
 
     /**
@@ -1196,20 +1208,16 @@ class Signal
 
     public function removeFromQueue($id)
     {
-        global $wpdb;
-
-        $query      = $wpdb->prepare("DELETE FROM $this->queueTableName WHERE id = %d", $id);
-
-        $wpdb->query($query);
-
-        /**
-         * Flush db cache
-         */
-        if(wp_cache_supports( 'flush_group' )){
-            wp_cache_flush_group('signal');
-        }else{
-            wp_cache_flush();
-        }
+        TSJIPPY\removeFromDb(
+            '',
+            [
+                "DELETE FROM %i WHERE id = %d", 
+                $this->queueTableName,
+                $id
+            ],
+            [],
+            'signal'
+        );
     }
 
     /**
