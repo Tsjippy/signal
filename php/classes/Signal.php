@@ -1302,8 +1302,6 @@ class Signal
              * Check Rate limit
              */
             if ($this->getRateLimited()) {
-                TSJIPPY\printArray("Rate Limited till $this->rateLimitString");
-
                 // We are past the rate limit, reset it
                 if (time() > $this->rateLimited) {
                     $this->setRateLimit(false);
