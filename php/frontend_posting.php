@@ -131,15 +131,22 @@ function afterContent($frontendContend)
 }
 
 // Send Signal message about the new or updated post
-add_action('tsjippy-frontend-content-after-post-save', __NAMESPACE__ . '\afterPostSave', 999);
-function afterPostSave($post)
+/**
+ * Allow comments
+ * 
+ * @param   \WP_Post    $post       The new or updated post
+ * @param   object      $object     FrontEndContent Instance
+ * @param   array       $request    The sanitized request data
+ */
+add_action('tsjippy-frontend-content-after-post-save', __NAMESPACE__ . '\afterPostSave', 999, 3);
+function afterPostSave($post, $object, $request)
 {
-    if (isset($_POST['send-signal']) && $_POST['send-signal']) {
+    if (isset($request['send-signal']) && $request['send-signal']) {
         update_metadata('post', $post->ID, 'send_signal', true);
-        update_metadata('post', $post->ID, 'signal_groups', TSJIPPY\sanitize($_POST['signal-groups']));
-        update_metadata('post', $post->ID, 'signal_message_type', TSJIPPY\sanitize($_POST['signal-message-type']));
+        update_metadata('post', $post->ID, 'signal_groups', $request['signal-groups']);
+        update_metadata('post', $post->ID, 'signal_message_type', $request['signal-message-type']);
         update_metadata('post', $post->ID, 'signal_url', true);
-        update_metadata('post', $post->ID, 'signal_extra_message', TSJIPPY\sanitize($_POST['signal-extra-message']));
+        update_metadata('post', $post->ID, 'signal_extra_message', $request['signal-extra-message']);
     } else {
         delete_metadata('post', $post->ID, 'send_signal');
         delete_metadata('post', $post->ID, 'signal_groups');
