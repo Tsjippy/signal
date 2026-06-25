@@ -405,9 +405,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     }
 
     /**
-     * Function to do extra actions from $_POST data. Overwrite if needed
+     * Function to do extra actions from $request data. Overwrite if needed
      */
-    public function postActions()
+    public function postActions($request)
     {
         $local    = SETTINGS['local'] ?? false;
 
@@ -418,12 +418,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         $signal    = getSignalInstance();
 
         // Change account details
-        if (isset($_POST['display-name']) || isset($_POST['avatar'])) {
+        if (isset($request['display-name']) || isset($request['avatar'])) {
 
             $message    = '';
 
-            if (isset($_POST['display-name'])) {
-                $displayName    = TSJIPPY\sanitize($_POST['display-name']);
+            if (isset($request['display-name'])) {
+                $displayName    = $request['display-name'];
 
                 if ($displayName != $this->settings['display-name']) {
                     $result    = $signal->updateProfile($displayName);
@@ -438,8 +438,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             }
 
 
-            if (isset($_POST['picture-ids']['avatar'])) {
-                $avatarAttachmentId    = TSJIPPY\sanitize($_POST['picture-ids']['avatar']);
+            if (isset($request['picture-ids']['avatar'])) {
+                $avatarAttachmentId    = $request['picture-ids']['avatar'];
 
                 if ($avatarAttachmentId != $this->settings['picture-ids']['avatar']) {
                     if (empty($avatarAttachmentId)) {
@@ -471,15 +471,15 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             return $this->registerForm();
         } elseif (isset($_GET['unregister'])) {
             $signal->unregister();
-        } elseif (!empty($_POST['captcha'])) {
-            $result = $signal->register(TSJIPPY\sanitize($_POST['phone']), TSJIPPY\sanitize($_POST['captcha']), isset($_POST['voice']));
+        } elseif (!empty($request['captcha'])) {
+            $result = $signal->register(request['phone'], $request['captcha'], isset($request['voice']));
 
             if (is_wp_error($result)) {
                 return "<div class='error'>" . $result->get_error_message() . "</div>";
             } elseif (empty($signal->error)) {
                 ob_start();
                 // show the verification form after the registration form if there is no error
-        ?>
+                ?>
                 <form method='post'>
                     You should have received a verification code.<br>
                     Please insert the code below.
@@ -493,19 +493,19 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <br>
                     <button>Verify</button>
                 </form>
-        <?php
+                <?php
 
                 return ob_get_clean();
             }
-        } elseif (!empty($_POST['verification-code'])) {
-            $result    = $signal->verify(TSJIPPY\sanitize($_POST['verification-code']));
+        } elseif (!empty($request['verification-code'])) {
+            $result    = $signal->verify($request['verification-code']);
 
             if (is_wp_error($result)) {
                 return "<div class='error'>" . $result->get_error_message() . "</div>" . $this->registerForm();
             } elseif (!empty($signal->error)) {
                 return "<div class='error'>$signal->error</div>" . $this->registerForm();
             } else {
-                unset($_POST['verification-code']);
+                unset($request['verification-code']);
 
                 return "<div class='success'>Succesfully registered with Signal!</div>";
             }
