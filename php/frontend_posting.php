@@ -4,7 +4,7 @@ namespace TSJIPPY\SIGNAL;
 
 use TSJIPPY;
 
-add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent');
+add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent', 20);
 function afterContent($frontendContend)
 {
     $hidden            = 'hidden';
