@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- wrapped front-end options in a collapsible
 
 ### Fixed
 
