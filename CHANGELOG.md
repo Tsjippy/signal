@@ -5,6 +5,7 @@
 
 ### Changed
 - wrapped front-end options in a collapsible
+- frontend content hook
 
 ### Fixed
 
