@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- pass sanitized request to tsjippy-frontend-content-after-post-save
 
 ### Fixed
 
