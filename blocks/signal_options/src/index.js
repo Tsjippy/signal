@@ -38,10 +38,10 @@ registerPlugin("signal-options", {
 
     const [meta, setMeta] = useEntityProp("postType", postType, "meta");
 
-    let sendSignal = meta["send_signal"];
-    let signalMessageType = meta["signal_message_type"];
-    let signalExtraMessage = meta["signal_extra_message"];
-    let signalUrl = meta["signal_url"];
+    let sendSignal = meta["tsjippy_send_signal"];
+    let signalMessageType = meta["tsjippy_signal_message_type"];
+    let signalExtraMessage = meta["tsjippy_signal_extra_message"];
+    let signalUrl = meta["tsjippy_signal_url"];
 
     if (signalMessageType != "all") {
       signalMessageType = "summary";
@@ -69,7 +69,7 @@ registerPlugin("signal-options", {
         <ToggleControl
           label={__("Send signal message on publish", "sim")}
           checked={sendSignal}
-          onChange={(value) => updateMetaValue(value, "send_signal")}
+          onChange={(value) => updateMetaValue(value, "tsjippy_send_signal")}
         />
 
         <RadioControl
@@ -78,7 +78,7 @@ registerPlugin("signal-options", {
             { label: __("Send a summary"), value: "summary" },
             { label: __("Send the whole post content"), value: "all" },
           ]}
-          onChange={(value) => updateMetaValue(value, "signal_message_type")}
+          onChange={(value) => updateMetaValue(value, "tsjippy_signal_message_type")}
         />
 
         <br></br>
@@ -86,7 +86,7 @@ registerPlugin("signal-options", {
         <TextareaControl
           label={__("Add this sentence to the signal message:")}
           value={signalExtraMessage}
-          onChange={(value) => updateMetaValue(value, "signal_extra_message")}
+          onChange={(value) => updateMetaValue(value, "tsjippy_signal_extra_message")}
         />
 
         <ToggleControl
@@ -95,7 +95,7 @@ registerPlugin("signal-options", {
             "sim",
           )}
           checked={signalUrl}
-          onChange={(value) => updateMetaValue(value, "signal_url")}
+          onChange={(value) => updateMetaValue(value, "tsjippy_signal_url")}
         />
       </PluginDocumentSettingPanel>
     );
