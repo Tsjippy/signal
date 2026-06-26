@@ -348,7 +348,7 @@ class SignalCommandLine extends AbstractSignal
         // Turn on implicit flushing
         ob_implicit_flush(1);
 
-        echo "Link is <code>".esc_attr($link)."</code>";
+        echo "Link is <code>" . esc_attr($link) . "</code>";
 
         #https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=$link
 
@@ -498,7 +498,7 @@ class SignalCommandLine extends AbstractSignal
      * List Groups
      * @return array|string
      */
-    public function listGroups($force=false)
+    public function listGroups($force = false)
     {
         if (!$force) {
             if (!empty($this->groups)) {
@@ -526,7 +526,7 @@ class SignalCommandLine extends AbstractSignal
 
         $result = $this->parseResult(true);
 
-        if(is_wp_error($result)){
+        if (is_wp_error($result)) {
             return $result;
         }
 
@@ -595,7 +595,7 @@ class SignalCommandLine extends AbstractSignal
 
         $result = $this->parseResult(true);
 
-        if(is_wp_error($result)){
+        if (is_wp_error($result)) {
             return $result;
         }
 
@@ -641,7 +641,7 @@ class SignalCommandLine extends AbstractSignal
                 TSJIPPY\printArray($errorMessage);
             } elseif (str_contains($errorMessage, 'Did not receive a reply. ')) {
                 TSJIPPY\printArray($errorMessage);
-            } elseif($errorMessage != "Command failed") {
+            } elseif ($errorMessage != "Command failed") {
                 TSJIPPY\printArray($errorMessage);
             }
 

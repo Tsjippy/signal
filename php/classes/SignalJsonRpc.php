@@ -17,7 +17,7 @@ use WP_Error;
     printf  '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":SOMEID}\n' | socat STDIN UNIX-CONNECT:SOCKETPATH -YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/socket
 
     Test json RPC
-    echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/config --config YOURPATH/wp-content/signal-cli jsonRpc
+ echo '{"jsonrpc":"2.0","method":"getUserStatus","params":{"recipient":["+SOMENUMBER"]},"id":"my special mark"}' | YOURPATH/public_html/wp-content/signal-cli/program/signal-cli/config --config YOURPATH/wp-content/signal-cli jsonRpc
 */
 
 
@@ -77,7 +77,7 @@ class SignalJsonRpc extends AbstractSignal
             if ($errno == 2) {
                 echo "Could not start, is the signal-cli jsonrpc daemon running?";
             } elseif (!$this->socket) {
-                echo "Unable to create socket on ".esc_attr($this->socketPath);
+                echo "Unable to create socket on " . esc_attr($this->socketPath);
 
                 //TSJIPPY\printArray("$errno: $this->error");
             }
@@ -460,16 +460,15 @@ class SignalJsonRpc extends AbstractSignal
             preg_match('/\d{10,}/', $this->error, $matches);
             if (!empty($matches[0])) {
                 $rateLimitedTill    = intval($matches[0]);
-                if(!empty($json->error->data->response->results[0]->token)){
+                if (!empty($json->error->data->response->results[0]->token)) {
                     $token              = $json->error->data->response->results[0]->token;
                 }
             } elseif (isset($json->error->data->response->results[0]->retryAfterSeconds)) {
                 $rateLimitedTill    = time() + intval($json->error->data->response->results[0]->retryAfterSeconds);
 
-                if(!empty($json->error->data->response->results[0]->token)){
+                if (!empty($json->error->data->response->results[0]->token)) {
                     $token              = $json->error->data->response->results[0]->token;
                 }
-                
             }
 
             // Only update if this is higher than the current value

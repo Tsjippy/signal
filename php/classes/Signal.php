@@ -48,7 +48,7 @@ class Signal
         /**
          * Folder containing the signal-cli executable and its data
          */
-        $this->basePath         = wp_normalize_path( WP_CONTENT_DIR) . '/signal-cli';
+        $this->basePath         = wp_normalize_path(WP_CONTENT_DIR) . '/signal-cli';
         if (!is_dir($this->basePath)) {
             wp_mkdir_p($this->basePath);
         }
@@ -286,7 +286,7 @@ class Signal
      * @param   array   $params 
      */
     protected function addToCommandLog($method, $params)
-    {        
+    {
         TSJIPPY\insertInDb(
             $this->commandTableName,
             array(
@@ -326,12 +326,12 @@ class Signal
 
         if (!empty($minTime)) {
             $query      .= " and time_send > %d";
-            $values[]      = $minTime."000";
+            $values[]      = $minTime . "000";
         }
 
         if (!empty($maxTime)) {
             $query .= " and time_send < %d";
-            $values[]      = $maxTime."000";
+            $values[]      = $maxTime . "000";
         }
 
         if (!empty($receiver)) {
@@ -375,12 +375,12 @@ class Signal
 
         if (!empty($minTime)) {
             $query      .= " and time_send > %d";
-            $values[]    = $minTime."000";
+            $values[]    = $minTime . "000";
         }
 
         if (!empty($maxTime)) {
             $query      .= " and time_send < %d";
-            $values[]    = $maxTime."000";
+            $values[]    = $maxTime . "000";
         }
 
         if (!empty($sender)) {
@@ -505,9 +505,9 @@ class Signal
         /**
          * Flush db cache
          */
-        if(wp_cache_supports( 'flush_group' )){
+        if (wp_cache_supports('flush_group')) {
             wp_cache_flush_group('signal');
-        }else{
+        } else {
             wp_cache_flush();
         }
 
@@ -533,9 +533,9 @@ class Signal
         /**
          * Flush db cache
          */
-        if(wp_cache_supports( 'flush_group' )){
+        if (wp_cache_supports('flush_group')) {
             wp_cache_flush_group('signal');
-        }else{
+        } else {
             wp_cache_flush();
         }
     }
@@ -795,12 +795,12 @@ class Signal
             $publishDate    = strtotime($release['published_at']);
 
             if ($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()) {
-                ?>
+?>
                 <strong>
                     Updating Signal to version "<?php echo esc_attr($release['tag_name']); ?>
                 </strong>
                 <br>
-                <?php
+<?php
 
                 // Disabled for now
                 #$this->installSignal($release);
@@ -828,14 +828,14 @@ class Signal
         if ($this->os == 'Linux') {
             $pidFile    = __DIR__ . '/installing.signal';
             if (file_exists($pidFile)) {
-                echo esc_attr($pidFile)." exists, another installation might by running already<br>";
+                echo esc_attr($pidFile) . " exists, another installation might by running already<br>";
                 return;
             }
             file_put_contents($pidFile, 'running');
         }
 
         try {
-            echo "Downloading Signal version ".esc_attr($version)."<br>";
+            echo "Downloading Signal version " . esc_attr($version) . "<br>";
             $url    = "https://github.com/AsamK/signal-cli/releases/download/v$version/signal-cli-$version-$this->os.tar.gz";
 
             if (!empty($release['assets']) && is_array($release['assets'])) {
@@ -905,7 +905,7 @@ class Signal
                     }
                 }
 
-                echo "Unzipping .tar archive to ".esc_attr($folder)."<br>";
+                echo "Unzipping .tar archive to " . esc_attr($folder) . "<br>";
 
                 $phar = new \PharData($fileName);
                 $phar->extractTo($folder); // extract all files
@@ -938,7 +938,7 @@ class Signal
                 // stop the deamon
                 #exec("kill $(ps -ef | grep -v grep | grep -P 'signal-cli.*daemon'| awk '{print $2}')");
 
-                echo "Removing from ".esc_attr($this->programPath)."<br>";
+                echo "Removing from " . esc_attr($this->programPath) . "<br>";
 
                 exec("rm -rfd $this->programPath");
 
@@ -967,14 +967,14 @@ class Signal
             $wpFileSystem   = TSJIPPY\loadWpFileSystem();
             $result = $wpFileSystem->move("$folder/signal-cli", "$this->path");
         } else {
-            echo esc_attr($path)." does not exist<br>";
+            echo esc_attr($path) . " does not exist<br>";
             TSJIPPY\printArray("$folder/signal-cli not found please check", true);
         }
 
         if ($result) {
-            echo "<div class='success'>Succesfully installed Signal version ".esc_attr($version)."!</div>";
+            echo "<div class='success'>Succesfully installed Signal version " . esc_attr($version) . "!</div>";
         } else {
-            echo "<div class='error'>Failed!<br>Could not move ".esc_attr($path)." to ".esc_attr($this->programPath)."/signal-cli.<br>Check the ".esc_attr($folder)." folder.</div>";
+            echo "<div class='error'>Failed!<br>Could not move " . esc_attr($path) . " to " . esc_attr($this->programPath) . "/signal-cli.<br>Check the " . esc_attr($folder) . " folder.</div>";
         }
     }
 
@@ -1060,7 +1060,7 @@ class Signal
             return $e->getResponse()->getReasonPhrase();
         }
 
-        echo "Downloading ".esc_url($url)." to ". esc_attr($tempPath)." failed!";
+        echo "Downloading " . esc_url($url) . " to " . esc_attr($tempPath) . " failed!";
     }
 
     protected function daemonIsRunning()
@@ -1211,7 +1211,7 @@ class Signal
         TSJIPPY\removeFromDb(
             '',
             [
-                "DELETE FROM %i WHERE id = %d", 
+                "DELETE FROM %i WHERE id = %d",
                 $this->queueTableName,
                 $id
             ],

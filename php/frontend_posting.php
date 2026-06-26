@@ -57,9 +57,7 @@ function afterContent($frontendContend)
                                 }
                         ?>
                                 <label>
-                                    <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php if (count($signalGroups) == 1 || in_array($group->id, $defaultGroups)) {
-                                                                                                                                    echo  'checked';
-                                                                                                                                } ?>>
+                                    <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php if (count($signalGroups) == 1 || in_array($group->id, $defaultGroups)) echo  'checked'; ?>>
                                     <?php echo esc_attr($group->name); ?>
                                 </label>
                             <?php
@@ -73,9 +71,7 @@ function afterContent($frontendContend)
                                         continue;
                                     }
                                 ?>
-                                    <option value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) {
-                                                                                            echo 'selected';
-                                                                                        } ?>>
+                                    <option value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) echo 'selected'; ?>>
                                         <?php echo esc_attr($group->name); ?>
                                     </option>
                                 <?php
@@ -97,9 +93,7 @@ function afterContent($frontendContend)
                         type='radio'
                         name='signal-message-type'
                         value='summary'
-                        <?php if ($messageType != 'all') {
-                            echo 'checked';
-                        } ?>>
+                        <?php if ($messageType != 'all') echo 'checked'; ?>>
                     Send a summary
                 </label>
                 <label>
@@ -107,9 +101,7 @@ function afterContent($frontendContend)
                         type='radio'
                         name='signal-message-type'
                         value='all'
-                        <?php if ($messageType == 'all') {
-                            echo 'checked';
-                        } ?>>
+                        <?php if ($messageType == 'all') echo 'checked'; ?>>
                     Send the whole post content
                 </label>
                 <br>

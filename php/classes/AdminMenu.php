@@ -868,15 +868,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <label>
                         Automatically remove messages older then <input type='number' name='clean-amount' value='<?php echo esc_attr($this->settings['clean-amount']); ?>' style='width:60px;'>
                         <select name='clean-period' class='inline'>
-                            <option value='days' <?php if ($this->settings['clean-period'] == 'days') {
-                                                        echo 'selected="selected"';
-                                                    } ?>>days</option>
-                            <option value='weeks' <?php if ($this->settings['clean-period'] == 'weeks') {
-                                                        echo 'selected="selected"';
-                                                    } ?>>weeks</option>
-                            <option value='months' <?php if ($this->settings['clean-period'] == 'months') {
-                                                        echo 'selected="selected"';
-                                                    } ?>>months</option>
+                            <option value='days' <?php if ($this->settings['clean-period'] == 'days') echo 'selected="selected"'; ?>>days</option>
+                            <option value='weeks' <?php if ($this->settings['clean-period'] == 'weeks') echo 'selected="selected"'; ?>>weeks</option>
+                            <option value='months' <?php if ($this->settings['clean-period'] == 'months') echo 'selected="selected"'; ?>>months</option>
                         </select>
                     </label>
                     <br>
