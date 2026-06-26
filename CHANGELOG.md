@@ -8,6 +8,7 @@
 - sanitize post on original function
 
 ### Fixed
+- non-prefixd post meta's
 
 ### Updated
 
