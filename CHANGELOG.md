@@ -5,6 +5,7 @@
 - attribute escaping
 
 ### Changed
+- proper html
 
 ### Fixed
 
