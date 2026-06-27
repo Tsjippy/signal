@@ -911,7 +911,11 @@ class Signal
                 $phar->extractTo($folder); // extract all files
             }
         } catch (\Exception $e) {
-            echo "<div class='error'>" . wp_kses_post($e->getMessage()) . '</div>';
+            ?>
+            <div class='error'>
+                <?php wp_kses_post(wp_kses_post($e->getMessage()));?>
+            </div>
+            <?php
 
             // handle errors
             $this->error    = 'Installation error';
@@ -972,9 +976,19 @@ class Signal
         }
 
         if ($result) {
-            echo "<div class='success'>Succesfully installed Signal version " . esc_attr($version) . "!</div>";
+            ?>
+            <div class='success'>
+                Succesfully installed Signal version <?php echo esc_attr($version);?>!
+            </div>
+            <?php
         } else {
-            echo "<div class='error'>Failed!<br>Could not move " . esc_attr($path) . " to " . esc_attr($this->programPath) . "/signal-cli.<br>Check the " . esc_attr($folder) . " folder.</div>";
+            ?>
+            <div class='error'>
+                Failed!<br>
+                Could not move <?php echo esc_attr($path);?> to <?php echo esc_attr($this->programPath);?>/signal-cli.<br>
+                Check the <?php echo esc_attr($folder);?> folder.
+            </div>
+            <?php
         }
     }
 
