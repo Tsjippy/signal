@@ -7,9 +7,10 @@ use TSJIPPY;
 add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent', 20);
 function afterContent($frontendContend)
 {
-    $hidden            = 'hidden';
+    $hidden         = 'hidden';
     $checked        = '';
     $messageType    = '';
+    $defaultGroups  = [];
 
     if (
         $frontendContend->fullrights &&                             // we have publish rights
@@ -18,16 +19,16 @@ function afterContent($frontendContend)
             !empty($frontendContend->getPostMeta('send_signal'))    // we should send a signal message
         )
     ) {
-        $checked         = 'checked';
-        $hidden            = '';
-        $messageType    = $frontendContend->getPostMeta('signal_message_type');
+        $checked       = 'checked';
+        $hidden        = '';
+        $messageType   = $frontendContend->getPostMeta('signal_message_type');
     }
 
-    $signalGroups       = [];
+    $signalGroups      = [];
     if (SETTINGS['local'] ?? false) {
-        $signal            = getSignalInstance();
-        $signalGroups    = $signal->listGroups();
-        $defaultGroups    = SETTINGS['groups'] ?? [];
+        $signal        = getSignalInstance();
+        $signalGroups  = $signal->listGroups();
+        $defaultGroups = SETTINGS['groups'] ?? [];
     }
 
 ?>

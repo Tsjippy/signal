@@ -41,8 +41,8 @@ function phoneNumberUpdated($phonenumber, $userId)
 
     // check if we need to remove the signal numbers
     if (!$valid) {
-        $signalNumber   = get_user_meta($userId, 'tsjippy_signal_number');
-        $phoneNumbers   = (array)get_user_meta($userId, 'tsjippy_phonenumbers');
+        $signalNumber   = get_user_meta($userId, 'tsjippy_signal_number', true);
+        $phoneNumbers   = get_user_meta($userId, 'tsjippy_phonenumbers');
 
         if (!in_array($signalNumber, $phoneNumbers)) {
             delete_user_meta($userId, 'tsjippy_signal_number');

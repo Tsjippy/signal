@@ -561,7 +561,7 @@ class SignalJsonRpc extends AbstractSignal
         // Remove from queue, no point in keeping it for some commands
         if (
             empty($result) &&
-            !in_array($method, ['send', 'remoteDelete', 'sendReceipt', 'sendReaction', 'updateProfile'])
+            !array_key_exists($method, ['send' => 1, 'remoteDelete' => 1, 'sendReceipt' => 1, 'sendReaction' => 1, 'updateProfile' => 1])
         ) {
             $this->removeFromQueue($commandId);
         }
