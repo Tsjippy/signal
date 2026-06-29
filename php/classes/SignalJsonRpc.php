@@ -528,7 +528,8 @@ class SignalJsonRpc extends AbstractSignal
 
         $priority       = 10;
         $waitForResult  = false;
-        if ($this->getResult) {
+        // Only wait if needed and not rate-limited
+        if ($this->getResult && !$this->rateLimited) {
             $priority       = 1;
             $waitForResult  = true;
         }
@@ -558,12 +559,17 @@ class SignalJsonRpc extends AbstractSignal
             $i++;
         }
 
-        // Remove from queue, no point in keeping it for some commands
-        if (
-            empty($result) &&
-            !array_key_exists($method, ['send' => 1, 'remoteDelete' => 1, 'sendReceipt' => 1, 'sendReaction' => 1, 'updateProfile' => 1])
-        ) {
-            $this->removeFromQueue($commandId);
+        /**
+         * Still no result
+         */
+        if ( empty($result) ) {
+            // Remove from queue, no point in keeping it for some commands
+            if(!array_key_exists($method, ['send' => 1, 'remoteDelete' => 1, 'sendReceipt' => 1, 'sendReaction' => 1, 'updateProfile' => 1])){
+                $this->removeFromQueue($commandId);
+            }
+
+            // Mark as not waiting anymore
+            $this->markNotWaiting($commandId);
         }
 
         return $result;

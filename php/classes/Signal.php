@@ -103,19 +103,19 @@ class Signal
             $this->phoneNumber  = $accountData->accounts[0]->number;
         }
 
-        $this->queueTableName   = $wpdb->prefix . 'tsjippy_signal_message_queue';
+        $this->queueTableName    = $wpdb->prefix . 'tsjippy_signal_message_queue';
 
         $this->receivedTableName = $wpdb->prefix . 'tsjippy_received_signal_messages';
 
-        $this->tableName        = $wpdb->prefix . 'tsjippy_signal_messages';
+        $this->tableName         = $wpdb->prefix . 'tsjippy_signal_messages';
 
-        $this->commandTableName = $wpdb->prefix . 'tsjippy_signal_command_history';
+        $this->commandTableName  = $wpdb->prefix . 'tsjippy_signal_command_history';
 
-        $this->totalMessages    = 0;
+        $this->totalMessages     = 0;
 
-        $this->valid            = true;
+        $this->valid             = true;
 
-        $this->rateLimited      = get_option('tsjippy-signal-rate-limit');
+        $this->rateLimited       = get_option('tsjippy-signal-rate-limit');
 
         $this->setRateLimit($this->rateLimited, false);
 
@@ -324,23 +324,35 @@ class Signal
         $query          = "SELECT * FROM %i where 1";
         $values         = [$this->tableName];
 
+        $cacheKey       = "sent-messages";    
+
         if (!empty($minTime)) {
             $query      .= " and time_send > %d";
             $values[]      = $minTime . "000";
+
+            $cacheKey .= "-mintime-$minTime";
         }
 
         if (!empty($maxTime)) {
             $query .= " and time_send < %d";
-            $values[]      = $maxTime . "000";
+            $values[]  = $maxTime . "000";
+
+            $cacheKey .= "-maxtime-$maxTime";
         }
 
         if (!empty($receiver)) {
             $query .= " and recipient = %s";
             $values[] = $receiver;
+
+            $cacheKey .= "-receiver-$receiver";
         }
 
-        // phpcs:ignore
-        $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total', $query), $values));
+        $this->totalMessages    = TSJIPPY\getFromDb(
+            $cacheKey.'-count', 
+            'signal', 
+            str_replace('*', 'COUNT(id) as total', $query), 
+            $values
+        );
 
         $query      .= " ORDER BY `time_send` DESC LIMIT $startIndex, $amount;";
 
@@ -348,8 +360,12 @@ class Signal
             return [];
         }
 
-        // phpcs:ignore
-        return $wpdb->get_results($wpdb->prepare($query, $values));
+        return TSJIPPY\getFromDb(
+            $cacheKey, 
+            'signal', 
+            $query, 
+            $values
+        );
     }
 
     /**
@@ -362,8 +378,6 @@ class Signal
      */
     public function getReceivedMessageLog($amount = 100, $page = 1, $minTime = '', $maxTime = '', $sender = '')
     {
-        global $wpdb;
-
         $startIndex = 0;
 
         if ($page > 1) {
@@ -373,23 +387,35 @@ class Signal
         $query      = "SELECT * FROM %i where 1";
         $values     = [$this->receivedTableName];
 
+        $cacheKey   = "received-messages";
+
         if (!empty($minTime)) {
             $query      .= " and time_send > %d";
             $values[]    = $minTime . "000";
+
+            $cacheKey   .= "-mintime-$minTime";
         }
 
         if (!empty($maxTime)) {
             $query      .= " and time_send < %d";
             $values[]    = $maxTime . "000";
+
+            $cacheKey   .= "-maxtime-$maxTime";
         }
 
         if (!empty($sender)) {
             $query      .= " and sender = %s";
             $values[]    = $sender;
+
+            $cacheKey   .= "-sender-$sender";
         }
 
-        // phpcs:ignore
-        $this->totalMessages    = $wpdb->get_var($wpdb->prepare(str_replace('*', 'COUNT(id) as total ', $query), $values));
+        $this->totalMessages    = TSJIPPY\getFromDb(
+            $cacheKey.'-count',
+            'signal',
+            str_replace('*', 'COUNT(id) as total ', $query), 
+            $values
+        );
 
         $query      .= " ORDER BY `chat` ASC, `time_send` DESC LIMIT $startIndex, $amount;";
 
@@ -397,8 +423,12 @@ class Signal
             return [];
         }
 
-        // phpcs:ignore
-        return $wpdb->get_results($wpdb->prepare($query, $values));
+        return  TSJIPPY\getFromDb(
+            $cacheKey,
+            'signal',
+            $query, 
+            $values
+        );
     }
 
     /**
@@ -454,8 +484,6 @@ class Signal
      */
     public function clearMessageLog($maxDate)
     {
-        global $wpdb;
-
         $timeSend   = strtotime(get_gmt_from_date($maxDate, 'Y-m-d'));
 
         // remove sent messages
@@ -471,19 +499,16 @@ class Signal
         );
 
         // remove attachment files
-        $results    = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM %i WHERE `time_send` < %d AND `attachments` is NOT NULL; ",
-                $this->receivedTableName,
-                "{$timeSend}000"
-
-            )
+        $results    =  TSJIPPY\getFromDb(
+            "received-messages-with-attachment-timeSend-$timeSend",
+            'signal',
+            "SELECT * FROM %i WHERE `time_send` < %d AND `attachments` is NOT NULL; ", 
+            $this->receivedTableName,
+            "{$timeSend}000"
         );
 
         foreach ($results as $result) {
-            $attachments    = unserialize($result->attachments);
-
-            foreach ($attachments as $attachment) {
+            foreach ($result->attachments as $attachment) {
                 if (file_exists($attachment)) {
                     wp_delete_file($attachment);
                 }
@@ -502,15 +527,6 @@ class Signal
             'signal'
         );
 
-        /**
-         * Flush db cache
-         */
-        if (wp_cache_supports('flush_group')) {
-            wp_cache_flush_group('signal');
-        } else {
-            wp_cache_flush();
-        }
-
         return true;
     }
 
@@ -522,22 +538,22 @@ class Signal
      */
     public function markAsDeleted($timeStamp)
     {
-        global $wpdb;
-
-        $wpdb->query($wpdb->prepare(
-            "UPDATE %i SET `status` = 'deleted' WHERE time_send = %d",
+        TSJIPPY\updateDbValue(
             $this->tableName,
-            $timeStamp
-        ));
-
-        /**
-         * Flush db cache
-         */
-        if (wp_cache_supports('flush_group')) {
-            wp_cache_flush_group('signal');
-        } else {
-            wp_cache_flush();
-        }
+            [
+                `status` => 'deleted'
+            ],
+            [
+                'time_send' => $timeStamp
+            ],
+            [
+                '%s'
+            ],
+            [
+                '%d'
+            ],
+            'signal'
+        );
     }
 
     /**
@@ -678,15 +694,7 @@ class Signal
      */
     public function getRateLimited()
     {
-        global $wpdb;
-
-        $rateLimited    = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT option_value FROM %i WHERE `option_name`=%s",
-                $wpdb->options,
-                'tsjippy-signal-rate-limit'
-            )
-        );
+        $rateLimited = get_option('tsjippy-signal-rate-limit');
 
         if ($rateLimited != $this->rateLimited) {
             $this->setRateLimit($rateLimited, false);
@@ -1174,23 +1182,21 @@ class Signal
      */
     public function getQueue($id = -1)
     {
-        global $wpdb;
-
         if ($id == -1) {
-            // Get the oldest 1 entry without result
-            $result    = $wpdb->get_row($wpdb->prepare(
+            $result     = TSJIPPY\getFromDb(
+                "command-oldest-result",
+                'signal',
                 "SELECT * FROM %i WHERE result IS NULL ORDER BY priority ASC, time_added ASC LIMIT 1;",
                 $this->queueTableName
-            ));
+            );
         } else {
-            $result     = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $this->queueTableName WHERE id = %d",
+            $result     = TSJIPPY\getFromDb(
+                "command-$id-result",
+                'signal',
+                "SELECT * FROM %i WHERE id = %d",
+                $this->queueTableName,
                 $id
-            ));
-        }
-
-        if (isset($result->params)) {
-            $result->params = maybe_unserialize($result->params);
+            );
         }
 
         return $result;
@@ -1201,13 +1207,13 @@ class Signal
      */
     private function getQueueSize()
     {
-        global $wpdb;
-
-        // Get the oldest 1 entry without result
-        $result    = $wpdb->get_var($wpdb->prepare(
+        // Get the queue count
+        $result    =  TSJIPPY\getFromDb(
+            'queue-count',
+            'signal',
             "SELECT COUNT(*) FROM %i WHERE result IS NULL;",
             $this->queueTableName
-        ));
+        );
 
         return $result;
     }
@@ -1235,6 +1241,29 @@ class Signal
     }
 
     /**
+     * Mark a command as not waiting
+     * @param   int  $commandId     The commandId
+     *
+     * @return  bool                Whether the message was updated successfully
+     */
+    public function markNotWaiting($commandId)
+    {
+        // Update the queue
+        TSJIPPY\updateDbValue(
+            $this->queueTableName,
+            [
+                'waiting'   => false
+            ],
+            [
+                'id'        => $commandId
+            ],
+            ['%d'],
+            ['%d'],
+            'signal'
+        );
+    }
+
+    /**
      * Updates a message in the queue with the result of the command
      * @param   object  $command    The command to update, should be the result of getQueue
      * @param   mixed  $result     The result of the command
@@ -1243,8 +1272,6 @@ class Signal
      */
     public function updateQueueResult($command, $result)
     {
-        global $wpdb;
-
         if (is_wp_error($result)) {
             TSJIPPY\printArray($result, false, false, true);
             $result = $result->get_error_message();
@@ -1280,8 +1307,6 @@ class Signal
 
     public function processQueue()
     {
-        global $wpdb;
-
         if (wp_get_environment_type() === 'local') {
             //return; // no point in doing this
         }
@@ -1300,13 +1325,7 @@ class Signal
             /**
              * Check if we if should terminate
              */
-            $dbStartTime    = $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT option_value FROM %i WHERE `option_name`=%s",
-                    $wpdb->options,
-                    'tsjippy-signal-processing-queue'
-                )
-            );
+            $dbStartTime    = get_option('tsjippy-signal-processing-queue');
 
             if ($dbStartTime != $startTime) {
                 break;
@@ -1334,6 +1353,7 @@ class Signal
                 sleep(1);
                 continue;
             }
+
 
             if (!is_array($command->params)) {
                 $this->removeFromQueue($command->id);
