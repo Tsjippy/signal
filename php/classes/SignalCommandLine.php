@@ -160,20 +160,20 @@ class SignalCommandLine extends AbstractSignal
 
     /**
      * Send a message to another user or group
-     * @param string|array  $recipients     Specify the recipients’ phone number or a group id
+     * @param string|array  $recipient     Specify the recipients’ phone number or a group id
      * @param string        $message        Specify the message, if missing, standard input is used
      * @param array         $attachments    Array of Image file paths
      *
      * @return bool|string
      */
-    public function send($recipients, string $message, $attachments = null, int $timeStamp = 0, $quoteAuthor = '', $quoteMessage = '')
+    public function send($recipient, string $message, $attachments = [], int $quoteTimestamp = 0, $quoteAuthor = '', $quoteMessage = '', $textStyle = '')
     {
         $groupId    = null;
-        if (!is_array($recipients)) {
-            if (strpos($recipients, '+') === 0) {
-                $recipients    = [$recipients];
+        if (!is_array($recipient)) {
+            if (strpos($recipient, '+') === 0) {
+                $recipients    = [$recipient];
             } else {
-                $groupId    = $recipients;
+                $groupId    = $recipient;
                 $recipients = null;
             }
         }

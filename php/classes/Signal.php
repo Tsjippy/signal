@@ -592,8 +592,8 @@ class Signal
         if ($result) {
             foreach ($matches[0] as $index => $match) {
                 $capture        = $match[0];
-                $typeIndicator    = $matches[1][$index][0];
-                $strWithoutType    = $matches[2][$index][0];
+                $typeIndicator   = $matches[1][$index][0];
+                $strWithoutType  = $matches[2][$index][0];
 
                 switch ($typeIndicator) {
                     case 'b':
@@ -625,7 +625,7 @@ class Signal
                     continue;
                 }
 
-                $length        = mb_strlen($strWithoutType);
+                $length     = mb_strlen($strWithoutType);
 
                 $style[]    = "$start:$length:$type";
 
@@ -800,7 +800,7 @@ class Signal
                     Updating Signal to version "<?php echo esc_attr($release['tag_name']); ?>
                 </strong>
                 <br>
-<?php
+            <?php
 
                 // Disabled for now
                 #$this->installSignal($release);
@@ -913,9 +913,9 @@ class Signal
         } catch (\Exception $e) {
             ?>
             <div class='error'>
-                <?php wp_kses_post(wp_kses_post($e->getMessage()));?>
+                <?php wp_kses_post(wp_kses_post($e->getMessage())); ?>
             </div>
-            <?php
+        <?php
 
             // handle errors
             $this->error    = 'Installation error';
@@ -976,19 +976,19 @@ class Signal
         }
 
         if ($result) {
-            ?>
+        ?>
             <div class='success'>
-                Succesfully installed Signal version <?php echo esc_attr($version);?>!
+                Succesfully installed Signal version <?php echo esc_attr($version); ?>!
             </div>
-            <?php
+        <?php
         } else {
-            ?>
+        ?>
             <div class='error'>
                 Failed!<br>
-                Could not move <?php echo esc_attr($path);?> to <?php echo esc_attr($this->programPath);?>/signal-cli.<br>
-                Check the <?php echo esc_attr($folder);?> folder.
+                Could not move <?php echo esc_attr($path); ?> to <?php echo esc_attr($this->programPath); ?>/signal-cli.<br>
+                Check the <?php echo esc_attr($folder); ?> folder.
             </div>
-            <?php
+<?php
         }
     }
 
@@ -1283,7 +1283,7 @@ class Signal
         global $wpdb;
 
         if (wp_get_environment_type() === 'local') {
-            return; // no point in doing this
+            //return; // no point in doing this
         }
 
         $this->processingQueue     = true;
@@ -1354,10 +1354,26 @@ class Signal
             }
 
             if (method_exists($this, $command->method)) {
-                if ($command->method == 'send' && isset($command->params['groupId'])) {
-                    $command->params['recipient']    = $command->params['groupId'];
+                if ($command->method == 'send') {
+                    if (isset($command->params['groupId'])) {
+                        $command->params['recipient']    = $command->params['groupId'];
 
-                    unset($command->params['groupId']);
+                        unset($command->params['groupId']);
+                    }
+
+                    // Originally sent more than 1 hour ago
+                    if ($command->time_added < time() - HOUR_IN_SECONDS) {
+
+                        $appendix       = "\n\nThis message was orginally sent " . human_time_diff($command->time_added) . " ago, sorry for the delay";
+
+                        $start          = mb_strlen($command->params['message']);
+
+                        $command->params['message'] .= $appendix;
+
+                        $length         = mb_strlen($appendix);
+
+                        $command->params['textStyle'][]    = "$start:$length:'ITALIC'";
+                    }
                 }
                 $result = call_user_func_array(array($this, $command->method), $command->params);
 
