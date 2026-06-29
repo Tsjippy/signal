@@ -8,6 +8,7 @@
 ### Changed
 - proper html
 - replaced in_array with isset
+- db caching
 
 ### Fixed
 
