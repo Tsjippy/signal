@@ -313,8 +313,6 @@ class Signal
      */
     public function getSentMessageLog($amount = 100, $page = 1, $minTime = '', $maxTime = '', $receiver = '')
     {
-        global $wpdb;
-
         $startIndex = 0;
 
         if ($page > 1) {
