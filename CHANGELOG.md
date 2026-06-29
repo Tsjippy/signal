@@ -3,6 +3,7 @@
 
 ### Added
 - attribute escaping
+- message when send command is delayed for more than one hour
 
 ### Changed
 - proper html
