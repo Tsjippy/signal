@@ -46,4 +46,8 @@ register_activation_hook(__FILE__, function () {
     $signal    = new Signal();
 
     $signal->createDbTables();
+
+    if(function_exists('TSJIPPY\activate')){
+        \TSJIPPY\activate();
+    }
 });
