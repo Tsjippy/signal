@@ -4,6 +4,7 @@
 ### Added
 - attribute escaping
 - message when send command is delayed for more than one hour
+- activate shared code function
 
 ### Changed
 - proper html
