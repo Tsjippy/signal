@@ -25,6 +25,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         parent::__construct($settings, $name);
     }
 
+    /**
+     * Displays the settings page for the plugin.
+     * 
+     * @param \DOMElement|null $parent The parent node element
+     * 
+     * @return bool True if the settings page was displayed successfully, false otherwise
+     */
     public function settings($parent)
     {
         $local    = false;
@@ -74,7 +81,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             ob_start();
 
             if (!$passed) {
-?>
+            ?>
                 <div class='error'>
                     Signal-cli is not working properly, please check the error log for more details.<br>
                     <?php echo esc_html($signal->error); ?>
@@ -94,6 +101,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         return true;
     }
 
+    /**
+     * Displays the email settings page for the plugin.
+     *
+     * @param \DOMElement|null $parent The parent node element
+     *
+     * @return bool True if the email settings page was displayed successfully, false otherwise
+     */
     public function emails($parent)
     {
         if (!SETTINGS['local'] ?? false) {
@@ -116,7 +130,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         <h4>
             E-mail to remind people to add their Signal phonenumber
         </h4>
-    <?php
+        <?php
 
         $email->printInputs();
 
@@ -125,6 +139,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         return true;
     }
 
+    /**
+     * Displays the data settings page for the plugin.
+     *
+     * @param \DOMElement|null $parent The parent node element
+     *
+     * @return bool True if the data settings page was displayed successfully, false otherwise
+     */
     public function data($parent)
     {
         if (!isset($this->settings['local']) || !$this->settings['local']) {
@@ -184,6 +205,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         return true;
     }
 
+    /**
+     * Handles the rate challenge for the plugin.
+     * 
+     * @param \DOMElement|null $parent The parent node element
+     * 
+     * @return bool True if the rate challenge was handled successfully, false otherwise
+     */
     private function rateChallenge($parent)
     {
         // no challenge var set
@@ -238,6 +266,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         }
     }
 
+    /**
+     * Displays the functions page for the plugin.
+     *
+     * @param \DOMElement|null $parent The parent node element
+     *
+     * @return bool True if the functions page was displayed successfully, false otherwise
+     */
     public function functions($parent)
     {
         if ($this->rateChallenge($parent)) {
@@ -295,7 +330,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         TSJIPPY\addElement('br', $label);
 
         ob_start();
-    ?>
+        ?>
         <table>
             <thead>
                 <tr>
@@ -408,6 +443,10 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
     /**
      * Function to do extra actions from $request data. Overwrite if needed
+     * 
+     * @param array $request The request data
+     * 
+     * @return string|void The result of the post actions
      */
     public function postActions($request)
     {
@@ -516,6 +555,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         }
     }
 
+    /**
+     * Displays the registration form for the plugin.
+     *
+     * @return string The HTML for the registration form
+     */
     public function registerForm()
     {
         ob_start();
@@ -654,6 +698,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
     /**
      * Shows the options when not connected to Signal
+     * 
+     * @return void
      */
     public function notConnectedOptions()
     {
@@ -673,7 +719,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
 
             <a href='<?php echo esc_url($url); ?>&link=true' class='button'>Link to an existing Signal number</a>
         </p>
-    <?php
+        <?php
     }
 
     /**
@@ -687,7 +733,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $groups    = $this->settings['groups'];
         }
 
-    ?>
+        ?>
         <label>
             Link to join the Signal group
             <input type='url' name='group-link' value='<?php echo esc_attr($this->settings["group-link"]); ?>' style='width:100%'>
@@ -725,6 +771,13 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     <?php
     }
 
+    /**
+     * Processes the actions based on the request parameters.
+     * 
+     * @param \DOMElement|null $parent The parent node element
+     * 
+     * @return void
+     */
     public function processActions($parent)
     {
         /**
@@ -821,6 +874,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
      * @param string $startDate The start date for the message log
      * @param string $endDate The end date for the message log
      * @param int $amount The number of messages to display
+     * @param \DOMElement|null $parent The parent node element
      */
     public function messagesHeader($startDate, $endDate, $amount, $parent)
     {
@@ -832,7 +886,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         }
 
         ob_start();
-    ?>
+        ?>
         <div class='flex-container'>
             <div class='flex'>
                 <h2>Show Message History</h2>
@@ -888,13 +942,22 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 </form>
             </div>
         </div>
-<?php
+        <?php
 
         addRawHtml(ob_get_clean(), $parent);
     }
 
     /**
      * Adds the navigator for the messages tables
+     * 
+     * @param string $startDate The start date for the message log
+     * @param string $endDate The end date for the message log
+     * @param int $amount The number of messages to display
+     * @param \DOMElement|null $parent The parent node element
+     * @param object $signal The signal instance
+     * @param int $page The current page number
+     * 
+     * @return void
      */
     private function addNavigator($startDate, $endDate, $amount, $parent, $signal, $page)
     {
@@ -931,6 +994,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
      * @param string $startDate The start date for the message log
      * @param string $endDate The end date for the message log
      * @param int $amount The number of messages to display
+     * @param \DOMElement|null $parent The parent node element
+     * 
      * @return bool True if the table is displayed, false otherwise
      */
     public function sentMessagesTable($startDate, $endDate, $amount, $parent)
@@ -1038,7 +1103,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
      * @param string $startDate The start date for the message log
      * @param string $endDate The end date for the message log
      * @param int $amount The number of messages to display
+     * @param \DOMElement|null $parent The parent node element
      * @param string $hidden The CSS class for hiding the table
+     * 
      * @return bool True if the table is displayed, false otherwise
      */
     public function receivedMessagesTable($startDate, $endDate, $amount, $parent, $hidden = 'hidden')
