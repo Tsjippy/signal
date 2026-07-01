@@ -44,14 +44,14 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         $attributes = [
             'type' => "checkbox",
             'name' => "local",
-            'value'=> 1
+            'value' => 1
         ];
 
         if ($local) {
             $attributes['checked']  = 'checked';
         }
 
-        addElement('input', $label, $attributes );
+        addElement('input', $label, $attributes);
 
         addElement('span', $label, ['class' => "slider round"]);
 
@@ -74,7 +74,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             ob_start();
 
             if (!$passed) {
-        ?>
+?>
                 <div class='error'>
                     Signal-cli is not working properly, please check the error log for more details.<br>
                     <?php echo esc_html($signal->error); ?>
@@ -113,7 +113,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         $email->printPlaceholders();
         ?>
 
-        <h4>E-mail to remind people to add their Signal phonenumber</h4>
+        <h4>
+            E-mail to remind people to add their Signal phonenumber
+        </h4>
     <?php
 
         $email->printInputs();
@@ -479,7 +481,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             } elseif (empty($signal->error)) {
                 ob_start();
                 // show the verification form after the registration form if there is no error
-                ?>
+        ?>
                 <form method='post'>
                     You should have received a verification code.<br>
                     Please insert the code below.
@@ -493,7 +495,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     <br>
                     <button>Verify</button>
                 </form>
-                <?php
+        <?php
 
                 return ob_get_clean();
             }
@@ -519,7 +521,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         ob_start();
         ?>
         <form method='post' action='<?php echo esc_url(admin_url("admin.php?page=" . TSJIPPY\sanitize($_GET['page']) . "&main-tab=" . TSJIPPY\sanitize($_GET['main-tab']))); ?>'>
-            <h4>Register with Signal</h4>
+            <h4>
+                Register with Signal
+            </h4>
             <br>
             <label>
                 Phone number you want to register
@@ -584,7 +588,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             echo wp_kses_post($signal->error);
         }
         ?>
-        <h4>Connection details</h4>
+        <h4>
+            Connection details
+        </h4>
         <p>
             Currently connected to <?php echo esc_attr($signal->phoneNumber); ?>
             <a href='<?php echo esc_url($url); ?>&unregister=true' class='button'>Unregister</a><br>
@@ -657,7 +663,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         }
 
         ?>
-        <h4>Connection details</h4>
+        <h4>
+            Connection details
+        </h4>
         <p>
             Currently not connected to Signal
             <br>
@@ -686,7 +694,9 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
         </label>
 
         <div class="">
-            <h4>Give optional Signal group name(s) to send new content messages to:</h4>
+            <h4>
+                Give optional Signal group name(s) to send new content messages to:
+            </h4>
             <div class="clone-divs-wrapper">
                 <?php
                 foreach ($groups as $index => $group) {
@@ -973,7 +983,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             $recipient    = '';
             if ($message->recipient[0] === '+') {
                 $recipient    = TSJIPPY\getFromDb(
-                    "get_display_name_for_".$message->recipient,
+                    "get_display_name_for_" . $message->recipient,
                     "signal",
                     "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s) LIMIT 1",
                     $wpdb->users,
@@ -1108,7 +1118,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                 $time        = get_date_from_gmt($isoDate, TSJIPPY\TIMEFORMAT);
 
                 $sender    = TSJIPPY\getFromDb(
-                    "get_display_name_for_".$message['sender'],
+                    "get_display_name_for_" . $message['sender'],
                     "signal",
                     "SELECT display_name FROM %i WHERE ID in (SELECT user_id FROM %i WHERE `meta_value` LIKE %s)",
                     $wpdb->users,
