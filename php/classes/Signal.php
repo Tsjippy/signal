@@ -998,6 +998,15 @@ class Signal
         }
     }
 
+    /**
+     * Copies a folder and its contents to another location
+     *
+     * @param   string  $from   The source folder
+     * @param   string  $to     The destination folder
+     * @param   string  $ext    The file extension to copy, default is all files (*)
+     *
+     * @return  bool            Whether the copy was successful
+     */
     private function copyfolder($from, $to, $ext = "*")
     {
         // (A1) SOURCE FOLDER CHECK
@@ -1083,6 +1092,9 @@ class Signal
         echo "Downloading " . esc_url($url) . " to " . esc_attr($tempPath) . " failed!";
     }
 
+    /**
+     * Checks if the signal-cli daemon is running
+     */
     protected function daemonIsRunning()
     {
         // check if running
@@ -1109,6 +1121,9 @@ class Signal
         }
     }
 
+    /**
+     * Starts the signal-cli daemon to receive messages
+     */
     public function startDaemon()
     {
         return;
@@ -1303,6 +1318,9 @@ class Signal
         }
     }
 
+    /**
+     * Processes the message queue, sending messages and executing commands
+     */
     public function processQueue()
     {
         if (wp_get_environment_type() === 'local') {
