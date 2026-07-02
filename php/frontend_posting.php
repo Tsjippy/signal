@@ -31,95 +31,105 @@ function afterContent($frontendContend)
         $defaultGroups = SETTINGS['groups'] ?? [];
     }
 
-?>
-    <div id="signal-message" class="frontend-form expand-wrapper">
-        <h4>
-            Signal
-            <button class="button small expand" type='button'>&#9660;</button>
-        </h4>
+    ?>
+    <tbody id="signal-message" class="frontend-form expand-wrapper">
+        <tr>
+            <td>
+                <h4>
+                    Signal
+                </h4>
+            </td>
+            <td>
+                <button class="button small expand" type='button'>
+                    &#9660;
+                </button>
+            </td>
+        </tr>
 
-        <div class="hidden expandable">
-            <label>
-                <input type='checkbox' name='send-signal' value='1' <?php echo esc_attr($checked); ?>>
-                Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish'; ?>
-            </label>
+        <tr>
+            <td class="hidden expandable" collspan=2>
+                <label>
+                    <input type='checkbox' name='send-signal' value='1' <?php echo esc_attr($checked); ?>>
+                    Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish'; ?>
+                </label>
 
-            <div class='signal-message-type <?php echo esc_attr($hidden); ?>' style='margin-top:15px;'>
-                <?php
-                if (!empty($signalGroups) && is_array($signalGroups)) {
-                ?>
-                    <label>
-                        Target Signal Groups<br>
-                        <?php
-                        if (count($signalGroups) < 6) {
-                            foreach ($signalGroups as $group) {
-                                if (empty($group->name)) {
-                                    continue;
-                                }
-                        ?>
-                                <label>
-                                    <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php if (count($signalGroups) == 1 || in_array($group->id, $defaultGroups)) echo  'checked'; ?>>
-                                    <?php echo esc_attr($group->name); ?>
-                                </label>
+                <div class='signal-message-type <?php echo esc_attr($hidden); ?>' style='margin-top:15px;'>
+                    <?php
+                    if (!empty($signalGroups) && is_array($signalGroups)) {
+                    ?>
+                        <label>
+                            Target Signal Groups<br>
                             <?php
-                            }
-                        } else {
-                            ?>
-                            <select name="signal-groups[]" multiple="multiple" class="hidden-select">
-                                <?php
+                            if (count($signalGroups) < 6) {
                                 foreach ($signalGroups as $group) {
                                     if (empty($group->name)) {
                                         continue;
                                     }
-                                ?>
-                                    <option value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) echo 'selected'; ?>>
+                            ?>
+                                    <label>
+                                        <input type='checkbox' name='signal-groups[]' value='<?php echo esc_attr($group->id); ?>' <?php if (count($signalGroups) == 1 || in_array($group->id, $defaultGroups)) echo  'checked'; ?>>
                                         <?php echo esc_attr($group->name); ?>
-                                    </option>
+                                    </label>
                                 <?php
                                 }
+                            } else {
                                 ?>
-                            </select>
+                                <select name="signal-groups[]" multiple="multiple" class="hidden-select">
+                                    <?php
+                                    foreach ($signalGroups as $group) {
+                                        if (empty($group->name)) {
+                                            continue;
+                                        }
+                                    ?>
+                                        <option value='<?php echo esc_attr($group->id); ?>' <?php if (in_array($group->id, $defaultGroups)) echo 'selected'; ?>>
+                                            <?php echo esc_attr($group->name); ?>
+                                        </option>
+                                    <?php
+                                    }
+                                    ?>
+                                </select>
 
-                        <?php
-                        }
-                        ?>
+                            <?php
+                            }
+                            ?>
+                        </label>
+                        <br>
+                    <?php
+                    }
+                    ?>
+                    <br>
+                    <label>
+                        <input
+                            type='radio'
+                            name='signal-message-type'
+                            value='summary'
+                            <?php if ($messageType != 'all') echo 'checked'; ?>>
+                        Send a summary
+                    </label>
+                    <label>
+                        <input
+                            type='radio'
+                            name='signal-message-type'
+                            value='all'
+                            <?php if ($messageType == 'all') echo 'checked'; ?>>
+                        Send the whole post content
                     </label>
                     <br>
-                <?php
-                }
-                ?>
-                <br>
-                <label>
-                    <input
-                        type='radio'
-                        name='signal-message-type'
-                        value='summary'
-                        <?php if ($messageType != 'all') echo 'checked'; ?>>
-                    Send a summary
-                </label>
-                <label>
-                    <input
-                        type='radio'
-                        name='signal-message-type'
-                        value='all'
-                        <?php if ($messageType == 'all') echo 'checked'; ?>>
-                    Send the whole post content
-                </label>
-                <br>
-                <br>
-                <label>
-                    Add this sentence to the signal message:<br>
-                    <input type="text" name="signal-extra-message">
-                </label>
-                <br>
-                <br>
-                <label>
-                    <input type="checkbox" name="signal-url" value='1'>
-                    Include the url in the message even if the whole content is posted
-                </label>
-            </div>
-        </div>
-    </div>
+                    <br>
+                    <label>
+                        Add this sentence to the signal message:<br>
+                        <input type="text" name="signal-extra-message">
+                    </label>
+                    <br>
+                    <br>
+                    <label>
+                        <input type="checkbox" name="signal-url" value='1'>
+                        Include the url in the message even if the whole content is posted
+                    </label>
+                </div>
+            </td>
+        </tr>
+    </tbody>
 <?php
 }
 

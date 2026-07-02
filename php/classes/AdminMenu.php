@@ -1137,12 +1137,12 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
             }
 
             $groupedMessages[$message->chat][]    = [
-                'id'            => $message->id,
-                'timesent'        => $message->time_send,    // timestamp is in milis
-                'message'        => $message->message,
-                'status'        => $message->status,
-                'sender'        => $message->sender,
-                'attachments'    => $message->attachments
+                'id'          => $message->id,
+                'timesent'    => $message->time_send,    // timestamp is in milis
+                'message'     => $message->message,
+                'status'      => $message->status,
+                'sender'      => $message->sender,
+                'attachments' => $message->attachments
             ];
         }
 
@@ -1197,7 +1197,7 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     $sender    = $message['sender'];
                 } else {
                     $sender    = $sender[0];
-                    $sender    = apply_filters('tsjippy-tsjippy-signal-admin-display-name', $sender->display_name, $sender);
+                    $sender    = apply_filters('tsjippy-tsjippy-signal-admin-display-name', $sender);
                 }
 
                 // in case of private message replace the phonenumber in the chat for the name as well
