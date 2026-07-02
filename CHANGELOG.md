@@ -11,6 +11,9 @@
 
 ### Updated
 
+### Removed
+- frontendcontent.js
+
 ## [10.5.9] - 2026-07-02
 
 
