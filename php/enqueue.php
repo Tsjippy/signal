@@ -9,17 +9,6 @@ function loadAssets()
 {
     wp_register_script('tsjippy_signal_options', TSJIPPY\pathToUrl(PLUGINPATH . 'js/signal.min.js'), array('tsjippy_formsubmit_script'), PLUGINVERSION, true);
     wp_register_script('tsjippy_signal_admin', TSJIPPY\pathToUrl(PLUGINPATH . 'js/admin.min.js'), array('tsjippy_formsubmit_script'), PLUGINVERSION, true);
-
-    wp_register_script('tsjippy_frontend_signal_script', TSJIPPY\pathToUrl(PLUGINPATH . 'js/frontend-signal.min.js'), [], PLUGINVERSION, true);
-}
-
-add_filter('tsjippy-frontend-content-js', __NAMESPACE__ . '\addSignalJs');
-
-function addSignalJs($dependables)
-{
-    $dependables[]  = 'tsjippy_frontend_signal_script';
-
-    return $dependables;
 }
 
 add_action('admin_enqueue_scripts', __NAMESPACE__ . '\loadAdminAssets');

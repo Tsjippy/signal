@@ -7,7 +7,6 @@ use TSJIPPY;
 add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent', 20);
 function afterContent($frontendContend)
 {
-    $hidden         = 'hidden';
     $checked        = '';
     $messageType    = '';
     $defaultGroups  = [];
@@ -20,7 +19,6 @@ function afterContent($frontendContend)
         )
     ) {
         $checked       = 'checked';
-        $hidden        = '';
         $messageType   = $frontendContend->getPostMeta('signal_message_type', '');
     }
 
@@ -53,7 +51,7 @@ function afterContent($frontendContend)
                     Send signal message on <?php echo $frontendContend->update ? 'update' : 'publish'; ?>
                 </label>
 
-                <div class='signal-message-type <?php echo esc_attr($hidden); ?>' style='margin-top:15px;'>
+                <div class='signal-message-type' style='margin-top:15px;'>
                     <?php
                     if (!empty($signalGroups) && is_array($signalGroups)) {
                     ?>
