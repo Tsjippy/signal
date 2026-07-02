@@ -5,6 +5,7 @@
 - deefault meta value implementation
 
 ### Changed
+- wrapped frontend posting options in rbody
 
 ### Fixed
 
