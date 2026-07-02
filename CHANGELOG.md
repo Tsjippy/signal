@@ -2,6 +2,17 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.5.9] - 2026-07-02
+
+
+### Added
 - attribute escaping
 - message when send command is delayed for more than one hour
 - activate shared code function
@@ -10,10 +21,6 @@
 - proper html
 - replaced in_array with isset
 - db caching
-
-### Fixed
-
-### Updated
 
 ## [10.5.8] - 2026-06-26
 
