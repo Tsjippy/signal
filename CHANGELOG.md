@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- deefault meta value implementation
 
 ### Changed
 
