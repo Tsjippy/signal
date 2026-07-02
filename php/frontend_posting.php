@@ -16,12 +16,12 @@ function afterContent($frontendContend)
         $frontendContend->fullrights &&                             // we have publish rights
         (
             $frontendContend->postId == null ||                     // this is a new page
-            !empty($frontendContend->getPostMeta('send_signal'))    // we should send a signal message
+            !empty($frontendContend->getPostMeta('send_signal', false))    // we should send a signal message
         )
     ) {
         $checked       = 'checked';
         $hidden        = '';
-        $messageType   = $frontendContend->getPostMeta('signal_message_type');
+        $messageType   = $frontendContend->getPostMeta('signal_message_type', '');
     }
 
     $signalGroups      = [];
