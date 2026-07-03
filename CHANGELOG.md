@@ -2,12 +2,21 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Updated
+
+## [10.6.1] - 2026-07-03
+
+
+### Added
 - deefault meta value implementation
 
 ### Changed
 - wrapped frontend posting options in rbody
-
-### Fixed
 
 ### Updated
 
