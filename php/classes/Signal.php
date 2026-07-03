@@ -1324,7 +1324,7 @@ class Signal
     public function processQueue()
     {
         if (wp_get_environment_type() === 'local') {
-            return; // no point in doing this
+            //return; // no point in doing this
         }
 
         $this->processingQueue     = true;
@@ -1363,6 +1363,10 @@ class Signal
 
             // Get the oldest command
             $command    = $this->getQueue();
+
+            if(is_array($command)){
+                $command    = $command[0];
+            }
 
             // Nothing in the queue
             if (empty($command)) {
