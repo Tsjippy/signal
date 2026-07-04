@@ -5,7 +5,7 @@ import {
   TextareaControl,
 } from "@wordpress/components";
 import { useSelect } from "@wordpress/data";
-import { PluginDocumentSettingPanel } from "@wordpress/edit-post";
+import { PluginDocumentSettingPanel } from '@wordpress/editor';
 import { useEntityProp } from "@wordpress/core-data";
 import { registerPlugin } from "@wordpress/plugins";
 
