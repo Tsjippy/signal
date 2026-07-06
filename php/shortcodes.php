@@ -38,7 +38,7 @@ function signalMessages()
                 $html .= '<form action="" method="post">
                     <input type="hidden" class="no-reset" id="recipient-number" name="recipient-number" value="' . $recipient_number . '">
                     <input type="hidden" class="no-reset" id="key" name="key" value="' . $key . '">
-                    <button class="button remove signal-message sim" type="submit" style="margin-top:10px;">Remove this message</button>
+                    <button class="button remove signal-message tsjippy" type="submit" style="margin-top:10px;">Remove this message</button>
                 </form>';
             }
         }

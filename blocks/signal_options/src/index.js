@@ -1,4 +1,4 @@
-const { __ } = wp.i18n;
+import { __ } from "@wordpress/i18n";
 import {
   ToggleControl,
   RadioControl,
@@ -63,11 +63,11 @@ registerPlugin("signal-options", {
     return (
       <PluginDocumentSettingPanel
         name="signal-options"
-        title={__("Signal Options", "sim")}
+        title={__("Signal Options", "tsjippy")}
         className="signal-options"
       >
         <ToggleControl
-          label={__("Send signal message on publish", "sim")}
+          label={__("Send signal message on publish", "tsjippy")}
           checked={sendSignal}
           onChange={(value) => updateMetaValue(value, "tsjippy_send_signal")}
         />
@@ -92,7 +92,7 @@ registerPlugin("signal-options", {
         <ToggleControl
           label={__(
             "Include the url in the message even if the whole content is posted",
-            "sim",
+            "tsjippy",
           )}
           checked={signalUrl}
           onChange={(value) => updateMetaValue(value, "tsjippy_signal_url")}
