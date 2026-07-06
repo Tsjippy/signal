@@ -8,6 +8,7 @@
 ### Fixed
 
 ### Updated
+- blocks js
 
 ## [10.6.2] - 2026-07-03
 
