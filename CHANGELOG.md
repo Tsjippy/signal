@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- optimized signal block
 
 ### Fixed
 
