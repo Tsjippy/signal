@@ -36,66 +36,56 @@ registerPlugin("signal-options", {
       return "";
     }
 
-    const [meta, setMeta] = useEntityProp("postType", postType, "meta");
+    const [meta, setMeta]  = useEntityProp("postType", postType, "meta");
 
-    let sendSignal = meta["tsjippy_send_signal"];
-    let signalMessageType = meta["tsjippy_signal_message_type"];
+    let sendSignal         = meta["tsjippy_send_signal"];
+    let signalMessageType  = meta["tsjippy_signal_message_type"];
     let signalExtraMessage = meta["tsjippy_signal_extra_message"];
-    let signalUrl = meta["tsjippy_signal_url"];
+    let signalUrl          = meta["tsjippy_signal_url"];
 
     if (signalMessageType != "all") {
       signalMessageType = "summary";
     }
 
     const updateMetaValue = (value, key) => {
-      console.log(value);
-      console.log(key);
-
       let newMeta = { ...meta };
 
       newMeta[key] = value;
-
-      console.log(newMeta);
 
       setMeta(newMeta);
     };
 
     return (
       <PluginDocumentSettingPanel
-        name="signal-options"
-        title={__("Signal Options", "tsjippy")}
-        className="signal-options"
+        name      = "signal-options"
+        title     = {__("Signal Options", "tsjippy")}
+        className = "signal-options"
       >
         <ToggleControl
-          label={__("Send signal message on publish", "tsjippy")}
-          checked={sendSignal}
-          onChange={(value) => updateMetaValue(value, "tsjippy_send_signal")}
+          label    = {__("Send signal message on publish", "tsjippy")}
+          checked  = {sendSignal}
+          onChange = {(value) => updateMetaValue(value, "tsjippy_send_signal")}
         />
 
         <RadioControl
-          selected={signalMessageType}
-          options={[
+          selected = {signalMessageType}
+          options  = {[
             { label: __("Send a summary"), value: "summary" },
             { label: __("Send the whole post content"), value: "all" },
           ]}
-          onChange={(value) => updateMetaValue(value, "tsjippy_signal_message_type")}
+          onChange = {(value) => updateMetaValue(value, "tsjippy_signal_message_type")}
         />
-
         <br></br>
-
         <TextareaControl
-          label={__("Add this sentence to the signal message:")}
-          value={signalExtraMessage}
-          onChange={(value) => updateMetaValue(value, "tsjippy_signal_extra_message")}
+          label    = {__("Add this sentence to the signal message:")}
+          value    = {signalExtraMessage}
+          onChange = {(value) => updateMetaValue(value, "tsjippy_signal_extra_message")}
         />
 
         <ToggleControl
-          label={__(
-            "Include the url in the message even if the whole content is posted",
-            "tsjippy",
-          )}
-          checked={signalUrl}
-          onChange={(value) => updateMetaValue(value, "tsjippy_signal_url")}
+          label    = {__("Include the url in the message even if the whole content is posted","tsjippy",)}
+          checked  = {signalUrl}
+          onChange = {(value) => updateMetaValue(value, "tsjippy_signal_url")}
         />
       </PluginDocumentSettingPanel>
     );
