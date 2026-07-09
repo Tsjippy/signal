@@ -5,6 +5,7 @@
 
 ### Changed
 - optimized signal block
+- removed shortcode
 
 ### Fixed
 
