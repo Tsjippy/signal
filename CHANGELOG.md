@@ -4,12 +4,17 @@
 ### Added
 
 ### Changed
-- optimized signal block
-- removed shortcode
 
 ### Fixed
 
 ### Updated
+
+## [10.6.4] - 2026-07-10
+
+
+### Changed
+- optimized signal block
+- removed shortcode
 
 ## [10.6.3] - 2026-07-06
 
