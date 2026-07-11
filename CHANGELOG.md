@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- get signal command by id
 
 ### Updated
 
