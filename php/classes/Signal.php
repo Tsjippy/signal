@@ -1206,7 +1206,7 @@ class Signal
             $result     = TSJIPPY\getFromDb(
                 "command-$id-result",
                 'signal',
-                "SELECT * FROM %i WHERE id = %d",
+                "SELECT * FROM %i WHERE id = %d LIMIT 1",
                 $this->queueTableName,
                 $id
             );
