@@ -4,17 +4,12 @@
 ### Added
 
 ### Changed
+- allow chatting with bypassing queue
+- prayer hook
 
 ### Fixed
 
 ### Updated
-
-## [10.6.9] - 2026-07-12
-
-
-### Changed
-- allow chatting with bypassing queue
-- prayer hook
 
 ## [10.6.8] - 2026-07-11
 
