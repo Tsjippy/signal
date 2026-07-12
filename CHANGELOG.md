@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- get signal command by id
 
 ### Updated
+
+## [10.6.8] - 2026-07-11
+
+
+### Fixed
+- get signal command by id
 
 ## [10.6.7] - 2026-07-11
 
