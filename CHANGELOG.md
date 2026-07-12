@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- allow chatting with bypassing queue
 
 ### Fixed
 
