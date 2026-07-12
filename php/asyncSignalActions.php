@@ -11,5 +11,5 @@ add_action('tsjippy-events-anniversary-message', __NAMESPACE__ . '\asyncSignalMe
 // Usermanagement
 add_action('tsjippy-user-management-birthday-message', __NAMESPACE__ . '\asyncSignalMessageSend', 10, 3);
 
-// Prayer Message
-add_action('tsjippy-prayer-send-message', __NAMESPACE__ . '\sendSignalMessage', 10, 3);
+// Daily Message
+add_action('tsjippy-daily-message-send', __NAMESPACE__ . '\sendSignalMessage', 10, 3);
