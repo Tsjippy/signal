@@ -34,9 +34,16 @@ class SignalJsonRpc extends AbstractSignal
     public mixed $socket;
     public string $socketPath;
 
-    public function __construct($shouldCloseSocket = true, $getResult = true)
+    /**
+     * Constructor
+     * 
+     * @param   bool $shouldCloseSocket     Whether to close the socket after finishing the task
+     * @param   bool $getResult             Whether to return the command result
+     * @param   bool $isChat                Whether this is an chat, this will bypass the queue if true, default false  
+     */
+    public function __construct($shouldCloseSocket = true, $getResult = true, $isChat=false)
     {
-        parent::__construct();
+        parent::__construct($isChat);
 
         if ($this->os == 'Windows') {
             return;
@@ -521,7 +528,7 @@ class SignalJsonRpc extends AbstractSignal
         }
 
         // only add to queue if needed
-        if ($this->processingQueue) {
+        if ($this->processingQueue || $this->isChat) {
             // do this straight away
             return $this->doRequest($method, $params);
         }
@@ -530,7 +537,7 @@ class SignalJsonRpc extends AbstractSignal
         $waitForResult  = false;
         // Only wait if needed and not rate-limited
         if ($this->getResult && !$this->rateLimited) {
-            $priority       = 1;
+            $priority       = 2;
             $waitForResult  = true;
         }
 

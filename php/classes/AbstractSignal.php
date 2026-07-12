@@ -81,7 +81,7 @@ abstract class AbstractSignal extends Signal
      *
      * @return bool|string
      */
-    abstract public function sendReceipt($recipient, $timestamp);
+    abstract public function sendReceipt($recipient, $timeStamp);
 
     /**
      * Deletes a message

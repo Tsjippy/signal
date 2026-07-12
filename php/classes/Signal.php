@@ -37,12 +37,15 @@ class Signal
     public string   $rateLimitString;
     public bool     $processingQueue;
     public array    $groups;
+    public bool     $isChat;
 
     /**
      * Constructor
      */
-    public function __construct()
+    public function __construct($isChat = false)
     {
+        $this->isChat   = $isChat;
+
         global $wpdb;
 
         /**
@@ -801,12 +804,12 @@ class Signal
             $publishDate    = strtotime($release['published_at']);
 
             if ($release['tag_name'] != 'v0.14.4.1' && $curVersion != $release['tag_name'] && $publishDate + (5 * DAY_IN_SECONDS) < time()) {
-?>
+                ?>
                 <strong>
                     Updating Signal to version "<?php echo esc_attr($release['tag_name']); ?>
                 </strong>
                 <br>
-            <?php
+                <?php
 
                 // Disabled for now
                 #$this->installSignal($release);
@@ -994,7 +997,7 @@ class Signal
                 Could not move <?php echo esc_attr($path); ?> to <?php echo esc_attr($this->programPath); ?>/signal-cli.<br>
                 Check the <?php echo esc_attr($folder); ?> folder.
             </div>
-<?php
+        <?php
         }
     }
 
@@ -1167,7 +1170,7 @@ class Signal
      * @return  int                 The db row id
      */
     public function addToQueue($method, $params = [], $priority = 10, $waiting = false)
-    {
+    {       
         return TSJIPPY\insertInDb(
             $this->queueTableName,
             array(

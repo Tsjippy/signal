@@ -1,371 +1,371 @@
-$tsjippySignal<?php
+<?php
 
-                /**
-                 * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
-                 * this file should be run from a service, see install/signal-cli-jsonrpc-daemon.service
-                 */
-                //use TSJIPPY;
-                use TSJIPPY\SIGNAL;
-                use WordPress\AiClient\Messages\DTO\UserMessage;
-                use WordPress\AiClient\Messages\DTO\ModelMessage;
-                use WordPress\AiClient\Messages\DTO\MessagePart;
+/**
+ * find signal config here: nano $HOME/.local/share/signal-cli/data/accounts.json
+ * this file should be run from a service, see install/signal-cli-jsonrpc-daemon.service
+ */
+//use TSJIPPY;
+use TSJIPPY\SIGNAL;
+use WordPress\AiClient\Messages\DTO\UserMessage;
+use WordPress\AiClient\Messages\DTO\ModelMessage;
+use WordPress\AiClient\Messages\DTO\MessagePart;
 
-                // load wp
-                //ob_start();
-                define('WP_USE_THEMES', false); // Do not use the theme files
-                define('COOKIE_DOMAIN', false); // Do not append verify the domain to the cookie
+// load wp
+//ob_start();
+define('WP_USE_THEMES', false); // Do not use the theme files
+define('COOKIE_DOMAIN', false); // Do not append verify the domain to the cookie
 
-                require(__DIR__ . "/../../../../wp-load.php");
-                require_once ABSPATH . WPINC . '/functions.php';
+require(__DIR__ . "/../../../../wp-load.php");
+require_once ABSPATH . WPINC . '/functions.php';
 
-                //print(ob_get_clean());
+//print(ob_get_clean());
 
-                /* Remove the execution time limit */
-                //set_time_limit(0);
+/* Remove the execution time limit */
+//set_time_limit(0);
 
-                include_once __DIR__ . '/../php/classes/SignalJsonRpc.php';
+include_once __DIR__ . '/../php/classes/SignalJsonRpc.php';
 
-                $tsjippySignal = new SIGNAL\SignalJsonRpc(false, true);
+$tsjippySignal = new SIGNAL\SignalJsonRpc(shouldCloseSocket: false, getResult:true, isChat: true);
 
-                if (!$tsjippySignal->socket) {
-                    TSJIPPY\printArray("Invalid socket: $tsjippySignal->error\n", true);
-                    return;
+if (!$tsjippySignal->socket) {
+    TSJIPPY\printArray("Invalid socket: $tsjippySignal->error\n", true);
+    return;
+}
+
+while (1) {
+    $response = '';
+
+    $x      = 0;
+    $base   = '{"jsonrpc":';
+    while (!feof($tsjippySignal->socket)) {
+        $response       .= fgets($tsjippySignal->socket, 4096);
+
+        // somehow we are reading the second one already
+        if (substr_count($response, $base) > 1) {
+            // loop over each jsonrpc response to find the one with a result property
+            foreach (explode($base, $response) as $jsonString) {
+                $decoded    = json_decode($base . $jsonString);
+
+                if (!empty($decoded) && isset($decoded->method) && $decoded->method == 'receive') {
+                    $response   = json_encode($decoded);
+                    break 2;
                 }
+            }
+        }
 
-                while (1) {
-                    $response = '';
+        //TSJIPPY\printArray($response, true);
 
-                    $x      = 0;
-                    $base   = '{"jsonrpc":';
-                    while (!feof($tsjippySignal->socket)) {
-                        $response       .= fgets($tsjippySignal->socket, 4096);
+        if (!empty(json_decode($response))) {
+            //TSJIPPY\printArray(json_decode($response));
+            break;
+        }
 
-                        // somehow we are reading the second one already
-                        if (substr_count($response, $base) > 1) {
-                            // loop over each jsonrpc response to find the one with a result property
-                            foreach (explode($base, $response) as $jsonString) {
-                                $decoded    = json_decode($base . $jsonString);
+        $streamMetaData  = stream_get_meta_data($tsjippySignal->socket);
 
-                                if (!empty($decoded) && isset($decoded->method) && $decoded->method == 'receive') {
-                                    $response   = json_encode($decoded);
-                                    break 2;
-                                }
-                            }
-                        }
+        if ($streamMetaData['unread_bytes'] <= 0) {
+            $x++;
 
-                        //TSJIPPY\printArray($response, true);
+            if ($x > 10) {
+                break;
+            }
+        }
+    }
+    flush();
 
-                        if (!empty(json_decode($response))) {
-                            //TSJIPPY\printArray(json_decode($response));
-                            break;
-                        }
+    $response   = trim($response);
 
-                        $streamMetaData  = stream_get_meta_data($tsjippySignal->socket);
+    if (empty($response)) {
+        continue;
+    }
 
-                        if ($streamMetaData['unread_bytes'] <= 0) {
-                            $x++;
+    $json   = json_decode($response);
 
-                            if ($x > 10) {
-                                break;
-                            }
-                        }
-                    }
-                    flush();
+    if (empty($json)) {
+        if (empty($response)) {
+            TSJIPPY\printArray("Response is empty");
+        } else {
+            TSJIPPY\printArray("Response is '$response'");
+        }
 
-                    $response   = trim($response);
+        switch (json_last_error()) {
+            case JSON_ERROR_NONE:
+                TSJIPPY\printArray(' No errors' . $response, true);
+                break;
+            case JSON_ERROR_DEPTH:
+                TSJIPPY\printArray(' Maximum stack depth exceeded' . $response, true);
+                break;
+            case JSON_ERROR_STATE_MISMATCH:
+                TSJIPPY\printArray(' Underflow or the modes mismatch' . $response, true);
+                break;
+            case JSON_ERROR_CTRL_CHAR:
+                TSJIPPY\printArray(' Unexpected control character found' . $response, true);
+                break;
+            case JSON_ERROR_SYNTAX:
+                TSJIPPY\printArray(' Syntax error, malformed JSON: ' . $response, true);
+                break;
+            case JSON_ERROR_UTF8:
+                TSJIPPY\printArray(' Malformed UTF-8 characters, possibly incorrectly encoded' . $response, true);
+                break;
+            default:
+                break;
+        }
 
-                    if (empty($response)) {
-                        continue;
-                    }
+        continue;
+    }
 
-                    $json   = json_decode($response);
+    // incoming message
+    if ($json->method == 'receive') {
+        print("receive");
+        processMessage($json->params);
+    } elseif (isset($json->result)) {
+        TSJIPPY\printArray($json);
+        $tsjippySignalResults              = get_option('tsjippy-signal-results', []);
 
-                    if (empty($json)) {
-                        if (empty($response)) {
-                            TSJIPPY\printArray("Response is empty");
-                        } else {
-                            TSJIPPY\printArray("Response is '$response'");
-                        }
+        $tsjippySignalResults[$json->id]   = $json;
 
-                        switch (json_last_error()) {
-                            case JSON_ERROR_NONE:
-                                TSJIPPY\printArray(' No errors' . $response, true);
-                                break;
-                            case JSON_ERROR_DEPTH:
-                                TSJIPPY\printArray(' Maximum stack depth exceeded' . $response, true);
-                                break;
-                            case JSON_ERROR_STATE_MISMATCH:
-                                TSJIPPY\printArray(' Underflow or the modes mismatch' . $response, true);
-                                break;
-                            case JSON_ERROR_CTRL_CHAR:
-                                TSJIPPY\printArray(' Unexpected control character found' . $response, true);
-                                break;
-                            case JSON_ERROR_SYNTAX:
-                                TSJIPPY\printArray(' Syntax error, malformed JSON: ' . $response, true);
-                                break;
-                            case JSON_ERROR_UTF8:
-                                TSJIPPY\printArray(' Malformed UTF-8 characters, possibly incorrectly encoded' . $response, true);
-                                break;
-                            default:
-                                break;
-                        }
+        update_option('tsjippy-signal-results', $tsjippySignalResults);
+    }
+}
 
-                        continue;
-                    }
+TSJIPPY\printArray("The end", true);
 
-                    // incoming message
-                    if ($json->method == 'receive') {
-                        print("receive");
-                        processMessage($json->params);
-                    } elseif (isset($json->result)) {
-                        TSJIPPY\printArray($json);
-                        $tsjippySignalResults              = get_option('tsjippy-signal-results', []);
+/**
+ * Process an incoming message
+ * @param   object  $data   The data of the incoming message
+ */
+function processMessage($data)
+{
+    global $tsjippySignal;
 
-                        $tsjippySignalResults[$json->id]   = $json;
+    //TSJIPPY\printArray($data, true);
 
-                        update_option('tsjippy-signal-results', $tsjippySignalResults);
-                    }
+    // no message found
+    if (!isset($data->envelope->dataMessage) || empty($data->envelope->dataMessage->message)) {
+        return;
+    }
+
+    if ($data->account != $tsjippySignal->phoneNumber) {
+        TSJIPPY\printArray($data);
+        return;
+    }
+
+    $message        = $data->envelope->dataMessage->message;
+    $groupId        = $data->envelope->source;
+
+    $attachments    = [];
+
+    if (isset($data->envelope->dataMessage->attachments)) {
+        foreach ($data->envelope->dataMessage->attachments as $attachment) {
+            TSJIPPY\printArray($attachment);
+            $path       = "/home/.local/share/signal-cli/attachments/{$attachment->id}";
+
+            $newPath    = "$tsjippySignal->attachmentsPath/{$attachment->filename}";
+
+            // move the attachment
+            $wpFileSystem   = TSJIPPY\loadWpFileSystem();
+            $result = $wpFileSystem->move($path, $newPath);
+            if ($result) {
+                $attachments[]      = $newPath;
+            } else {
+                TSJIPPY\printArray("Failed to move $path to $newPath ");
+            }
+        }
+    }
+
+    // message to group
+    if (isset($data->envelope->dataMessage->groupInfo)) {
+        $groupId    = $data->envelope->dataMessage->groupInfo->groupId;
+
+        // we are mentioned
+        if (isset($data->envelope->dataMessage->mentions)) {
+            foreach ($data->envelope->dataMessage->mentions as $mention) {
+                if ($mention->number == $tsjippySignal->phoneNumber) {
+                    $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
+
+                    $tsjippySignal->sentTyping($data->envelope->source, '', $groupId);
+
+                    // Remove mention from message
+                    $message    = mb_convert_encoding($message, 'UTF-8', 'UTF-8');
+                    // Length of the mention is not correct, so we just remove the first 3 characters
+                    //$message    = substr($message, $data->envelope->dataMessage->mentions[0]->length);
+                    $message    = substr($message, 3);
+                    $answer     = getAnswer(trim($message, " \t\n\r\0\x0B?"), $data->envelope->source);
+
+                    $tsjippySignal->send($groupId, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
                 }
+            }
+        }
+    } elseif (!isset($data->envelope->dataMessage->groupInfo)) {
+        $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
 
-                TSJIPPY\printArray("The end", true);
+        $tsjippySignal->sentTyping($data->envelope->source, $data->envelope->timestamp);
 
-                /**
-                 * Process an incoming message
-                 * @param   object  $data   The data of the incoming message
-                 */
-                function processMessage($data)
-                {
-                    global $tsjippySignal;
+        $answer = getAnswer($message, $data->envelope->source);
 
-                    //TSJIPPY\printArray($data, true);
+        $tsjippySignal->send($data->envelope->source, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
+    }
 
-                    // no message found
-                    if (!isset($data->envelope->dataMessage) || empty($data->envelope->dataMessage->message)) {
-                        return;
-                    }
+    // add message to the received table
+    $tsjippySignal->addToReceivedMessageLog($data->envelope->source, $message, $data->envelope->timestamp, $groupId, $attachments);
+}
 
-                    if ($data->account != $tsjippySignal->phoneNumber) {
-                        TSJIPPY\printArray($data);
-                        return;
-                    }
+/**
+ * Get an answer for a given message and source
+ * @param   string  $message    The message to get an answer for
+ * @param   string  $source     The source of the message to get an answer for
+ *
+ * @return  array               The answer for the given message and source, with keys 'message' and 'pictures'
+ */
+function getAnswer($message, $source)
+{
+    global $tsjippySignal;
 
-                    $message        = $data->envelope->dataMessage->message;
-                    $groupId        = $data->envelope->source;
+    $lowerMessage = strtolower($message);
 
-                    $attachments    = [];
+    // Find the first name
+    $name = false;
+    $users = get_users(array(
+        'meta_key'     => 'tsjippy_signal_number',
+        'meta_value'   => $source,
+    ));
 
-                    if (isset($data->envelope->dataMessage->attachments)) {
-                        foreach ($data->envelope->dataMessage->attachments as $attachment) {
-                            TSJIPPY\printArray($attachment);
-                            $path       = "/home/.local/share/signal-cli/attachments/{$attachment->id}";
+    if (!empty($users)) {
+        $name = $users[0]->first_name;
+    }
 
-                            $newPath    = "$tsjippySignal->attachmentsPath/{$attachment->filename}";
+    $pictures   = [];
+    $response   = '';
 
-                            // move the attachment
-                            $wpFileSystem   = TSJIPPY\loadWpFileSystem();
-                            $result = $wpFileSystem->move($path, $newPath);
-                            if ($result) {
-                                $attachments[]      = $newPath;
-                            } else {
-                                TSJIPPY\printArray("Failed to move $path to $newPath ");
-                            }
-                        }
-                    }
+    if ($lowerMessage == 'test') {
+        $response    = 'Awesome!';
+    } elseif (str_contains($lowerMessage, 'where are you')) {
+        $response    = 'Sorry for being away, but I am now back in full capacity!';
+    } elseif ($lowerMessage == 'thanks' || str_contains($lowerMessage, 'thanks')) {
+        $response = 'You`re welcome!';
+    } elseif ($lowerMessage == 'hi' || str_contains($lowerMessage, 'hello')) {
+        $response = "Hi ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif ($lowerMessage == 'good morning') {
+        $response = "Good morning ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif ($lowerMessage == 'good afternoon') {
+        $response = "Good afternoon ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif ($lowerMessage == 'good evening') {
+        $response = "Good evening ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif ($lowerMessage == 'good night') {
+        $response = "Good night ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif (str_contains($lowerMessage, 'thank you')) {
+        $response = "You are welcome ";
+        if ($name) {
+            $response   .= $name;
+        }
+    } elseif (str_contains($lowerMessage, 'help')) {
+        $response = "";
+        if ($name) {
+            $response   .= $name . ', ';
+        }
+        $response .= "I am so sorry to hear you need help. I am afraid I am not a good councelor";
+    } else {
+        $response = addAiResponse($message, $source);
+    }
 
-                    // message to group
-                    if (isset($data->envelope->dataMessage->groupInfo)) {
-                        $groupId    = $data->envelope->dataMessage->groupInfo->groupId;
+    $response   = [
+        'message'   => $response,
+        'pictures'  => $pictures
+    ];
 
-                        // we are mentioned
-                        if (isset($data->envelope->dataMessage->mentions)) {
-                            foreach ($data->envelope->dataMessage->mentions as $mention) {
-                                if ($mention->number == $tsjippySignal->phoneNumber) {
-                                    $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, $groupId, '👍🏽');
+    if (empty($response['message']) && !empty($lowerMessage)) {
+        TSJIPPY\printArray("No answer found for '$message'");
 
-                                    $tsjippySignal->sentTyping($data->envelope->source, '', $groupId);
+        $response['message'] = 'I have no clue, do you know?';
+    }
 
-                                    // Remove mention from message
-                                    $message    = mb_convert_encoding($message, 'UTF-8', 'UTF-8');
-                                    // Length of the mention is not correct, so we just remove the first 3 characters
-                                    //$message    = substr($message, $data->envelope->dataMessage->mentions[0]->length);
-                                    $message    = substr($message, 3);
-                                    $answer     = getAnswer(trim($message, " \t\n\r\0\x0B?"), $data->envelope->source);
+    $response   = apply_filters('tsjippy-signal-daemon-response', $response, $message, $source, $users, $name, $tsjippySignal);
 
-                                    $tsjippySignal->send($groupId, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
-                                }
-                            }
-                        }
-                    } elseif (!isset($data->envelope->dataMessage->groupInfo)) {
-                        $tsjippySignal->sendReaction($data->envelope->source, $data->envelope->timestamp, '', '👍🏽');
+    return $response;
+}
 
-                        $tsjippySignal->sentTyping($data->envelope->source, $data->envelope->timestamp);
+/**
+ * Parses an incoming Signal messages with AI
+ *
+ * @param   string  $message        The incoming message
+ * @param   string  $phoneNumber    The sender phonenumber
+ *
+ * @return  string                  The answer
+ */
+function addAiResponse($message, $phoneNumber)
+{
+    TSJIPPY\printArray($message);
+    TSJIPPY\printArray($phoneNumber);
 
-                        $answer = getAnswer($message, $data->envelope->source);
+    global $tsjippySignal;
 
-                        $tsjippySignal->send($data->envelope->source, $answer['message'], $answer['pictures'], $data->envelope->timestamp, $data->envelope->source, $data->envelope->dataMessage->message);
-                    }
+    $connectors = [];
+    foreach (wp_get_connectors() as $name => $connector) {
+        if ($connector['plugin']['is_active']()) {
+            $connectors[$name] = $connector;
+        }
+    }
 
-                    // add message to the received table
-                    $tsjippySignal->addToReceivedMessageLog($data->envelope->source, $message, $data->envelope->timestamp, $groupId, $attachments);
-                }
+    if (empty($connectors)) {
+        return '';
+    }
 
-                /**
-                 * Get an answer for a given message and source
-                 * @param   string  $message    The message to get an answer for
-                 * @param   string  $source     The source of the message to get an answer for
-                 *
-                 * @return  array               The answer for the given message and source, with keys 'message' and 'pictures'
-                 */
-                function getAnswer($message, $source)
-                {
-                    global $tsjippySignal;
+    try {
+        // Get message history of last hour
+        $received   = $tsjippySignal->getReceivedMessageLog(100, 1, time() - MINUTE_IN_SECONDS * 100000, '', $phoneNumber);
 
-                    $lowerMessage = strtolower($message);
+        $sent       = $tsjippySignal->getSentMessageLog(100, 1, time() - MINUTE_IN_SECONDS * 100000, '', $phoneNumber);
 
-                    // Find the first name
-                    $name = false;
-                    $users = get_users(array(
-                        'meta_key'     => 'tsjippy_signal_number',
-                        'meta_value'   => $source,
-                    ));
+        $messages   = array_merge($received, $sent);
 
-                    if (!empty($users)) {
-                        $name = $users[0]->first_name;
-                    }
+        // Sort on time
+        usort($messages, function ($a, $b) {
+            if ($a->timesend == $b->timesend) {
+                return 0;
+            }
 
-                    $pictures   = [];
-                    $response   = '';
+            return ($a->timesend < $b->timesend) ? -1 : 1;
+        });
 
-                    if ($lowerMessage == 'test') {
-                        $response    = 'Awesome!';
-                    } elseif (str_contains($lowerMessage, 'where are you')) {
-                        $response    = 'Sorry for being away, but I am now back in full capacity!';
-                    } elseif ($lowerMessage == 'thanks' || str_contains($lowerMessage, 'thanks')) {
-                        $response = 'You`re welcome!';
-                    } elseif ($lowerMessage == 'hi' || str_contains($lowerMessage, 'hello')) {
-                        $response = "Hi ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif ($lowerMessage == 'good morning') {
-                        $response = "Good morning ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif ($lowerMessage == 'good afternoon') {
-                        $response = "Good afternoon ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif ($lowerMessage == 'good evening') {
-                        $response = "Good evening ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif ($lowerMessage == 'good night') {
-                        $response = "Good night ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif (str_contains($lowerMessage, 'thank you')) {
-                        $response = "You are welcome ";
-                        if ($name) {
-                            $response   .= $name;
-                        }
-                    } elseif (str_contains($lowerMessage, 'help')) {
-                        $response = "";
-                        if ($name) {
-                            $response   .= $name . ', ';
-                        }
-                        $response .= "I am so sorry to hear you need help. I am afraid I am not a good councelor";
-                    } else {
-                        $response = addAiResponse($message, $source);
-                    }
+        $history    = [];
 
-                    $response   = [
-                        'message'   => $response,
-                        'pictures'  => $pictures
-                    ];
+        foreach ($messages as $msg) {
+            if ($msg->sender == null) {
+                $history[]  = new ModelMessage([new MessagePart($msg->message)]);
+            } else {
+                $history[]  = new UserMessage([new MessagePart($msg->message)]);
+            }
+        }
 
-                    if (empty($response['message']) && !empty($lowerMessage)) {
-                        TSJIPPY\printArray("No answer found for '$message'");
+        $result = wp_ai_client_prompt($message)
+            ->with_history(...$history)
+            ->generate_text();
 
-                        $response['message'] = 'I have no clue, do you know?';
-                    }
+        if (is_wp_error($result)) {
+            // Handle error.
+            return '';
+        }
 
-                    $response   = apply_filters('tsjippy-signal-daemon-response', $response, $message, $source, $users, $name, $tsjippySignal);
+        $modelName              = array_keys($connectors)[0];
+        return "I am not sure what to answer so I asked $modelName.\n\nHere is what it said:\n$result";
+    } catch (\Exception $e) {
+        // Code to handle any other general Exception
+        TSJIPPY\printArray("Caught a general exception: " . $e->getMessage());
+    }
 
-                    return $response;
-                }
-
-                /**
-                 * Parses an incoming Signal messages with AI
-                 *
-                 * @param   string  $message        The incoming message
-                 * @param   string  $phoneNumber    The sender phonenumber
-                 *
-                 * @return  string                  The answer
-                 */
-                function addAiResponse($message, $phoneNumber)
-                {
-                    TSJIPPY\printArray($message);
-                    TSJIPPY\printArray($phoneNumber);
-
-                    global $tsjippySignal;
-
-                    $connectors = [];
-                    foreach (wp_get_connectors() as $name => $connector) {
-                        if ($connector['plugin']['is_active']()) {
-                            $connectors[$name] = $connector;
-                        }
-                    }
-
-                    if (empty($connectors)) {
-                        return '';
-                    }
-
-                    try {
-                        // Get message history of last hour
-                        $received   = $tsjippySignal->getReceivedMessageLog(100, 1, time() - MINUTE_IN_SECONDS * 100000, '', $phoneNumber);
-
-                        $sent       = $tsjippySignal->getSentMessageLog(100, 1, time() - MINUTE_IN_SECONDS * 100000, '', $phoneNumber);
-
-                        $messages   = array_merge($received, $sent);
-
-                        // Sort on time
-                        usort($messages, function ($a, $b) {
-                            if ($a->timesend == $b->timesend) {
-                                return 0;
-                            }
-
-                            return ($a->timesend < $b->timesend) ? -1 : 1;
-                        });
-
-                        $history    = [];
-
-                        foreach ($messages as $msg) {
-                            if ($msg->sender == null) {
-                                $history[]  = new ModelMessage([new MessagePart($msg->message)]);
-                            } else {
-                                $history[]  = new UserMessage([new MessagePart($msg->message)]);
-                            }
-                        }
-
-                        $result = wp_ai_client_prompt($message)
-                            ->with_history(...$history)
-                            ->generate_text();
-
-                        if (is_wp_error($result)) {
-                            // Handle error.
-                            return '';
-                        }
-
-                        $modelName              = array_keys($connectors)[0];
-                        return "I am not sure what to answer so I asked $modelName.\n\nHere is what it said:\n$result";
-                    } catch (\Exception $e) {
-                        // Code to handle any other general Exception
-                        TSJIPPY\printArray("Caught a general exception: " . $e->getMessage());
-                    }
-
-                    return '';
-                }
+    return '';
+}
