@@ -27,6 +27,9 @@ function scheduleTasks()
     add_action('tsjippy-signal-schedule-signal-message', __NAMESPACE__ . '\sendSignalMessage', 10, 8);
 }
 
+/**
+ * Checks if Signal is correctly installed
+ */
 function checkSignal()
 {
     $signal         = TSJIPPY\SIGNAL\getSignalInstance();
@@ -93,6 +96,9 @@ function signalNumberReminder()
     }
 }
 
+/**
+ * Removes old signal messages
+ */
 function cleanSignalLog()
 {
     $period     = SETTINGS['clean-period'] ?? false;
@@ -105,6 +111,9 @@ function cleanSignalLog()
     $signal->clearMessageLog($maxDate);
 }
 
+/**
+ * Processes actions in the queue
+ */
 function processQueue()
 {
     $signal    = getSignalInstance();
