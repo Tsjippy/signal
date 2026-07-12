@@ -5,6 +5,7 @@
 
 ### Changed
 - allow chatting with bypassing queue
+- prayer hook
 
 ### Fixed
 
