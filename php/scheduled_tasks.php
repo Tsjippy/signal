@@ -5,6 +5,9 @@ namespace TSJIPPY\SIGNAL;
 use TSJIPPY;
 
 add_action('init', __NAMESPACE__ . '\scheduleTasks');
+/**
+ * Schedule all tasks for this plugin
+ */
 function scheduleTasks()
 {
     TSJIPPY\scheduleTask('tsjippy-signal-check-signal', 'daily', __NAMESPACE__, 'checkSignal');
