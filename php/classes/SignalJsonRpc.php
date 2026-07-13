@@ -1138,12 +1138,16 @@ class SignalJsonRpc extends AbstractSignal
             $params['given-name'] = $givenname;
         }
 
-        if (!empty($avatarPath) && file_exists($avatarPath)) {
-            $params['avatar'] = $avatarPath;
+        if (!empty($avatar) && file_exists($avatar)) {
+            $params['avatar'] = $avatar;
         }
 
         if ($removeAvatar) {
             $params['removeAvatar'] = true;
+        }
+
+        if(empty($params )){
+            return "Nothing to do";
         }
 
         $result = $this->addToCommandQueue('updateProfile', $params);
