@@ -7,6 +7,7 @@
 
 ### Fixed
 - add to command history
+- updating profile
 
 ### Updated
 
