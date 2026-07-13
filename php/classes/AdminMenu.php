@@ -26,11 +26,11 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     }
 
     /**
-     * Displays the settings page for the plugin.
+     * Add the settings page to the admin menu
+     *
+     * @param \DOMElement $parent The parent menu slug
      * 
-     * @param \DOMElement|null $parent The parent node element
-     * 
-     * @return bool True if the settings page was displayed successfully, false otherwise
+     * @return bool True if the settings page was added, false otherwise
      */
     public function settings($parent)
     {

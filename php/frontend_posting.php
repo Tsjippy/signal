@@ -136,7 +136,7 @@ function afterContent($frontendContend)
 <?php
 }
 
-// Send Signal message about the new or updated post
+add_action('tsjippy-frontend-content-after-post-save', __NAMESPACE__ . '\afterPostSave', 999, 3);
 /**
  * Allow comments
  * 
@@ -144,7 +144,6 @@ function afterContent($frontendContend)
  * @param   object      $object     FrontEndContent Instance
  * @param   array       $request    The sanitized request data
  */
-add_action('tsjippy-frontend-content-after-post-save', __NAMESPACE__ . '\afterPostSave', 999, 3);
 function afterPostSave($post, $object, $request)
 {
     if (isset($request['send-signal']) && $request['send-signal']) {
@@ -163,6 +162,12 @@ function afterPostSave($post, $object, $request)
 }
 
 add_action('wp_after_insert_post', __NAMESPACE__ . '\afterInsertPost', 10, 3);
+/**
+ * Set the default picture of a post after it is inserted
+ *
+ * @param    int        $postId        The WP_Post id
+ * @param    \WP_Post    $post        The WP_Post object
+ */
 function afterInsertPost($postId, $post)
 {
     if (in_array($post->post_status, ['publish'])) {
