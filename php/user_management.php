@@ -27,11 +27,13 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
     //Content
     ob_start();
 
-?>
+    ?>
     <div id='signal-options' class='tabcontent hidden'>
         <form>
             <input type='hidden' class='no-reset' name='user-id' value='<?php echo esc_attr($user->ID); ?>'>
-            <h3>Signal Options</h3>
+            <h3>
+                Signal Options
+            </h3>
             <?php
             $prefs      = get_user_meta($user->ID, 'tsjippy_signal_preferences', true);
             echo wp_kses_post(apply_filters('tsjippy-signal-personal-settings', '', $user, $prefs));
@@ -40,7 +42,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
             ?>
         </form>
     </div>
-<?php
+    <?php
 
     $result    = ob_get_clean();
 

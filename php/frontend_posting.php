@@ -5,6 +5,11 @@ namespace TSJIPPY\SIGNAL;
 use TSJIPPY;
 
 add_action('tsjippy-frontend-content-post-after-content', __NAMESPACE__ . '\afterContent', 20);
+/**
+ * Add the comments section to the frontend post content
+ * 
+ * @param   object    $frontendContend    The FrontEndContent instance
+ */
 function afterContent($frontendContend)
 {
     $checked        = '';
