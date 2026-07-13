@@ -1418,9 +1418,19 @@ class Signal
                         $command->params['textStyle'][]    = "$start:$length:'ITALIC'";
                     }
                 }
-                $result = call_user_func_array(array($this, $command->method), $command->params);
 
-                $this->addToCommandLog($command->method, $command->params);
+                try{
+                    $result = call_user_func_array(array($this, $command->method), $command->params);
+
+                    $this->addToCommandLog($command->method, $command->params);
+                }catch(\Exception $e) {
+                    TSJIPPY\printArray([
+                        $e->getMessage(),
+                        $command
+                    ]);
+
+                    continue;
+                }
             } else {
                 TSJIPPY\printArray($command);
             }
