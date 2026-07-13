@@ -25,7 +25,7 @@ function getSignalInstance($getResult = true)
         $signal = new SignalJsonRpc(true, $getResult);
     } else {
         include_once __DIR__ . '/../php/classes/SignalCommandLine.php';
-        $signal = new SignalCommandLine($getResult);
+        $signal = new SignalCommandLine();
     }
 
     if ($getResult) {
@@ -39,6 +39,11 @@ function getSignalInstance($getResult = true)
 
 // Send an signal message before sending a mail. Do not continue sending the e-mail if not needed
 add_filter('wp_mail', __NAMESPACE__ . '\sendEmailBySignal', 2);
+/**
+ * Sends a signal message based on the mail args
+ * 
+ * @param   array   $args
+ */
 function sendEmailBySignal($args)
 {
     $signal = getSignalInstance(false);
