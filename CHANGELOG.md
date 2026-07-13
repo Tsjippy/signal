@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- params with a - in the key
 
 ### Updated
+
+## [10.7.2] - 2026-07-13
+
+
+### Fixed
+- params with a - in the key
 
 ## [10.7.1] - 2026-07-13
 
