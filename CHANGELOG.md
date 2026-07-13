@@ -2,13 +2,18 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- error handler
 
 ### Changed
 
 ### Fixed
 
 ### Updated
+
+## [10.7.1] - 2026-07-13
+
+
+### Added
+- error handler
 
 ## [10.7.0] - 2026-07-12
 
