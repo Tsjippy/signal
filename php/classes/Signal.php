@@ -202,7 +202,7 @@ class Signal
 
         maybe_create_table($this->queueTableName, $sql);
 
-        // Command queue
+        // Command History
         $sql = "CREATE TABLE {$this->commandTableName} (
             id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_added bigint(20) NOT NULL,
@@ -210,7 +210,7 @@ class Signal
             params longtext
        ) $charsetCollate;";
 
-        maybe_create_table($this->queueTableName, $sql);
+        maybe_create_table($this->commandTableName, $sql);
     }
 
     /**
@@ -293,9 +293,9 @@ class Signal
         TSJIPPY\insertInDb(
             $this->commandTableName,
             array(
-                'time_send' => time(),
-                'recipient' => $method,
-                'message'   => $params,
+                'time_added' => time(),
+                'method'     => $method,
+                'params'     => $params,
             ),
             [
                 '%d',
