@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- params with a - in the key
 
 ### Updated
 
