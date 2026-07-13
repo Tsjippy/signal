@@ -1419,11 +1419,22 @@ class Signal
                     }
                 }
 
+                /**
+                 * Replaces dashes in the params as they are not valid in php variable names
+                 */
+                foreach($command->params as $key => $param){
+                    if(str_contains($key, '-')){
+                        $command->params[str_replace('-', '', $key)]    = $param;
+
+                        unset($command->params[$key]);
+                    }
+                }
+
                 try{
                     $result = call_user_func_array(array($this, $command->method), $command->params);
 
                     $this->addToCommandLog($command->method, $command->params);
-                }catch(\Exception $e) {
+                }catch(\Throwable $e) {
                     TSJIPPY\printArray([
                         $e->getMessage(),
                         $command

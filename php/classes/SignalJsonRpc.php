@@ -1123,19 +1123,19 @@ class SignalJsonRpc extends AbstractSignal
      * The profile is stored encrypted on the Signal servers.
      * The decryption key is sent with every outgoing messages to contacts.
      *
-     * @param string    $name           New name visible by message recipients
-     * @param string    $avatarPath     Path to the new avatar visible by message recipients
+     * @param string    $givenname      New name visible by message recipients
+     * @param string    $avatar         Path to the new avatar visible by message recipients
      * @param bool      $removeAvatar   Remove the avatar visible by message recipients
      *
      * @return bool|string|WP_Error     Tehe result or an WP Error object
      */
-    public function updateProfile(string $name = '', ?string $avatarPath = '', bool $removeAvatar = false)
+    public function updateProfile(string $givenname = '', ?string $avatar = '', bool $removeAvatar = false)
     {
 
         $params = [];
 
-        if (!empty($name)) {
-            $params['given-name'] = $name;
+        if (!empty($givenname)) {
+            $params['given-name'] = $givenname;
         }
 
         if (!empty($avatarPath) && file_exists($avatarPath)) {
@@ -1154,8 +1154,6 @@ class SignalJsonRpc extends AbstractSignal
             }
             return true;
         }
-
-        TSJIPPY\printArray($result);
 
         return $result;
     }
