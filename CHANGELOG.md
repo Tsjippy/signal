@@ -6,10 +6,15 @@
 ### Changed
 
 ### Fixed
-- add to command history
-- updating profile
 
 ### Updated
+
+## [10.7.3] - 2026-07-13
+
+
+### Fixed
+- add to command history
+- updating profile
 
 ## [10.7.2] - 2026-07-13
 
