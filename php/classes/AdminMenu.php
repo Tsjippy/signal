@@ -397,8 +397,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
                     'compare' => 'EXISTS'
                 )
             ),
-            'orderby'    => 'meta_value',
-            'order'     => 'ASC'
+            'orderby' => 'meta_value',
+            'order'   => 'ASC'
         ]);
 
         $dataList   = TSJIPPY\addElement('datalist', $label, ['id' => "groups"]);
