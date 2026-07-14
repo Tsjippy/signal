@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- optimized post query
 
 ### Fixed
 
 ### Updated
+
+## [10.7.4] - 2026-07-14
+
+
+### Changed
+- optimized post query
 
 ## [10.7.3] - 2026-07-13
 
