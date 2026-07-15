@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- no need to serilize before insertInDb
 
 ### Fixed
 
