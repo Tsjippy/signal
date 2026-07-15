@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- wrap queue processor in try block
 
 ### Fixed
 
 ### Updated
+
+## [10.7.6] - 2026-07-15
+
+
+### Changed
+- wrap queue processor in try block
 
 ## [10.7.5] - 2026-07-14
 
