@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- wrap queue processor in try block
 
 ### Fixed
 
