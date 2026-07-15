@@ -1327,7 +1327,7 @@ class Signal
     public function processQueue()
     {
         if (wp_get_environment_type() === 'local') {
-            //return; // no point in doing this
+            return; // no point in doing this
         }
 
         $this->processingQueue     = true;
@@ -1379,6 +1379,10 @@ class Signal
 
 
             if (!is_array($command->params)) {
+                TSJIPPY\printArray([
+                    "Removing",
+                    $command
+                ]);
                 $this->removeFromQueue($command->id);
                 continue;
             }
@@ -1466,6 +1470,12 @@ class Signal
 
                 // Remove from the queue as none is waiting for the result or to much time has passed since adding it
                 if (!$command->waiting || time() - $command->time_added > 25) {
+                    TSJIPPY\printArray([
+                        "Removing",
+                        $command,
+                        $result
+                    ]);
+
                     $this->removeFromQueue($command->id);
 
                     sleep($sleepTime);
@@ -1480,6 +1490,6 @@ class Signal
 
         $this->processingQueue     = false;
 
-        //TSJIPPY\printArray('Finished processing queue, as another job has taken over');
+        TSJIPPY\printArray('Finished processing queue, as another job has taken over');
     }
 }
