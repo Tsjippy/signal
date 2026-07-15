@@ -1328,7 +1328,7 @@ class Signal
     {
         try {
             if (wp_get_environment_type() === 'local') {
-                //return; // no point in doing this
+                return; // no point in doing this
             }
 
             $this->processingQueue     = true;
