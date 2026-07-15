@@ -1326,170 +1326,180 @@ class Signal
      */
     public function processQueue()
     {
-        if (wp_get_environment_type() === 'local') {
-            return; // no point in doing this
-        }
-
-        $this->processingQueue     = true;
-
-        // Mark the start of this option
-        $startTime = time();
-        update_option('tsjippy-signal-processing-queue', $startTime);
-
-        $queueSize  = 0;
-        $sleepTime  = 30;
-
-        // Loop until a new cronjob has started
-        while (true) {
-            /**
-             * Check if we if should terminate
-             */
-            $dbStartTime    = get_option('tsjippy-signal-processing-queue');
-
-            if ($dbStartTime != $startTime) {
-                break;
+        try {
+            if (wp_get_environment_type() === 'local') {
+                //return; // no point in doing this
             }
 
-            /**
-             * Check Rate limit
-             */
-            if ($this->getRateLimited()) {
-                // We are past the rate limit, reset it
-                if (time() > $this->rateLimited) {
-                    $this->setRateLimit(false);
-                } else {
-                    // no need to run if there is a rate limit
-                    sleep(60);
-                    continue;
-                }
-            }
+            $this->processingQueue     = true;
 
-            // Get the oldest command
-            $command    = $this->getQueue();
+            // Mark the start of this option
+            $startTime = time();
+            update_option('tsjippy-signal-processing-queue', $startTime);
 
-            if(is_array($command)){
-                $command    = $command[0];
-            }
+            $queueSize  = 0;
+            $sleepTime  = 30;
 
-            // Nothing in the queue
-            if (empty($command)) {
-                sleep(1);
-                continue;
-            }
+            // Loop until a new cronjob has started
+            while (true) {
+                /**
+                 * Check if we if should terminate
+                 */
+                $dbStartTime    = get_option('tsjippy-signal-processing-queue');
 
-
-            if (!is_array($command->params)) {
-                TSJIPPY\printArray([
-                    "Removing",
-                    $command
-                ]);
-                $this->removeFromQueue($command->id);
-                continue;
-            }
-
-            /**
-             * Check the remaining items in the queue
-             */
-            // No need to query the db again if we already know that there are multiple commands awaiting execution
-            if ($queueSize > 3) {
-                $queueSize--;
-            } else {
-                $queueSize  = $this->getQueueSize();
-                if ($queueSize < 3) {
-                    $sleepTime  = 2;
-                }
-            }
-
-            if (method_exists($this, $command->method)) {
-                if ($command->method == 'send') {
-                    if (isset($command->params['groupId'])) {
-                        $command->params['recipient']    = $command->params['groupId'];
-
-                        unset($command->params['groupId']);
-                    }
-
-                    // Originally sent more than 1 hour ago
-                    if ($command->time_added < time() - HOUR_IN_SECONDS) {
-
-                        $appendix       = "\n\nThis message was orginally sent " . human_time_diff($command->time_added) . " ago, sorry for the delay";
-
-                        $start          = mb_strlen($command->params['message']);
-
-                        $command->params['message'] .= $appendix;
-
-                        $length         = mb_strlen($appendix);
-
-                        $command->params['textStyle'][]    = "$start:$length:'ITALIC'";
-                    }
+                if ($dbStartTime != $startTime) {
+                    break;
                 }
 
                 /**
-                 * Replaces dashes in the params as they are not valid in php variable names
+                 * Check Rate limit
                  */
-                foreach($command->params as $key => $param){
-                    if(str_contains($key, '-')){
-                        $command->params[str_replace('-', '', $key)]    = $param;
-
-                        unset($command->params[$key]);
+                if ($this->getRateLimited()) {
+                    // We are past the rate limit, reset it
+                    if (time() > $this->rateLimited) {
+                        $this->setRateLimit(false);
+                    } else {
+                        // no need to run if there is a rate limit
+                        sleep(60);
+                        continue;
                     }
                 }
 
-                try{
-                    $result = call_user_func_array(array($this, $command->method), $command->params);
+                // Get the oldest command
+                $command    = $this->getQueue();
 
-                    $this->addToCommandLog($command->method, $command->params);
-                }catch(\Throwable $e) {
-                    TSJIPPY\printArray([
-                        $e->getMessage(),
-                        $command
-                    ]);
+                if(is_array($command)){
+                    $command    = $command[0];
+                }
 
+                // Nothing in the queue
+                if (empty($command)) {
+                    sleep(1);
                     continue;
                 }
-            } else {
-                TSJIPPY\printArray($command);
-            }
 
-            // Mark as timed out if still no result after 10 times
-            if ($command->retries >= 9 && empty($result)) {
-                TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                $result = 'timed out';
-            }
 
-            // We got a result
-            if (!empty($result)) {
-                // Add to the message log
-                if ($command->method == 'send' && !empty($result->timestamp)) {
-                    $this->addToMessageLog($command->params['recipient'], $command->params['message'], $result->timestamp);
-                }
-
-                // Delete a message
-                elseif ($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
-                    $this->markAsDeleted($command->param['targetTimestamp']);
-                }
-
-                // Remove from the queue as none is waiting for the result or to much time has passed since adding it
-                if (!$command->waiting || time() - $command->time_added > 25) {
+                if (!is_array($command->params)) {
                     TSJIPPY\printArray([
                         "Removing",
-                        $command,
-                        $result
+                        $command
                     ]);
-
                     $this->removeFromQueue($command->id);
-
-                    sleep($sleepTime);
                     continue;
                 }
+
+                /**
+                 * Check the remaining items in the queue
+                 */
+                // No need to query the db again if we already know that there are multiple commands awaiting execution
+                if ($queueSize > 3) {
+                    $queueSize--;
+                } else {
+                    $queueSize  = $this->getQueueSize();
+                    if ($queueSize < 3) {
+                        $sleepTime  = 2;
+                    }
+                }
+
+                if (method_exists($this, $command->method)) {
+                    if ($command->method == 'send') {
+                        if (isset($command->params['groupId'])) {
+                            $command->params['recipient']    = $command->params['groupId'];
+
+                            unset($command->params['groupId']);
+                        }
+
+                        // Originally sent more than 1 hour ago
+                        if ($command->time_added < time() - HOUR_IN_SECONDS) {
+
+                            $appendix       = "\n\nThis message was orginally sent " . human_time_diff($command->time_added) . " ago, sorry for the delay";
+
+                            $start          = mb_strlen($command->params['message']);
+
+                            $command->params['message'] .= $appendix;
+
+                            $length         = mb_strlen($appendix);
+
+                            $command->params['textStyle'][]    = "$start:$length:'ITALIC'";
+                        }
+                    }
+
+                    /**
+                     * Replaces dashes in the params as they are not valid in php variable names
+                     */
+                    foreach($command->params as $key => $param){
+                        if(str_contains($key, '-')){
+                            $command->params[str_replace('-', '', $key)]    = $param;
+
+                            unset($command->params[$key]);
+                        }
+                    }
+
+                    try{
+                        $result = call_user_func_array(array($this, $command->method), $command->params);
+
+                        $this->addToCommandLog($command->method, $command->params);
+                    }catch(\Throwable $e) {
+                        TSJIPPY\printArray([
+                            $e->getMessage(),
+                            $command
+                        ]);
+
+                        continue;
+                    }
+                } else {
+                    TSJIPPY\printArray($command);
+                }
+
+                // Mark as timed out if still no result after 10 times
+                if ($command->retries >= 9 && empty($result)) {
+                    TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
+                    $result = 'timed out';
+                }
+
+                // We got a result
+                if (!empty($result)) {
+                    // Add to the message log
+                    if ($command->method == 'send' && !empty($result->timestamp)) {
+                        $this->addToMessageLog($command->params['recipient'], $command->params['message'], $result->timestamp);
+                    }
+
+                    // Delete a message
+                    elseif ($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
+                        $this->markAsDeleted($command->param['targetTimestamp']);
+                    }
+
+                    // Remove from the queue as none is waiting for the result or to much time has passed since adding it
+                    if (!$command->waiting || time() - $command->time_added > 25) {
+                        TSJIPPY\printArray([
+                            "Removing",
+                            $command,
+                            $result
+                        ]);
+
+                        $this->removeFromQueue($command->id);
+
+                        sleep($sleepTime);
+                        continue;
+                    }
+                }
+
+                $this->updateQueueResult($command, $result);
+
+                sleep($sleepTime);
             }
 
-            $this->updateQueueResult($command, $result);
+            $this->processingQueue     = false;
 
-            sleep($sleepTime);
+            TSJIPPY\printArray('Finished processing queue, as another job has taken over');
+        }
+        catch(\Exception $e) {
+            TSJIPPY\printArray($e->getMessage());
         }
 
-        $this->processingQueue     = false;
+        finally {
+            TSJIPPY\printArray("Process complete");
+        }
 
-        TSJIPPY\printArray('Finished processing queue, as another job has taken over');
     }
 }
