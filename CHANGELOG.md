@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- no need to serilize before insertInDb
 
 ### Fixed
 
 ### Updated
+
+## [10.7.7] - 2026-07-15
+
+
+### Changed
+- no need to serilize before insertInDb
 
 ## [10.7.6] - 2026-07-15
 
