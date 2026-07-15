@@ -269,7 +269,7 @@ class Signal
                 'sender'      => $sender,
                 'message'     => $message,
                 'chat'        => $chat,
-                'attachments' => maybe_serialize($attachments)
+                'attachments' => $attachments
             ),
             [
                 '%d',
@@ -1176,7 +1176,7 @@ class Signal
             array(
                 'time_added'   => time(),
                 'method'       => $method,
-                'params'       => maybe_serialize($params),
+                'params'       => $params,
                 'priority'     => $priority,
                 'waiting'      => $waiting
             ),
