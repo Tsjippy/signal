@@ -1280,6 +1280,30 @@ class Signal
     }
 
     /**
+     * Updates an commands priority
+     * @param   int  $commandId     The commandId
+     * @param   int $priority       The new priority
+     *
+     * @return  bool                Whether the message was updated successfully
+     */
+    public function updatePriority($commandId, $priority)
+    {
+        // Update the queue
+        TSJIPPY\updateDbValue(
+            $this->queueTableName,
+            [
+                'priority'   => $priority
+            ],
+            [
+                'id'        => $commandId
+            ],
+            ['%d'],
+            ['%d'],
+            'signal'
+        );
+    }
+
+    /**
      * Updates a message in the queue with the result of the command
      * @param   object  $command    The command to update, should be the result of getQueue
      * @param   mixed  $result     The result of the command
@@ -1454,7 +1478,10 @@ class Signal
                 // Mark as timed out if still no result after 10 times
                 if ($command->retries >= 9 && empty($result)) {
                     TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                    $result = 'timed out';
+                    
+                    if($command->priority != 99){
+                        $this->updatePriority($command->id, 99);
+                    }
                 }
 
                 // We got a result

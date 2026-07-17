@@ -860,14 +860,19 @@ class SignalJsonRpc extends AbstractSignal
 
         $result = $this->addToCommandQueue('send', $params);
 
+        if (is_wp_error($result)) {
+            TSJIPPY\printArray($result->get_error_message());
+        }
+
         if (!$result || is_wp_error($result)) {
-            return true;
+            return null;
         }
 
         if (isset($result->timestamp)) {
             return $result->timestamp;
         } elseif (!is_numeric($result)) {
             TSJIPPY\printArray($result);
+            return null;
         }
 
         return $result;
