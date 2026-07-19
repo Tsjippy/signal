@@ -1444,7 +1444,7 @@ class Signal
 
                             $length         = mb_strlen($appendix);
 
-                            $command->params['textStyle'][]    = "$start:$length:'ITALIC'";
+                            $command->params['textStyle'][]    = "$start:$length:ITALIC";
                         }
                     }
 
