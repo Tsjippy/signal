@@ -7,6 +7,7 @@
 - do not delete command on failure, but keep trying with lower priority
 
 ### Fixed
+- messagea delayed comment
 
 ### Updated
 
