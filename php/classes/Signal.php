@@ -1427,6 +1427,7 @@ class Signal
 
                 if (method_exists($this, $command->method)) {
                     if ($command->method == 'send') {
+                        TSJIPPY\printArray("Sleeptime: $sleepTime");
                         if (isset($command->params['groupId'])) {
                             $command->params['recipient']    = $command->params['groupId'];
 
