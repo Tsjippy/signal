@@ -8,6 +8,7 @@
 
 ### Fixed
 - messagea delayed comment
+- remove from queue when arror
 
 ### Updated
 
