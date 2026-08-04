@@ -1427,7 +1427,6 @@ class Signal
 
                 if (method_exists($this, $command->method)) {
                     if ($command->method == 'send') {
-                        TSJIPPY\printArray("Sleeptime: $sleepTime");
                         if (isset($command->params['groupId'])) {
                             $command->params['recipient']    = $command->params['groupId'];
 
@@ -1478,9 +1477,9 @@ class Signal
 
                 // Mark as timed out if still no result after 10 times
                 if ($command->retries >= 9 && empty($result)) {
-                    TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                    
                     if($command->priority != 99){
+                        TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
+                    
                         $this->updatePriority($command->id, 99);
                     }
                 }
@@ -1508,8 +1507,21 @@ class Signal
                         $this->removeFromQueue($command->id);
 
                         sleep($sleepTime);
+                        
                         continue;
                     }
+                }
+
+                if(!empty($this->error)){
+                    if(str_contains($this->error, 'Invalid number')){
+                        TSJIPPY\printArray("Removing the command as it is an invalid number");
+                    }else{
+                        TSJIPPY\printArray($this->error);
+                    }
+                        
+                    $this->removeFromQueue($command->id);
+                    
+                    $this->error = '';
                 }
 
                 $this->updateQueueResult($command, $result);

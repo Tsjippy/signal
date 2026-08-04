@@ -7,8 +7,6 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\Image\ImagickImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use mikehaertl\shellcommand\Command;
-use stdClass;
 use WP_Error;
 
 /*
@@ -117,7 +115,7 @@ class SignalJsonRpc extends AbstractSignal
 
         // this commands needs a higher timeout than usual
         try {
-            stream_set_timeout($this->socket, 1);
+            stream_set_timeout($this->socket, 5);
         } catch (\Error $e) {
             TSJIPPY\printArray($e);
 
@@ -441,7 +439,8 @@ class SignalJsonRpc extends AbstractSignal
 
         // Captcha required
         elseif (str_contains($this->error, 'CAPTCHA proof required')) {
-            $this->sendRateLimitInstructions($this->error);
+            TSJIPPY\printArray($this);
+            //$this->sendRateLimitInstructions($this->error);
         }
 
         // Rate Limit
@@ -482,6 +481,8 @@ class SignalJsonRpc extends AbstractSignal
             if ($rateLimitedTill > $this->getRateLimited()) {
                 // Send rate limit instruction if this is the first time we encouter the issue
                 if (!$this->rateLimited) {
+                    
+                    TSJIPPY\printArray($this);
                     $this->sendRateLimitInstructions($token);
                 }
 
@@ -504,7 +505,7 @@ class SignalJsonRpc extends AbstractSignal
         else {
             TSJIPPY\printArray(
                 [
-                    'message'   => "Got error '$this->error' while running the '$method' command. ",
+                    'message'   => "Got error '$this->error' while running the '$method' command.",
                     'method'    => $method,
                     'params'    => $params,
                     'json'      => $json
