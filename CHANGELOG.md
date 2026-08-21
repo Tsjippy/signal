@@ -5,6 +5,7 @@
 
 ### Changed
 - do not delete command on failure, but keep trying with lower priority
+- loading form data
 
 ### Fixed
 - messagea delayed comment
