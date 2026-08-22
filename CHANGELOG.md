@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.7.8] - 2026-08-22
+
+
+### Changed
 - do not delete command on failure, but keep trying with lower priority
 - loading form data
 
 ### Fixed
 - messagea delayed comment
 - remove from queue when arror
-
-### Updated
 
 ## [10.7.7] - 2026-07-15
 
