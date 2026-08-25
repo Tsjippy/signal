@@ -1469,6 +1469,8 @@ class Signal
                             $command
                         ]);
 
+                        sleep(60);
+
                         continue;
                     }
                 } else {

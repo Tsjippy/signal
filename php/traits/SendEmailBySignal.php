@@ -4,11 +4,16 @@ namespace TSJIPPY\SIGNAL;
 
 trait SendEmailBySignal
 {
+    /**
+     * Send an e-mail content via Signal
+     * 
+     * @param   array   $args   E-mail arguments
+     */
     function sendEmailBySignal($args)
     {
         $numbers    = [];
         if (!empty($args['submission'])) {
-            $forms      = new \TSJIPPY\FORMS\Forms(blockId:$args['submission']->form_id);
+            $forms      = new \TSJIPPY\FORMS\Forms(postId:$args['submission']->post_id, blockId:$args['submission']->block_id);
 
             $numbers    = (array) ($args['submission']->{$forms->findPhoneNumberElementName()} ?? []);
         }
