@@ -56,8 +56,8 @@ class SignalJsonRpc extends AbstractSignal
         $this->shouldCloseSocket    = $shouldCloseSocket;
 
         // Check daemon
-        $this->daemonIsRunning();
-        $this->startDaemon();
+        /* $this->daemonIsRunning();
+        $this->startDaemon(); */
 
         $this->socketPath     = "$this->basePath/socket";
 
@@ -180,10 +180,14 @@ class SignalJsonRpc extends AbstractSignal
      *
      * @param   int     $id         the request id should epoch of the request
      */
-    public function getRequestResponse(int $id)
+    public function getRequestResponse(int $id, $attempt = 0)
     {
         if (empty($id)) {
             TSJIPPY\printArray("Got an empty Id");
+            return false;
+        }
+
+        if ($attempt >= 10) {
             return false;
         }
 
@@ -300,9 +304,9 @@ class SignalJsonRpc extends AbstractSignal
 
             // add the results we are not interested in to the db
             if (!empty($results)) {
-                $signalResults              = get_option('tsjippy-signal-results', []);
+                $signalResults  = get_option('tsjippy-signal-results', []);
 
-                array_merge($signalResults, $results);
+                $signalResults  = array_merge($signalResults, $results);
 
                 update_option('tsjippy-signal-results', $signalResults);
             }
@@ -559,8 +563,14 @@ class SignalJsonRpc extends AbstractSignal
 
         // Loop till we get an result or an timeout
         $i = 0;
-        while (empty($result) && $i < 5) {
-            $result = $this->getQueue($commandId)->result;
+        while (empty($result) && $i < 10) {
+            $queue = $this->getQueue($commandId);
+
+            if (is_array($queue)) {
+                $queue = $queue[0] ?? null;
+            }
+
+            $result = $queue->result ?? null;
 
             sleep(5);
 
@@ -807,9 +817,8 @@ class SignalJsonRpc extends AbstractSignal
             }
 
             foreach ($attachments as $index => $attachment) {
-                if (empty($image)) {
+                if (empty($attachment)) {
                     unset($attachments[$index]);
-
                     continue;
                 }
 
@@ -847,7 +856,7 @@ class SignalJsonRpc extends AbstractSignal
             }
         }
 
-        if (!empty($timeStamp) && !empty($quoteAuthor) && !empty($quoteMessage)) {
+        if (!empty($quoteTimestamp) && !empty($quoteAuthor) && !empty($quoteMessage)) {
             $params['quoteTimestamp']   = $quoteTimestamp;
 
             $params['quoteAuthor']      = $quoteAuthor;

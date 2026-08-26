@@ -33,7 +33,7 @@ class Signal
     public string   $commandTableName;
     public int|null $totalMessages;
     public bool     $valid;
-    public bool|int $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
+    public int|false|null $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
     public bool     $processingQueue;
     public array    $groups;
@@ -166,7 +166,7 @@ class Signal
 
         // Sent messages log
         $sql = "CREATE TABLE {$this->tableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            id BIGINT(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_send bigint(20) NOT NULL,
             recipient longtext NOT NULL,
             message longtext NOT NULL,
@@ -177,7 +177,7 @@ class Signal
 
         // Received messages log
         $sql = "CREATE TABLE {$this->receivedTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            id BIGINT(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_send bigint(20) NOT NULL,
             sender longtext NOT NULL,
             message longtext NOT NULL,
@@ -190,7 +190,7 @@ class Signal
 
         // Command queue
         $sql = "CREATE TABLE {$this->queueTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            id BIGINT(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_added bigint(20) NOT NULL,
             method longtext NOT NULL,
             params longtext,
@@ -204,7 +204,7 @@ class Signal
 
         // Command History
         $sql = "CREATE TABLE {$this->commandTableName} (
-            id mediumint(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            id BIGINT(9) NOT NULL AUTO_INCREMENT PRIMARY KEY,
             time_added bigint(20) NOT NULL,
             method longtext NOT NULL,
             params longtext
@@ -542,7 +542,7 @@ class Signal
         TSJIPPY\updateDbValue(
             $this->tableName,
             [
-                `status` => 'deleted'
+                'status' => 'deleted'
             ],
             [
                 'time_send' => $timeStamp
@@ -953,7 +953,7 @@ class Signal
 
                 echo "Removing from " . esc_attr($this->programPath) . "<br>";
 
-                exec("rm -rfd $this->programPath");
+                exec('rm -rfd ' . escapeshellarg($this->programPath));
 
                 wp_mkdir_p($this->programPath);
                 TSJIPPY\printArray("Created $this->programPath");
@@ -1036,7 +1036,7 @@ class Signal
                 if (is_dir($a)) {
                     $this->copyfolder("$a", "$to/$ff/");
                 } else {
-                    if (!copy($a, "$to$ff")) {
+                    if (!copy($a, "$to/$ff")) {
                         TSJIPPY\printArray("Error copying $a to $to$ff");
                     }
                 }
@@ -1322,12 +1322,11 @@ class Signal
             TSJIPPY\printArray($command);
             TSJIPPY\printArray($result);
         } else {
-
-            $data   = [
-                'retries'   => $command->retries + 1
-            ];
-
-            if (!empty($result)) {
+            if (empty($result)) {
+                $data   = [
+                    'retries'   => $command->retries + 1
+                ];
+            }else{
                 $data['result']    = $result;
             }
 
@@ -1354,186 +1353,203 @@ class Signal
             if (wp_get_environment_type() === 'local') {
                 return; // no point in doing this
             }
+            global $wpdb;
+    
+            $lock = $wpdb->get_var(
+                "SELECT GET_LOCK('tsjippy_signal_queue', 0)"
+            );
 
-            $this->processingQueue     = true;
+            if (!$lock) {
+                return;
+            }
 
-            // Mark the start of this option
-            $startTime = time();
-            update_option('tsjippy-signal-processing-queue', $startTime);
+            try {
+                $this->processingQueue     = true;
 
-            $queueSize  = 0;
-            $sleepTime  = 30;
+                // Mark the start of this option
+                $startTime = time();
+                update_option('tsjippy-signal-processing-queue', $startTime);
 
-            // Loop until a new cronjob has started
-            while (true) {
-                /**
-                 * Check if we if should terminate
-                 */
-                $dbStartTime    = get_option('tsjippy-signal-processing-queue');
+                $queueSize  = 0;
+                $sleepTime  = 30;
 
-                if ($dbStartTime != $startTime) {
-                    break;
-                }
+                // Loop until a new cronjob has started
+                while (true) {
+                    /**
+                     * Check if we if should terminate
+                     */
+                    $dbStartTime    = get_option('tsjippy-signal-processing-queue');
 
-                /**
-                 * Check Rate limit
-                 */
-                if ($this->getRateLimited()) {
-                    // We are past the rate limit, reset it
-                    if (time() > $this->rateLimited) {
-                        $this->setRateLimit(false);
-                    } else {
-                        // no need to run if there is a rate limit
-                        sleep(60);
-                        continue;
-                    }
-                }
-
-                // Get the oldest command
-                $command    = $this->getQueue();
-
-                if(is_array($command)){
-                    $command    = $command[0];
-                }
-
-                // Nothing in the queue
-                if (empty($command)) {
-                    sleep(1);
-                    continue;
-                }
-
-
-                if (!is_array($command->params)) {
-                    TSJIPPY\printArray([
-                        "Removing",
-                        $command
-                    ]);
-                    $this->removeFromQueue($command->id);
-                    continue;
-                }
-
-                /**
-                 * Check the remaining items in the queue
-                 */
-                // No need to query the db again if we already know that there are multiple commands awaiting execution
-                if ($queueSize > 3) {
-                    $queueSize--;
-                } else {
-                    $queueSize  = $this->getQueueSize();
-                    if ($queueSize < 3) {
-                        $sleepTime  = 2;
-                    }
-                }
-
-                if (method_exists($this, $command->method)) {
-                    if ($command->method == 'send') {
-                        if (isset($command->params['groupId'])) {
-                            $command->params['recipient']    = $command->params['groupId'];
-
-                            unset($command->params['groupId']);
-                        }
-
-                        // Originally sent more than 1 hour ago
-                        if ($command->time_added < time() - HOUR_IN_SECONDS) {
-
-                            $appendix       = "\n\nThis message was orginally sent " . human_time_diff($command->time_added) . " ago, sorry for the delay";
-
-                            $start          = mb_strlen($command->params['message']);
-
-                            $command->params['message'] .= $appendix;
-
-                            $length         = mb_strlen($appendix);
-
-                            $command->params['textStyle'][]    = "$start:$length:ITALIC";
-                        }
+                    if ($dbStartTime != $startTime) {
+                        break;
                     }
 
                     /**
-                     * Replaces dashes in the params as they are not valid in php variable names
+                     * Check Rate limit
                      */
-                    foreach($command->params as $key => $param){
-                        if(str_contains($key, '-')){
-                            $command->params[str_replace('-', '', $key)]    = $param;
-
-                            unset($command->params[$key]);
+                    if ($this->getRateLimited()) {
+                        // We are past the rate limit, reset it
+                        if (time() > $this->rateLimited) {
+                            $this->setRateLimit(false);
+                        } else {
+                            // no need to run if there is a rate limit
+                            sleep(60);
+                            continue;
                         }
                     }
 
-                    try{
-                        $result = call_user_func_array(array($this, $command->method), $command->params);
+                    // Get the oldest command
+                    $command    = $this->getQueue();
 
-                        $this->addToCommandLog($command->method, $command->params);
-                    }catch(\Throwable $e) {
-                        TSJIPPY\printArray([
-                            $e->getMessage(),
-                            $command
-                        ]);
+                    if(is_array($command)){
+                        $command    = $command[0];
+                    }
 
-                        sleep(60);
-
+                    // Nothing in the queue
+                    if (empty($command)) {
+                        sleep(1);
                         continue;
                     }
-                } else {
-                    TSJIPPY\printArray($command);
-                }
 
-                // Mark as timed out if still no result after 10 times
-                if ($command->retries >= 9 && empty($result)) {
-                    if($command->priority != 99){
-                        TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
-                    
-                        $this->updatePriority($command->id, 99);
-                    }
-                }
 
-                // We got a result
-                if (!empty($result)) {
-                    // Add to the message log
-                    if ($command->method == 'send' && !empty($result->timestamp)) {
-                        $this->addToMessageLog($command->params['recipient'], $command->params['message'], $result->timestamp);
-                    }
-
-                    // Delete a message
-                    elseif ($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
-                        $this->markAsDeleted($command->param['targetTimestamp']);
-                    }
-
-                    // Remove from the queue as none is waiting for the result or to much time has passed since adding it
-                    if (!$command->waiting || time() - $command->time_added > 25) {
+                    if (!is_array($command->params)) {
                         TSJIPPY\printArray([
                             "Removing",
-                            $command,
-                            $result
+                            $command
                         ]);
-
                         $this->removeFromQueue($command->id);
-
-                        sleep($sleepTime);
-                        
                         continue;
                     }
-                }
 
-                if(!empty($this->error)){
-                    if(str_contains($this->error, 'Invalid number')){
-                        TSJIPPY\printArray("Removing the command as it is an invalid number");
-                    }else{
-                        TSJIPPY\printArray($this->error);
+                    /**
+                     * Check the remaining items in the queue
+                     */
+                    // No need to query the db again if we already know that there are multiple commands awaiting execution
+                    if ($queueSize > 3) {
+                        $queueSize--;
+                    } else {
+                        $queueSize  = $this->getQueueSize();
+                        if ($queueSize < 3) {
+                            $sleepTime = 2;
+                        } else {
+                            $sleepTime = 30;
+                        }
                     }
+
+                    if (method_exists($this, $command->method)) {
+                        if ($command->method == 'send') {
+                            if (isset($command->params['groupId'])) {
+                                $command->params['recipient']    = $command->params['groupId'];
+
+                                unset($command->params['groupId']);
+                            }
+
+                            // Originally sent more than 1 hour ago
+                            if ($command->time_added < time() - HOUR_IN_SECONDS) {
+
+                                $appendix       = "\n\nThis message was orginally sent " . human_time_diff($command->time_added) . " ago, sorry for the delay";
+
+                                $start          = mb_strlen($command->params['message']);
+
+                                $command->params['message'] .= $appendix;
+
+                                $length         = mb_strlen($appendix);
+
+                                $command->params['textStyle'][]    = "$start:$length:ITALIC";
+                            }
+                        }
+
+                        /**
+                         * Replaces dashes in the params as they are not valid in php variable names
+                         */
+                        foreach($command->params as $key => $param){
+                            if(str_contains($key, '-')){
+                                $command->params[str_replace('-', '', $key)]    = $param;
+
+                                unset($command->params[$key]);
+                            }
+                        }
+
+                        try{
+                            $result = call_user_func_array(array($this, $command->method), $command->params);
+
+                            $this->addToCommandLog($command->method, $command->params);
+                        }catch(\Throwable $e) {
+                            TSJIPPY\printArray([
+                                $e->getMessage(),
+                                $command
+                            ]);
+
+                            sleep(60);
+
+                            continue;
+                        }
+                    } else {
+                        TSJIPPY\printArray($command);
+                    }
+
+                    // Mark as timed out if still no result after 10 times
+                    if ($command->retries >= 9 && empty($result)) {
+                        if($command->priority != 99){
+                            TSJIPPY\printArray("Command $command->method has been retried 10 times, skipping", true);
                         
-                    $this->removeFromQueue($command->id);
-                    
-                    $this->error = '';
+                            $this->updatePriority($command->id, 99);
+                        }
+                    }
+
+                    // We got a result
+                    if (!empty($result)) {
+                        // Add to the message log
+                        if ($command->method == 'send' && !empty($result->timestamp)) {
+                            $this->addToMessageLog($command->params['recipient'], $command->params['message'], $result->timestamp);
+                        }
+
+                        // Delete a message
+                        elseif ($command->method == 'remoteDelete' && isset($result->results[0]->type) && $result->results[0]->type == 'SUCCESS') {
+                            $this->markAsDeleted($command->params['targetTimestamp']);
+                        }
+
+                        // Remove from the queue as none is waiting for the result or to much time has passed since adding it
+                        if (!$command->waiting || time() - $command->time_added > 25) {
+                            TSJIPPY\printArray([
+                                "Removing",
+                                $command,
+                                $result
+                            ]);
+
+                            $this->removeFromQueue($command->id);
+
+                            sleep($sleepTime);
+                            
+                            continue;
+                        }
+                    }
+
+                    if(!empty($this->error)){
+                        if(str_contains($this->error, 'Invalid number')){
+                            TSJIPPY\printArray("Removing the command as it is an invalid number");
+                        }else{
+                            TSJIPPY\printArray($this->error);
+                        }
+                            
+                        $this->removeFromQueue($command->id);
+                        
+                        $this->error = '';
+                    }
+
+                    $this->updateQueueResult($command, $result);
+
+                    sleep($sleepTime);
                 }
+            } finally {
+                $wpdb->query(
+                    "SELECT RELEASE_LOCK('tsjippy_signal_queue')"
+                );
 
-                $this->updateQueueResult($command, $result);
+                $this->processingQueue     = false;
 
-                sleep($sleepTime);
+                TSJIPPY\printArray('Finished processing queue, as another job has taken over');
             }
-
-            $this->processingQueue     = false;
-
-            TSJIPPY\printArray('Finished processing queue, as another job has taken over');
         }
         catch(\Exception $e) {
             TSJIPPY\printArray($e->getMessage());
