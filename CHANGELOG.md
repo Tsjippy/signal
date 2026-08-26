@@ -7,6 +7,7 @@
 - implemented new forms structure
 
 ### Fixed
+- bugs
 
 ### Updated
 
