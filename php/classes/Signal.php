@@ -33,7 +33,7 @@ class Signal
     public string   $commandTableName;
     public int|null $totalMessages;
     public bool     $valid;
-    public int|false|null $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
+    public mixed    $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
     public bool     $processingQueue;
     public array    $groups;
@@ -118,7 +118,7 @@ class Signal
 
         $this->valid             = true;
 
-        $this->rateLimited       = get_option('tsjippy-signal-rate-limit');
+        $this->rateLimited       = get_option('tsjippy-signal-rate-limit', false);
 
         $this->setRateLimit($this->rateLimited, false);
 
@@ -695,7 +695,7 @@ class Signal
      */
     public function getRateLimited()
     {
-        $rateLimited = get_option('tsjippy-signal-rate-limit');
+        $rateLimited = get_option('tsjippy-signal-rate-limit', false);
 
         if ($rateLimited != $this->rateLimited) {
             $this->setRateLimit($rateLimited, false);
