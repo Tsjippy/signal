@@ -8,6 +8,7 @@
 
 ### Fixed
 - bugs
+- bug
 
 ### Updated
 
