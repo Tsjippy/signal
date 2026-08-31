@@ -5,6 +5,7 @@
 
 ### Changed
 - implemented new forms structure
+- renamed elements to blocks
 
 ### Fixed
 - bugs
