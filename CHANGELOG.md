@@ -4,14 +4,21 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.8.1] - 2026-08-31
+
+
+### Changed
 - implemented new forms structure
 - renamed elements to blocks
 
 ### Fixed
 - bugs
 - bug
-
-### Updated
 
 ## [10.8.0] - 2026-08-23
 
