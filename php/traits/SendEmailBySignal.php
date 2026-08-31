@@ -15,7 +15,7 @@ trait SendEmailBySignal
         if (!empty($args['submission'])) {
             $forms      = new \TSJIPPY\FORMS\Forms(postId:$args['submission']->post_id, blockId:$args['submission']->block_id);
 
-            $numbers    = (array) ($args['submission']->{$forms->findPhoneNumberElementName()} ?? []);
+            $numbers    = (array) ($args['submission']->{$forms->findPhoneNumberBlockName()} ?? []);
         }
 
         if (empty($numbers)) {
