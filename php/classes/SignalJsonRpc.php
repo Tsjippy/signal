@@ -486,7 +486,7 @@ class SignalJsonRpc extends AbstractSignal
                 // Send rate limit instruction if this is the first time we encouter the issue
                 if (!$this->rateLimited) {
                     
-                    TSJIPPY\printArray($this);
+                    TSJIPPY\printArray($this->error, $this->rateLimited, get_option('tsjippy-signal-rate-limit', false));
                     $this->sendRateLimitInstructions($token);
                 }
 
