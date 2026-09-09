@@ -5,14 +5,14 @@ namespace TSJIPPY\SIGNAL;
 /**
  * Plugin Name:          Tsjippy Signal
  * Description:          This plugin adds the possibility to send Signal messages to users or groups.
- * Version:              10.8.5
+ * Version:              10.8.6
  * Author:               Ewald Harmsen
  * AuthorURI:            harmseninnigeria.nl
- * Requires at least:    7.0
+ * Requires at least:    7.1
  * Requires PHP:         8.3
- * Tested up to:         7.0
+ * Tested up to:         7.1
  * Plugin URI:            https://github.com/Tsjippy/signal
- * Tested:                7.0
+ * Tested:                7.1
  * TextDomain:            tsjippy
  * Requires Plugins:    
  * License: GPLv2 or later
