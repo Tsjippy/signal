@@ -532,6 +532,24 @@ class Signal
     }
 
     /**
+     * Deletes processed commands from queue
+     */
+    public function clearCommandQueue()
+    {
+        // remove sent messages
+        TSJIPPY\removeFromDb(
+            $this->queueTableName,
+            [
+                "DELETE FROM %i WHERE `result` IS NOT NULL AND `time_added` < %d",
+                $this->queueTableName,
+                time()
+            ],
+            [],
+            'signal'
+        );
+    }
+
+    /**
      * Marks a specific message as deleted in the log
      * @param   int     $timeStamp     The timestamp of the message to mark as deleted
      *

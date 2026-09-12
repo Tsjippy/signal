@@ -109,6 +109,8 @@ function cleanSignalLog()
     $signal     = new Signal();
 
     $signal->clearMessageLog($maxDate);
+
+    $signal->clearCommandQueue();
 }
 
 /**
