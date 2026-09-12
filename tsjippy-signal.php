@@ -10,10 +10,9 @@ namespace TSJIPPY\SIGNAL;
  * AuthorURI:            harmseninnigeria.nl
  * Requires at least:    7.1
  * Requires PHP:         8.3
- * Tested up to:         7.1
- * Plugin URI:            https://github.com/Tsjippy/signal
- * Tested:                7.1
- * TextDomain:            tsjippy
+ * Plugin URI:           https://github.com/Tsjippy/signal
+ * Tested:               7.1
+ * TextDomain:           tsjippy
  * Requires Plugins:    
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
