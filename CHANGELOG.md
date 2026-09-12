@@ -2,6 +2,7 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
+- clean up command queue once a day
 
 ### Changed
 
