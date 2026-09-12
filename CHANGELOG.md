@@ -2,13 +2,18 @@
 ## [Unreleased] - yyyy-mm-dd
 
 ### Added
-- clean up command queue once a day
 
 ### Changed
 
 ### Fixed
 
 ### Updated
+
+## [10.9.0] - 2026-09-12
+
+
+### Added
+- clean up command queue once a day
 
 ## [10.8.9] - 2026-09-11
 
