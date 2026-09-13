@@ -533,7 +533,7 @@ class SignalJsonRpc extends AbstractSignal
         }
 
         // only add to queue if needed
-        if ($this->processingQueue || $this->isChat) {
+        if (($this->processingQueue || $this->isChat) && !$this->rateLimited) {
             // do this straight away
             return $this->doRequest($method, $params);
         }
