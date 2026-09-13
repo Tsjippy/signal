@@ -7,6 +7,7 @@
 - removed 'tested up to'
 
 ### Fixed
+- isusue when rate limited
 
 ### Updated
 
