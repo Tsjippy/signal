@@ -4,12 +4,19 @@
 ### Added
 
 ### Changed
+
+### Fixed
+
+### Updated
+
+## [10.9.1] - 2026-09-13
+
+
+### Changed
 - removed 'tested up to'
 
 ### Fixed
 - isusue when rate limited
-
-### Updated
 
 ## [10.9.0] - 2026-09-12
 
