@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- try to figure out why a message sometimes gets send 3 times
 
 ### Fixed
 
