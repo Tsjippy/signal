@@ -35,7 +35,7 @@ class Signal
     public bool     $valid;
     public mixed    $rateLimited;   // false if not rate limited, otherwise the timestamp of when the rate limit will be lifted
     public string   $rateLimitString;
-    public bool     $processingQueue;
+    public bool|int $processingQueue;
     public array    $groups;
     public bool     $isChat;
 
@@ -684,8 +684,9 @@ class Signal
     public function setRateLimit($epoch, $save = true)
     {
         $this->rateLimitString  = '';
+        $epoch                  = false;
 
-        // Conver to seconds and check if in the past
+        // Convert to seconds and check if in the past
         if (is_numeric($epoch)) {
             // Convert to seconds
             if ($epoch && strlen((string)$epoch) > 11) {
@@ -696,9 +697,10 @@ class Signal
                 $epoch  = false;
             } else {
                 $this->rateLimitString   = gmdate(TSJIPPY\DATEFORMAT . ' ' . TSJIPPY\TIMEFORMAT, $epoch);
+
+                // print to check why $this->rateLimited is true and $this->rateLimitString is empty
+                TSJIPPY\printArray([$this->rateLimitString, $epoch]);
             }
-        } else {
-            $epoch  = false;
         }
 
         $this->rateLimited      = $epoch;
@@ -1382,7 +1384,7 @@ class Signal
             }
 
             try {
-                $this->processingQueue     = true;
+                $this->processingQueue     = rand();
 
                 // Mark the start of this option
                 $startTime = time();
@@ -1489,6 +1491,8 @@ class Signal
                         }
 
                         try{
+                            TSJIPPY\printArray("Processing $command->method from job with id $this->processingQueue");
+
                             $result = call_user_func_array(array($this, $command->method), $command->params);
 
                             $this->addToCommandLog($command->method, $command->params);

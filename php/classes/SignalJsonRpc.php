@@ -528,9 +528,7 @@ class SignalJsonRpc extends AbstractSignal
      */
     protected function addToCommandQueue($method, $params = [])
     {
-        if ($this->getRateLimited()) {
-            TSJIPPY\printArray("Rate limited till $this->rateLimitString");
-        }
+        $this->getRateLimited();
 
         // only add to queue if needed
         if (($this->processingQueue || $this->isChat) && !$this->rateLimited) {
@@ -555,7 +553,7 @@ class SignalJsonRpc extends AbstractSignal
         }
 
         if ($this->rateLimited) {
-            return 'rate limited';
+            return "Rate limited till $this->rateLimitString";
         }
 
         // Wait till the params are replaced by the result
