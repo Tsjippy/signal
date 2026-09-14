@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- try to figure out why a message sometimes gets send 3 times
 
 ### Fixed
 
 ### Updated
+
+## [10.9.2] - 2026-09-14
+
+
+### Changed
+- try to figure out why a message sometimes gets send 3 times
 
 ## [10.9.1] - 2026-09-13
 
