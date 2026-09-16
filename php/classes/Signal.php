@@ -1563,6 +1563,8 @@ class Signal
 
                     sleep($sleepTime);
                 }
+            }catch(\Exception $e) {
+                TSJIPPY\printArray($e->getMessage());
             } finally {
                 $wpdb->query(
                     "SELECT RELEASE_LOCK('tsjippy_signal_queue')"
@@ -1570,7 +1572,7 @@ class Signal
 
                 $this->processingQueue     = false;
 
-                TSJIPPY\printArray('Finished processing queue, as another job has taken over');
+                TSJIPPY\printArray("Finished processing queue with id $this->processingQueue, as another job has taken over");
             }
         }
         catch(\Exception $e) {
@@ -1578,7 +1580,7 @@ class Signal
         }
 
         finally {
-            TSJIPPY\printArray("Process complete");
+            TSJIPPY\printArray("Process complete with id $this->processingQueue");
         }
 
     }
