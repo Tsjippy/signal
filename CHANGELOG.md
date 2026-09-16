@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- catch
 
 ### Updated
+
+## [10.9.3] - 2026-09-16
+
+
+### Fixed
+- catch
 
 ## [10.9.2] - 2026-09-14
 
