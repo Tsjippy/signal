@@ -6,13 +6,12 @@
   "scripts": {
     "signal": "webpack --entry ./signal.js --output-path . --output-filename signal.min.js --progress --mode=production --devtool source-map",
     "admin": "webpack --entry ./admin.js --output-path . --output-filename admin.min.js --progress --mode=production --devtool source-map",
-    "frontend": "webpack --entry ./frontend-content.js --output-path . --output-filename frontend-signal.min.js --progress --mode=production --devtool source-map",
-    "all": "run-p signal admin frontend"
+    "all": "run-p signal admin"
   },
   "author": "Ewald Harmsen",
   "license": "ISC",
   "devDependencies": {
-    "webpack": "^5.107.2",
-    "webpack-cli": "^4.10.0"
+    "webpack": "^5.111.0",
+    "webpack-cli": "^7.2.3"
   }
 }
