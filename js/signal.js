@@ -1,10 +1,15 @@
+import{
+  fetchRestApi
+} from "../../tsjippy-forms/js/form_submit_functions.js";
+
+
 document.addEventListener("click", async (ev) => {
   let target = ev.target;
 
   if (target.name == "save_signal_preferences") {
     ev.stopImmediatePropagation();
 
-    let response = await FormSubmit.submitForm(
+    let response = await submitForm(
       target,
       "signal/save_preferences",
     );

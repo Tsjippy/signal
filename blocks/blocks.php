@@ -8,10 +8,10 @@ use TSJIPPY;
 add_action('enqueue_block_editor_assets', __NAMESPACE__ . '\loadBlockAssets');
 function loadBlockAssets()
 {
-    wp_enqueue_script(
-        'tsjippy-signal-block',
+    wp_enqueue_script_module(
+        '@tsjippy/signal-block',
         TSJIPPY\pathToUrl(PLUGINPATH . 'blocks/signal_options/build/index.js'),
-        ['wp-blocks', 'wp-dom', 'wp-dom-ready', 'wp-edit-post'],
+        [],
         PLUGINVERSION
     );
 }

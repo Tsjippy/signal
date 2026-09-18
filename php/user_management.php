@@ -22,7 +22,7 @@ function userInfoPage($filteredHtml, $showCurrentUserData, $user)
     //Add an extra tab
     $filteredHtml['tabs']['Signal']    = "<li class='tablink' id='show-signal-options' data-target='signal-options'>Signal options</li>";
 
-    wp_enqueue_script('tsjippy_signal_options');
+    wp_enqueue_script_module('@tsjippy/signal_options');
 
     //Content
     ob_start();
