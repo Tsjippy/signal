@@ -1,6 +1,7 @@
-import{
-  fetchRestApi
-} from "../../tsjippy-forms/js/form_submit_functions.js";
+
+import { 
+  displayMessage 
+} from "../../tsjippy-shared-functionality/js/partials/display_message.js";
 
 
 document.addEventListener("click", async (ev) => {
@@ -14,7 +15,7 @@ document.addEventListener("click", async (ev) => {
       "signal/save_preferences",
     );
     if (response) {
-      Main.displayMessage(response);
+      displayMessage(response);
     }
   }
 });
