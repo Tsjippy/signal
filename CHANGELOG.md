@@ -4,13 +4,18 @@
 ### Added
 
 ### Changed
-- js to modules
-- js update
-- load minification js depending on SCRIPT_DEBUG constant
 
 ### Fixed
 
 ### Updated
+
+## [10.9.5] - 2026-09-20
+
+
+### Changed
+- js to modules
+- js update
+- load minification js depending on SCRIPT_DEBUG constant
 
 ## [10.9.4] - 2026-09-16
 
