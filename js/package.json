@@ -4,9 +4,9 @@
   "description": "signal",
   "main": "./signal.js",
   "scripts": {
-    "signal": "webpack --entry ./signal.js --output-path . --output-filename signal.min.js --progress --mode=production --devtool source-map",
-    "admin": "webpack --entry ./admin.js --output-path . --output-filename admin.min.js --progress --mode=production --devtool source-map",
-    "all": "run-p signal admin"
+    "build": "webpack --progress",
+    "watch": "webpack --watch --progress",
+    "all": "npm run build"
   },
   "author": "Ewald Harmsen",
   "license": "ISC",

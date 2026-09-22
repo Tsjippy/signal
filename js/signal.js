@@ -1,8 +1,10 @@
-
 import { 
   displayMessage 
-} from "../../tsjippy-shared-functionality/js/partials/display_message.js";
+} from "@tsjippy/display_message";
 
+import{
+  submitForm
+} from "@tsjippy/form_submit_functions";
 
 document.addEventListener("click", async (ev) => {
   let target = ev.target;

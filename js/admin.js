@@ -2,7 +2,7 @@ import {
   copyFormInput,
   fixNumbering,
   removeNode,
-} from "../../tsjippy-forms/js/form_exports.js";
+} from "@tsjippy/form_exports";
 
 document.addEventListener("click", function (event) {
   let target = event.target;
@@ -18,7 +18,6 @@ document.addEventListener("click", function (event) {
 
   //remove element
   else if (target.matches(".remove")) {
-    console.log(target);
     //Remove node clicked
     removeNode(target);
   }
@@ -47,7 +46,6 @@ document.addEventListener("click", function (event) {
     let row = target.closest("tr").nextElementSibling;
 
     while (row.querySelector("td.chat") == null) {
-      console.log(row);
       row.classList.add("hidden");
       row = row.nextElementSibling;
 

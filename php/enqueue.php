@@ -7,17 +7,16 @@ use TSJIPPY;
 add_action('wp_enqueue_scripts', __NAMESPACE__ . '\loadAssets');
 function loadAssets()
 {
-    wp_register_script_module('@tsjippy/signal_options', TSJIPPY\pathToUrl(PLUGINPATH . 'js/signal' . TSJIPPY\JSEXTENSION), array('@tsjippy/formsubmit_script'), PLUGINVERSION);
-    wp_register_script_module('@tsjippy/signal_admin', TSJIPPY\pathToUrl(PLUGINPATH . 'js/admin' . TSJIPPY\JSEXTENSION), array('@tsjippy/formsubmit_script'), PLUGINVERSION);
-}
+    $deps   = SCRIPT_DEBUG ? [  
+        '@tsjippy/form_exports'
+    ] :
+    [];
+    wp_register_script_module('@tsjippy/signal_admin', TSJIPPY\pathToUrl(PLUGINPATH . 'js/admin' . TSJIPPY\JSEXTENSION), $deps, PLUGINVERSION);
 
-add_action('admin_enqueue_scripts', __NAMESPACE__ . '\loadAdminAssets');
-function loadAdminAssets($hook)
-{
-    //Only load on tsjippysettings pages
-    if (!str_contains($hook, 'tsjippy-settings_page_tsjippy_signal')) {
-        return;
-    }
-
-    wp_enqueue_script_module('@tsjippy/signal_admin', TSJIPPY\pathToUrl(PLUGINPATH . 'js/admin' . TSJIPPY\JSEXTENSION), array('@tsjippy/main'), PLUGINVERSION);
+    $deps   = SCRIPT_DEBUG ? [  
+        '@tsjippy/form_submit_functions', 
+        "@tsjippy/display_message"
+    ] :
+    [];
+    wp_register_script_module('@tsjippy/signal_options', TSJIPPY\pathToUrl(PLUGINPATH . 'js/signal' . TSJIPPY\JSEXTENSION), $deps, PLUGINVERSION);
 }

@@ -23,6 +23,8 @@ class AdminMenu extends \TSJIPPY\ADMIN\SubAdminMenu
     public function __construct($settings, $name)
     {
         parent::__construct($settings, $name);
+
+        wp_enqueue_script_module('@tsjippy/signal_admin');
     }
 
     /**
