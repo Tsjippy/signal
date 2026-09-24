@@ -60,7 +60,7 @@ document.addEventListener("click", function (event) {
     return;
   }
 
-  ev.stopImmediatePropagation();
+  ev.stopPropagation();
 });
 
 document.addEventListener("emoji_selected", function (ev) {

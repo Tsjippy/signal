@@ -10,7 +10,7 @@ document.addEventListener("click", async (ev) => {
   let target = ev.target;
 
   if (target.name == "save_signal_preferences") {
-    ev.stopImmediatePropagation();
+    ev.stopPropagation();
 
     let response = await submitForm(
       target,
