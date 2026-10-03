@@ -3,7 +3,7 @@
         'name' => 'sim/signal',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'b577abb419c3b4606ef92534ea5512a1925a23ad',
+        'reference' => '2bf247a01998998a9e08d8aeb90583b67b3e847f',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -120,7 +120,7 @@
         'sim/signal' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'b577abb419c3b4606ef92534ea5512a1925a23ad',
+            'reference' => '2bf247a01998998a9e08d8aeb90583b67b3e847f',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
