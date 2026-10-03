@@ -5,6 +5,7 @@
 
 ### Changed
 - js update
+- lib update
 
 ### Fixed
 
