@@ -121,9 +121,13 @@ Recognized change values must use the documented types:
 - `uri`: `UriInterface`
 - `query`: `string`
 - `version`: `string`
-- `body`: `resource|string|int|float|bool|StreamInterface|callable|\Iterator|\Stringable`
+- `body`: `resource|string|StreamInterface|callable|\Iterator|\Stringable`
 - `set_headers`: `array<array-key, string|non-empty-array<array-key, string>>`
 - `remove_headers`: `array<array-key, string|int>`
+
+When a `uri` change contains a host, the synthesized `Host` header now
+includes any non-default URI port, matching the `Request` constructor. 2.x
+omitted port zero and every port on schemes other than HTTP and HTTPS.
 
 #### Uploaded Files
 
@@ -137,8 +141,10 @@ file `size` values and `error` values must be non-negative PHP integers;
 numeric strings are no longer cast. If PHP supplies an upload size as a string
 because the byte count cannot fit in `PHP_INT_MAX`, it is rejected rather than
 truncated or cast. Nested specifications must provide `tmp_name`, `size`, and
-`error` as arrays with matching keys. When nested `name` or `type` metadata is
-provided, it must also be an array.
+`error` as arrays. Every key in `tmp_name` must also exist in `size` and
+`error`; additional metadata entries without a matching `tmp_name` entry are
+ignored. When nested `name` or `type` metadata is provided, it must also be an
+array.
 
 If your tests or adapters build `$_FILES` arrays manually, populate the full
 shape or create `UploadedFile` instances directly.
@@ -194,6 +200,41 @@ Normal URI strings with ports are still supported:
 $uri = new Uri('https://example.com:8080/path');
 ```
 
+URI parsing now accepts bracketed IPv6 and IPvFuture hosts consistently with
+`withHost()` for userinfo and network-path authorities such as
+`http://user@[::1]/`, `//[::1]`, and `http://[v7.a:b]/`. Invalid
+delimiter-free bracketed literals, such as `[gggg::1]`, are also reported with
+the intact host. Bracketed literals containing authority/path delimiters, such
+as `[a@b]` or `[v1.a/b]`, still reject after fallback parsing and may report the
+mangled parsed host.
+
+Userinfo before a bracketed IP-literal host is now percent-encoded ahead of
+parsing, so raw control bytes yield encoded userinfo, such as `us%01er`,
+instead of a silently mutated value, and raw DEL bytes in bracketed hosts are
+rejected instead of parsed as a mutated host. Consistent with registered-name
+authorities, such userinfo containing invalid UTF-8 is now rejected,
+percent-sequences such as `u%41` are preserved rather than decoded, and a
+literal `+` is preserved rather than decoded to a space.
+
+Only an optional numeric port (which may be empty) and a path, query, or
+fragment may follow a bracketed IP-literal host. Trailing bytes that are
+neither, such as `http://[::1]:80@evil/` or `http://[::1]:80x/`, are now
+rejected instead of being reparsed into a different host.
+
+Parsing still URL-decodes bracketed IP-literal hosts before validation
+(registered-name hosts round-trip unchanged), so a literal `+` in a bracketed
+IP-literal decodes to a space and is rejected: `withHost('[v1.fe80::a+en1]')`
+accepts the literal while parsing `http://[v1.fe80::a+en1]/` rejects it.
+Percent-encoding inside a bracketed IP-literal is now rejected during parsing as
+well, since RFC 3986 IP-literals contain no percent-encoding, so
+`http://[%3A%3A1]/` no longer decodes to `[::1]`; this matches `withHost()` and
+`Rfc3986::isValidHost()`.
+
+Percent-encoded octets in a registered-name host are normalized to uppercase
+hex, so a host such as `a%c3%a9b` is represented as `a%C3%A9b`. Malformed
+percent sequences and percent-encoded octets that decode to a byte forbidden in
+a host, such as `ex%zz` and `%2fhost`, are rejected.
+
 `Uri::fromParts()` accepts integer and decimal digit string ports, but floats and
 other port values are no longer cast.
 
@@ -242,6 +283,69 @@ For server globals, applications that need to reject malformed inbound `Host`
 headers should validate the original server parameters before calling
 `getUriFromGlobals()` or inspect them afterward.
 
+`Message::parseRequest()` now applies the same HTTP authority validation to
+absolute-form request targets. A zero or padded-zero port
+(`http://example.com:0/admin`) is rejected instead of producing a request
+whose synthesized `Host` header the same parser rejects elsewhere.
+Absolute-form targets with no URI host, such as `file:///etc/passwd`, are
+also rejected instead of producing a hostless request URI.
+
+Absolute-form targets whose authority contains userinfo are also rejected,
+including empty userinfo such as `http://@example.com/`. RFC 9110 deprecates
+userinfo in http(s) target URIs and directs recipients to treat its presence
+as an error; `Host` headers and CONNECT targets already reject it. These
+rules apply to absolute-form targets of every scheme.
+`ServerRequest::fromGlobals()` is unchanged and continues to strip
+`REQUEST_URI` userinfo.
+
+URI hosts now validate percent-encoding. Malformed sequences such as `ex%zz`,
+and percent-encoded octets that decode to bytes the raw host grammar already
+rejects (controls, space, DEL, `/`, `?`, `#`, `@`, `\`, `:`, `[`, `]`, and `%`
+itself) throw `MalformedUriException` from URI parsing and
+`InvalidArgumentException` from `Uri::withHost()`, and are rejected wherever
+hosts are validated, including `Host` headers and request targets in
+`Message::parseRequest()`. WHATWG-conformant browsers reject all of these hosts;
+curl rejects them too, except encoded DEL (`%7F`), which it decodes and forwards
+to name resolution. Other percent-encoded octets, including UTF-8 data such as
+`a%C3%A9b`, remain accepted and are normalized to uppercase hex.
+
+IPv6 hosts are now canonicalized to their RFC 5952 form when a URI is
+constructed, so `getHost()`, `getAuthority()`, and `(string) $uri` return the
+canonical spelling and synthesized `Host` headers use it. Leading zeros are
+suppressed, hexadecimal fields are lowercase, and the longest run of two or
+more zero fields is collapsed with `::`. Embedded dotted-decimal notation
+follows the rendering policy of BIND-derived `inet_ntop()` implementations and
+curl 8.11 and newer: exactly the IPv4-mapped (`::ffff:0:0/96`) and deprecated
+IPv4-compatible (`::/96`) layouts use it, while other embedded-IPv4 forms,
+including translated (NAT64) well-known prefixes such as `64:ff9b::/96`
+(RFC 6052), serialize in pure hexadecimal fields.
+
+```php
+// 2.x preserved the spelling as given
+(string) new Uri('http://[0:0:0:0:0:0:0:1]/'); // http://[0:0:0:0:0:0:0:1]/
+
+// 3.0
+(string) new Uri('http://[0:0:0:0:0:0:0:1]/');          // http://[::1]/
+(string) new Uri('http://[::FFFF:7F00:1]/');            // http://[::ffff:127.0.0.1]/
+(string) new Uri('http://[2001:db8:3:4::192.0.2.33]/'); // http://[2001:db8:3:4::c000:221]/
+```
+
+Applications that persist URI strings, for example as cache keys, will observe
+the new canonical form for previously non-canonical IPv6 spellings. Equivalent
+spellings of the same address now compare as same-origin in
+`UriComparator::isCrossOrigin()`, which canonicalizes bracketed IPv6 literals
+from any PSR-7 implementation before comparing hosts, and as equivalent in
+`UriNormalizer::isEquivalent()`. The new
+`UriNormalizer::CANONICALIZE_IPV6_HOST` flag, included in the default
+`UriNormalizer::PRESERVING_NORMALIZATIONS`, requests the canonical host from
+other PSR-7 implementations through `withHost()` and keeps the result only
+when the returned `getHost()` exactly matches the requested spelling; a
+nonexact result leaves that step unchanged while other selected normalizations
+still apply, and setter exceptions propagate. `UriComparator` does not share
+this limitation, since it canonicalizes the extracted host text directly. The
+public helper `Rfc3986::canonicalizeIpv6()` exposes the underlying
+transformation.
+
 #### Request Host Synchronization
 
 `Request::withUri()` now applies PSR-7 Host header synchronization before using
@@ -268,6 +372,12 @@ after calling `withUri()` or preserve a non-empty Host header explicitly.
 serializing a request without a `Host` header. Generated `Host` lines include
 non-null URI ports.
 
+`Message::toString()` also validates the host it synthesizes from the request
+URI and throws `InvalidArgumentException` for an invalid host, closing a header-
+injection vector. This affects only a custom `UriInterface` implementation that
+returns an invalid host when the request has no stored `Host` header; first-
+party `Uri` instances always carry a valid host and are unaffected.
+
 #### URI Paths and Request Targets
 
 `Uri::getPath()` now normalizes multiple leading slashes to one slash when
@@ -283,6 +393,67 @@ $uri->getPath(); // /valid///path
 
 `Request::getRequestTarget()` applies the same normalization for URI-derived
 origin-form request targets.
+
+Reference resolution and normalization (`UriResolver`, `UriNormalizer`, and
+`Uri::isSameDocumentReference()`) operate on the raw path from the URI string
+form and are therefore unaffected by this normalization.
+
+Authority-less `file` URIs with rootless paths now serialize without the `//`
+authority separator: `(string) new Uri('file:foo/bar')` returns `file:foo/bar`
+instead of `file://foo/bar`, which reparses with host `foo` and path `/bar`.
+Rooted paths such as `file:///myfile` keep their existing serialization.
+
+Authority-less `file` URIs with empty paths now serialize as `file:` instead of
+`file://`, which `new Uri()` itself rejects as unparseable. This affects
+degenerate URIs such as `new Uri('file:')` or
+`Uri::fromParts(['scheme' => 'file'])`; the serialization of every file URI
+with a non-empty path is unchanged.
+
+`UriResolver::removeDotSegments()` now applies RFC 3986 Section 5.2.4 to `..`
+segments above the root of an absolute path: excess `..` segments no longer
+consume the root, so a following empty segment is preserved. Resolving `/..//a`
+against `http://example.org/base` yields `http://example.org//a` where 2.x
+produced `http://example.org/a`. When the resulting URI has no authority,
+`UriResolver::resolve()` and `UriNormalizer::normalize()` serialize such a
+`//`-leading path with a `/.` prefix (`mailto:/.//a`), like the WHATWG URL
+Standard, instead of collapsing the slashes or throwing.
+
+#### URI Reference Relativization
+
+`UriResolver::relativize()` now returns a network-path reference (for example
+`//example.com`) when the target URI has the same authority as the base URI
+but an empty path that no other relative reference round-trips. No path
+reference can express such a target, as resolving one always produces a path
+of at least `/`, and an empty reference would keep the base path or inherit
+the base query or fragment. The returned reference resolves back to the
+exact target string, restoring the documented round-trip guarantee for these
+targets.
+
+```php
+$base = new Uri('http://example.com/a');
+$target = new Uri('http://example.com');
+
+// 2.x
+(string) UriResolver::relativize($base, $target); // ../
+// which resolved back to http://example.com/
+
+// 3.0
+(string) UriResolver::relativize($base, $target); // //example.com
+```
+
+The same applies when the base URI has a query or fragment component that an
+empty relative reference would otherwise inherit. When the base URI has an
+empty path as well and nothing would be inherited, shorter references such
+as the empty reference, `#fragment` or `?query` are still returned.
+
+`relativize()` also no longer returns the empty reference when the target
+path equals the base path but the base has a fragment the target lacks, as
+the empty reference would reintroduce that fragment. A relative-path
+reference, or a query reference when the target has a query, is returned
+instead. When the relative-path reference would be a single path segment
+containing a colon, which would be mistaken for a scheme name, it is
+prefixed with `./` (for example `./a:b`); 2.x threw a `MalformedUriException`
+for such targets when the base had a query the target lacked.
 
 #### HTTP Start-line Parsing
 
@@ -306,6 +477,22 @@ new Response(200, [], null, 'HTTP/1.1');
 Message::parseRequest("GET /foo%20bar HTTP/1.1\r\nHost: example.com\r\n\r\n");
 new Response(200, [], null, '1.1');
 ```
+
+`ServerRequest::fromGlobals()` applies the same validation to the
+`REQUEST_METHOD` and `SERVER_PROTOCOL` server values. Malformed values that 2.x
+hydrated, such as the `SERVER_PROTOCOL` value `INCLUDED` that Apache sets for
+server-side include subrequests, now throw `InvalidArgumentException`. Sanitize
+`$_SERVER` before calling `fromGlobals()` if such environments must be
+tolerated.
+
+`Request::withRequestTarget('')` throws `InvalidArgumentException`; omit the
+explicit request target to derive `/` or the URI-derived target automatically.
+
+`Message::parseMessage()` no longer unfolds folded HTTP/1.0 messages whose
+start line carries control bytes in the request target; such messages now
+throw the obsolete-line-folding `InvalidArgumentException`.
+`Message::parseRequest()` and `Message::parseResponse()` rejected these
+messages either way.
 
 #### Query Builder Values
 
@@ -331,6 +518,22 @@ Query::build(['tag' => ['a', 'b']]);
 // tag=a&tag=b
 ```
 
+`Uri::withQueryValues()` is stricter than `Query::build()` and requires `string`
+or `null` values; cast numeric and boolean query values to string.
+
+#### Non-string Scalar Bodies
+
+`Utils::streamFor()` and message bodies no longer accept `int`, `float`, or
+`bool` values. Cast them to strings first.
+
+```php
+// 2.x, no longer accepted in 3.0
+$response = new Response(200, [], 404);
+
+// 3.0
+$response = new Response(200, [], '404');
+```
+
 #### PumpStream Source Callables
 
 `PumpStream` source callables must now return a non-empty string when producing
@@ -344,9 +547,10 @@ when the stream is complete.
 #### Iterator-backed Streams
 
 `Utils::streamFor()` now validates values yielded by `Iterator` instances before
-passing them to the internal `PumpStream`. Scalar values, `null`, and stringable
-objects are converted to string chunks. Arrays, resources, and non-stringable
-objects now throw `UnexpectedValueException`.
+passing them to the internal `PumpStream`. Strings, integers, finite floats,
+booleans, `null`, and stringable objects are converted to string chunks.
+Non-finite floats, arrays, resources, and non-stringable objects now throw
+`UnexpectedValueException` when the stream is read.
 
 Iterator exhaustion is now the only EOF signal for iterator-backed streams.
 Yielding `false`, `null`, or an empty string no longer ends the stream; those
@@ -364,6 +568,29 @@ $stream = Utils::streamFor(new ArrayIterator([false, 'body']));
 // After: false and null are skipped chunks. End the iterator to signal EOF.
 $stream = Utils::streamFor(new ArrayIterator(['body']));
 ```
+
+#### Stream Behavior Changes
+
+All stream implementations now reject negative `read()` lengths with
+`RuntimeException`. In 2.x, some decorators passed negative lengths through,
+some returned sliced data, and some behavior varied by PHP version.
+
+`LimitStream` now rejects negative offsets and limits below `-1`. For
+non-seekable streams, offsets are tracked by the number of bytes actually
+skipped. Short reads are retried until the offset is reached, EOF is reached, or
+the decorated stream stops making progress.
+
+`StreamWrapper` now translates `RuntimeException` failures from the wrapped
+PSR-7 stream into PHP stream-wrapper failure values. When using a resource from
+`StreamWrapper::getResource()`, functions such as `fread()`, `fwrite()`,
+`fseek()`, `feof()`, and `fstat()` may now return normal PHP failure values
+instead of propagating the PSR-7 stream exception. Call the PSR-7 stream directly
+if you need exception-based failure handling.
+
+The `StreamWrapper::stream_read()` callback no longer declares a native return
+type so read failures can return `false`. The `StreamWrapper::stream_tell()`
+callback no longer declares a native return type so post-seek position lookup
+failures can make `fseek()` fail.
 
 #### Stream Mode Capabilities
 
@@ -395,6 +622,7 @@ writable stream such as a file or `php://temp` stream.
 Timed-out stream operations now throw
 `GuzzleHttp\Psr7\Exception\TimeoutException`, which extends
 `RuntimeException`. `Stream::read()`, `Stream::write()`,
+`AppendStream::read()`, `CachingStream::read()`, `InflateStream::read()`,
 `Utils::copyToStream()`, `Utils::copyToString()`, `Utils::hash()`,
 `Utils::readLine()`, and `Utils::tryGetContents()` detect PHP-style stream
 timeout metadata when a read or write operation cannot make progress. Timeout
@@ -431,6 +659,11 @@ suppresses exceptions thrown by destructor-triggered close callbacks. Call
 still closes the remote stream owned by the `CachingStream`, but it no longer
 closes the detached cache resource returned to the caller. Repeated `close()`
 calls are no-ops.
+
+`InflateStream::close()` now also closes the compressed source stream that was
+passed to its constructor. In 2.x, closing an `InflateStream` left the source
+stream open. Call `detach()` instead of `close()` if the compressed source
+stream must stay open; `close()` after `detach()` no longer closes the source.
 
 `PumpStream::close()` and `PumpStream::detach()` now discard internally buffered
 unread bytes. If a callable or iterator source returns more bytes than a read
@@ -498,6 +731,11 @@ Explicit custom boundaries are now validated using RFC 2046 multipart boundary
 syntax. Omit the boundary or pass `null` to continue using a generated random
 boundary.
 
+The string `'0'` is now treated as an explicit custom boundary and is serialized
+literally. In 2.x, PHP truthiness caused `new MultipartStream($elements, '0')`
+to use a generated random boundary. Omit the boundary or pass `null` when you
+want a generated boundary.
+
 Custom multipart part header names and values are also validated before
 serialization. Header names must be valid HTTP tokens, and header values must be
 strings without CR, LF, or other invalid control bytes.
@@ -528,11 +766,126 @@ use GuzzleHttp\Psr7\Utils;
 (string) Utils::redactUserInfo(new Uri('https://user:pass@example.com'));
 ```
 
+#### Header List Helpers
+
+The deprecated `Header::normalize()` method was removed. Use
+`Header::splitList()` to split HTTP headers that are defined as comma-separated
+lists.
+
+`Header::splitList()` now trims list elements with spaces, horizontal tabs,
+carriage returns, and line feeds. 2.x also trimmed null bytes and vertical
+tabs. Validated header values cannot contain those bytes, so this only affects
+strings passed to `Header::splitList()` directly.
+
 #### Non-instantiable Utility Classes
 
 Static utility and constant classes such as `Header`, `Message`, `MimeType`,
-`Query`, `Rfc7230`, and `Utils` now have private constructors. Replace any
-accidental instantiation with static method calls or constant access.
+`Query`, and `Utils` now have private constructors. Replace any accidental
+instantiation with static method calls or constant access.
+
+#### Native PHP Serialization of Streams
+
+Guzzle PSR-7 stream implementations no longer support native PHP `serialize()`
+or `unserialize()`. Persist stream contents explicitly and recreate streams with
+`Utils::streamFor()` when needed.
+
+#### URI Normalization of Userinfo and Host
+
+`UriNormalizer::CAPITALIZE_PERCENT_ENCODING` and
+`UriNormalizer::DECODE_UNRESERVED_CHARACTERS` now also apply to the userinfo and
+host components. In 2.x, these normalizations only rewrote the path, query, and
+fragment.
+
+Since the host is case-insensitive and PSR-7 requires it to be lowercase, octets
+decoded in the host are lowercased. Reserved percent-encoded octets such as
+`%3A` are never decoded, so component boundaries cannot change, and these two
+flags never modify bracketed IP-literal hosts, which only the separate
+`UriNormalizer::CANONICALIZE_IPV6_HOST` normalization may canonicalize. Both
+flags are part of `UriNormalizer::PRESERVING_NORMALIZATIONS`, so the output of
+`UriNormalizer::normalize()` and the result of `UriNormalizer::isEquivalent()`
+can change for URIs whose userinfo or host contains percent-encoded octets.
+Custom `UriInterface` implementations now receive `withUserInfo()` or
+`withHost()` calls from the normalizer when a normalization changes those
+components; unchanged components are never rewritten. The rewrite is kept only
+when the value returned by the implementation matches the normalized form, and
+a userinfo with an empty user segment is never rewritten. If a setter returns a
+different representation, that rewrite is discarded, while other selected
+normalizations still apply, and setter exceptions propagate. No percent-encoding
+normalization is applied to a component with malformed percent syntax, such as a
+`%` not followed by two hexadecimal digits.
+
+```php
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriNormalizer;
+
+// 2.x: http://%75ser@ex%61mple.com/
+// 3.0: http://user@example.com/
+(string) UriNormalizer::normalize(new Uri('http://%75ser@ex%61mple.com/'));
+```
+
+#### URI Ports and Authority Handling
+
+Several 3.0 changes affect how URI ports are accepted, validated, and rendered.
+Each is described in its own section above:
+
+- `UriInterface::withPort()` now requires `int|null`; see "Native PSR-7
+  Parameter Types".
+- `Uri::fromParts()` validates ports instead of casting them, and `withHost()`
+  rejects embedded `host:port` values; see "URI Host and Scheme Validation".
+- A generic `Uri` can represent ports 0 through 65535. Inbound HTTP authority
+  parsing is stricter: `Message::parseRequest()` rejects zero-valued ports but
+  accepts nonzero leading-zero ports, normalizing the reconstructed URI while
+  preserving the raw `Host` or request-target text; see "HTTP Start-line
+  Parsing" and "URI Host and Scheme Validation".
+- Server globals reject a zero-valued `HTTP_HOST` and validate `SERVER_PORT`
+  when fallback authority reconstruction needs it. A recognized absolute-form
+  or CONNECT `REQUEST_URI` authority takes precedence and can still produce a
+  URI with port zero; see "URI Host and Scheme Validation".
+- Synthesized `Host` headers now include any non-default URI port; see "Request
+  Modification Changes" and "Request Host Synchronization".
+
+`Uri` now knows the default ports of the `ws` and `wss` schemes, 80 and 443 per
+RFC 6455. An explicit default port on a `ws` or `wss` URI is removed when the
+URI is constructed or modified, `Uri::isDefaultPort()` returns `true` for such
+URIs, and `UriNormalizer::normalize()` with the `REMOVE_DEFAULT_PORT` flag
+removes the port from other `UriInterface` implementations as well. In 2.x,
+these ports were preserved.
+
+```php
+use GuzzleHttp\Psr7\Uri;
+
+// 2.x: ws://example.com:80/chat
+// 3.0: ws://example.com/chat
+(string) new Uri('ws://example.com:80/chat');
+
+// 2.x: 443
+// 3.0: null
+(new Uri('wss://example.com:443'))->getPort();
+```
+
+Because a native `Uri` never carries a default `ws` or `wss` port, the `Host`
+header synchronized from such a request URI omits the port. `Request` and
+`Message` `Host` synthesis and `Utils::modifyRequest()` still append an explicit
+default port that a `ws` or `wss` URI from another `UriInterface` implementation
+reports.
+
+`UriComparator::isCrossOrigin()` now applies these default ports when comparing
+effective ports, so two `ws` or `wss` URIs that differ only by an explicit
+default port, such as `ws://example.com/` and `ws://example.com:80/`, are
+same-origin no matter which `UriInterface` implementation supplies them. In 2.x,
+such pairs were considered cross-origin. Schemes other than `http`, `https`,
+`ws`, and `wss` still receive no implicit default port.
+
+#### Sensitive Stack Trace Arguments
+
+Credential-bearing URI, server-global, Authorization-header, and cookie
+arguments are marked with `#[\SensitiveParameter]`. PHP 8.2 and later replace
+those arguments in stack traces with `SensitiveParameterValue`. PHP 7.4 through
+8.1 do not redact trace arguments.
+
+This does not redact logs, exception messages, object properties, wire traffic,
+captured variables, return values, user callbacks, or the separate executing
+object in an explicit backtrace.
 
 1.x to 2.0
 ----------
@@ -716,31 +1069,10 @@ of depending on package internals.
 its high-water mark. This keeps the method compatible with the `int` return type
 from `StreamInterface::write()`.
 
-All stream implementations now reject negative `read()` lengths with
-`RuntimeException`. In 2.x, some decorators passed negative lengths through,
-some returned sliced data, and some behavior varied by PHP version.
-
-`LimitStream` now rejects negative offsets and limits below `-1`. For
-non-seekable streams, offsets are tracked by the number of bytes actually
-skipped. Short reads are retried until the offset is reached, EOF is reached, or
-the decorated stream stops making progress.
-
-`StreamWrapper` now translates `RuntimeException` failures from the wrapped
-PSR-7 stream into PHP stream-wrapper failure values. When using a resource from
-`StreamWrapper::getResource()`, functions such as `fread()`, `fwrite()`,
-`fseek()`, `feof()`, and `fstat()` may now return normal PHP failure values
-instead of propagating the PSR-7 stream exception. Call the PSR-7 stream directly
-if you need exception-based failure handling.
-
-The `StreamWrapper::stream_read()` callback no longer declares a native return
-type so read failures can return `false`. The `StreamWrapper::stream_tell()`
-callback no longer declares a native return type so post-seek position lookup
-failures can make `fseek()` fail.
-
-Several stream `__toString()` implementations now allow exceptions thrown during
-stringification to be rethrown. Avoid relying on `(string) $stream` to hide read
-failures; call `getContents()` or `read()` and handle exceptions when failures
-are possible.
+Several stream `__toString()` implementations now catch `Throwable`. On PHP 7.4
+and newer, exceptions thrown during stringification are rethrown. Avoid relying
+on `(string) $stream` to hide read failures; call `getContents()` or `read()` and
+handle exceptions when failures are possible.
 
 #### PSR-17 Factories
 

@@ -18,17 +18,19 @@ final class ServerRequestGlobalsFactory
     }
 
     /**
-     * @param array<array-key, mixed> $server         Typically the $_SERVER superglobal
-     * @param array<array-key, mixed> $query          Typically the $_GET superglobal
-     * @param array<array-key, mixed> $post           Typically the $_POST superglobal
-     * @param array<array-key, mixed> $cookies        Typically the $_COOKIE superglobal
-     * @param array<array-key, mixed> $files          Typically the $_FILES superglobal
-     * @param callable():mixed|null   $headerProvider
+     * @param array<array-key, mixed>  $server         Typically the $_SERVER superglobal
+     * @param array<array-key, mixed>  $query          Typically the $_GET superglobal
+     * @param array<array-key, mixed>  $post           Typically the $_POST superglobal
+     * @param array<array-key, mixed>  $cookies        Typically the $_COOKIE superglobal
+     * @param array<array-key, mixed>  $files          Typically the $_FILES superglobal
+     * @param (callable(): mixed)|null $headerProvider
      */
     public static function fromArrays(
+        #[\SensitiveParameter]
         array $server,
         array $query,
         array $post,
+        #[\SensitiveParameter]
         array $cookies,
         array $files,
         ?callable $headerProvider = null
@@ -48,27 +50,32 @@ final class ServerRequestGlobalsFactory
             ->withCookieParams($cookies)
             ->withQueryParams($query)
             ->withParsedBody($post)
-            ->withUploadedFiles(ServerRequest::normalizeFiles($files));
+            ->withUploadedFiles(UploadedFileNormalizer::normalize($files));
     }
 
     /**
      * @param array<array-key, mixed> $server Typically the $_SERVER superglobal
      */
-    public static function getUriFromServerParams(array $server): UriInterface
-    {
+    public static function getUriFromServerParams(
+        #[\SensitiveParameter]
+        array $server
+    ): UriInterface {
         $method = self::getRequestMethodFromServer($server);
 
         return self::getUriAndRequestTargetFromServer($server, $method)[0];
     }
 
     /**
-     * @param array<array-key, mixed> $server
-     * @param callable():mixed|null   $headerProvider
+     * @param array<array-key, mixed>  $server
+     * @param (callable(): mixed)|null $headerProvider
      *
      * @return array<array-key, string>
      */
-    private static function getAllHeaders(array $server, ?callable $headerProvider): array
-    {
+    private static function getAllHeaders(
+        #[\SensitiveParameter]
+        array $server,
+        ?callable $headerProvider
+    ): array {
         $headers = $headerProvider !== null ? $headerProvider() : false;
 
         if (!is_array($headers)) {
@@ -83,8 +90,10 @@ final class ServerRequestGlobalsFactory
      *
      * @return array<array-key, string>
      */
-    private static function normalizeHeaderValues(array $headers): array
-    {
+    private static function normalizeHeaderValues(
+        #[\SensitiveParameter]
+        array $headers
+    ): array {
         $normalized = [];
 
         foreach ($headers as $name => $value) {
@@ -116,14 +125,18 @@ final class ServerRequestGlobalsFactory
                 continue;
             }
 
-            if (substr($key, 0, 5) === 'HTTP_') {
+            if (str_starts_with($key, 'HTTP_')) {
                 $header = substr($key, 5);
 
                 if (isset($copyServer[$header], $server[$header]) && is_string($server[$header])) {
                     continue;
                 }
 
-                $header = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $header))));
+                $parts = explode(' ', Utils::asciiToLower(str_replace('_', ' ', $header)));
+                foreach ($parts as $i => $part) {
+                    $parts[$i] = Utils::asciiUcFirst($part);
+                }
+                $header = implode('-', $parts);
                 $headers[$header] = $value;
 
                 continue;
@@ -159,7 +172,7 @@ final class ServerRequestGlobalsFactory
     private static function removeInvalidHostHeader(array $headers): array
     {
         foreach ($headers as $name => $value) {
-            if (strtolower((string) $name) !== 'host') {
+            if (Utils::asciiToLower((string) $name) !== 'host') {
                 continue;
             }
 
@@ -185,7 +198,7 @@ final class ServerRequestGlobalsFactory
      */
     private static function getRequestMethodFromServer(array $server): string
     {
-        return strtoupper(self::getServerParam($server, 'REQUEST_METHOD') ?? 'GET');
+        return Utils::asciiToUpper(self::getServerParam($server, 'REQUEST_METHOD') ?? 'GET');
     }
 
     /**
@@ -198,7 +211,7 @@ final class ServerRequestGlobalsFactory
             return '1.1';
         }
 
-        return strpos($serverProtocol, 'HTTP/') === 0 ? substr($serverProtocol, 5) : $serverProtocol;
+        return str_starts_with($serverProtocol, 'HTTP/') ? substr($serverProtocol, 5) : $serverProtocol;
     }
 
     /**
@@ -206,12 +219,12 @@ final class ServerRequestGlobalsFactory
      */
     private static function extractHostAndPortFromAuthority(string $authority): array
     {
-        return Rfc7230::parseHostHeader($authority) ?? [null, null];
+        return Rfc9112::parseHostHeader($authority) ?? [null, null];
     }
 
     private static function parseServerPort(string $port): int
     {
-        $parsed = Rfc7230::parsePort($port);
+        $parsed = Rfc9112::parsePort($port);
         if ($parsed === null) {
             throw new InvalidArgumentException('Invalid SERVER_PORT; expected an integer between 1 and 65535.');
         }
@@ -247,8 +260,10 @@ final class ServerRequestGlobalsFactory
     /**
      * @param array<array-key, mixed> $server
      */
-    private static function getAuthorityUriFromServer(array $server): UriInterface
-    {
+    private static function getAuthorityUriFromServer(
+        #[\SensitiveParameter]
+        array $server
+    ): UriInterface {
         $uri = self::getUriWithSchemeFromServer($server);
 
         $hasPort = false;
@@ -295,8 +310,11 @@ final class ServerRequestGlobalsFactory
      *
      * @return array{0: UriInterface, 1: string|null}
      */
-    private static function getUriAndRequestTargetFromServer(array $server, string $method): array
-    {
+    private static function getUriAndRequestTargetFromServer(
+        #[\SensitiveParameter]
+        array $server,
+        string $method
+    ): array {
         $requestUri = self::getServerParam($server, 'REQUEST_URI');
         $queryString = self::getServerParam($server, 'QUERY_STRING');
 
@@ -328,7 +346,7 @@ final class ServerRequestGlobalsFactory
             return [$uri, null];
         }
 
-        if (Rfc7230::isAsteriskFormRequestTarget($method, $requestUri)) {
+        if (Rfc9112::isAsteriskFormRequestTarget($method, $requestUri)) {
             return [$uri->withPath('')->withQuery(''), '*'];
         }
 
@@ -347,9 +365,12 @@ final class ServerRequestGlobalsFactory
     /**
      * @return array{0: UriInterface, 1: string}|null
      */
-    private static function getAbsoluteFormUriAndRequestTarget(string $requestUri, ?string $queryString): ?array
-    {
-        if (!Rfc7230::isAbsoluteFormRequestTarget($requestUri)) {
+    private static function getAbsoluteFormUriAndRequestTarget(
+        #[\SensitiveParameter]
+        string $requestUri,
+        ?string $queryString
+    ): ?array {
+        if (!Rfc9112::isAbsoluteFormRequestTarget($requestUri)) {
             return null;
         }
 
@@ -370,14 +391,14 @@ final class ServerRequestGlobalsFactory
             $requestTarget = $requestTargetWithoutUserInfo;
         }
 
-        if (strpos($requestTarget, '?') === false && $queryString !== null && $queryString !== '') {
+        if (!str_contains($requestTarget, '?') && $queryString !== null && $queryString !== '') {
             $targetUri = $targetUri->withQuery($queryString);
             $requestTarget .= '?'.$queryString;
         }
 
         // Preserve the received absolute-form target unless it cannot be used as
         // a PSR-7 request target without normalization.
-        $normalizeRequestTarget = preg_match('/[\x00-\x20\x7F]/', $requestTarget) === 1
+        $normalizeRequestTarget = !Rfc9112::isValidRequestTarget($requestTarget)
             || self::hasEmptyPortInAbsoluteFormRequestTarget($requestTarget);
 
         return [$targetUri, $normalizeRequestTarget ? (string) $targetUri : $requestTarget];
@@ -431,13 +452,13 @@ final class ServerRequestGlobalsFactory
             return false;
         }
 
-        if ($authority[0] === '[') {
+        if (str_starts_with($authority, '[')) {
             $closingBracket = strpos($authority, ']');
 
             return $closingBracket !== false && substr($authority, $closingBracket + 1) === ':';
         }
 
-        return substr($authority, -1) === ':';
+        return str_ends_with($authority, ':');
     }
 
     /**
@@ -445,7 +466,7 @@ final class ServerRequestGlobalsFactory
      */
     private static function parseConnectAuthorityFormRequestTarget(string $method, string $target): ?array
     {
-        if (!Rfc7230::isConnectAuthorityFormRequestTarget($method, $target)) {
+        if (!Rfc9112::isConnectAuthorityFormRequestTarget($method, $target)) {
             return null;
         }
 
@@ -474,7 +495,7 @@ final class ServerRequestGlobalsFactory
 
     private static function normalizeOriginFormPathFromServer(string $path): string
     {
-        if ($path === '' || $path[0] === '/') {
+        if ($path === '' || str_starts_with($path, '/')) {
             return $path;
         }
 

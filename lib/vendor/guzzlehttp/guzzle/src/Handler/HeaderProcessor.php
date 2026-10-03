@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Handler;
 
+use GuzzleHttp\Psr7;
 use GuzzleHttp\Utils;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 
 /**
  * @internal
@@ -42,7 +41,7 @@ final class HeaderProcessor
         $parts = \explode(' ', $statusLine, 3);
         $protocol = $parts[0];
 
-        if (0 !== \strncasecmp($protocol, 'HTTP/', 5)) {
+        if (!Psr7\Utils::caselessEquals(\substr($protocol, 0, 5), 'HTTP/')) {
             throw new \RuntimeException('HTTP version missing from header data');
         }
 
@@ -58,7 +57,7 @@ final class HeaderProcessor
             throw new \RuntimeException('HTTP status code missing from header data');
         }
 
-        if (!\preg_match('/^[1-5]\d{2}$/', $status)) {
+        if (!\preg_match('/^[1-5]\d{2}$/D', $status)) {
             throw new \RuntimeException('HTTP status code is invalid');
         }
 
@@ -75,6 +74,26 @@ final class HeaderProcessor
         }
 
         return [$version, (int) $status, $reason, Utils::headersFromLines($headers)];
+    }
+
+    public static function isStatusLineCandidate(string $line): bool
+    {
+        return \preg_match('/^HTTP\/[0-9]+(?:\.[0-9]+)? [0-9]{3}(?: [^\r\n]*)?(?:\r\n|\r|\n)?$/iD', $line) === 1;
+    }
+
+    public static function isValidHeaderFieldLine(string $line): bool
+    {
+        $parts = \explode(':', $line, 2);
+
+        if (!isset($parts[1])) {
+            return false;
+        }
+
+        if (!\preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $parts[0])) {
+            return false;
+        }
+
+        return \preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*(?:\r\n|\r|\n)?$/D', \trim($parts[1], " \t")) === 1;
     }
 
     /**
@@ -138,30 +157,75 @@ final class HeaderProcessor
         throw new \OverflowException('Content-Length exceeds the maximum integer size supported on this platform');
     }
 
-    public static function parseContentLengthForResponseBody(RequestInterface $request, ResponseInterface $response): ?string
-    {
-        if (!self::responseCanHaveContentLengthBody($request, $response)) {
+    /**
+     * Validates response framing and returns its normalized Content-Length.
+     * Returns null when absent or when ordinary body framing does not apply.
+     *
+     * @param array<string, string[]> $headers
+     *
+     * @throws \RuntimeException when Content-Length is malformed, conflicting,
+     *                           or combined with Transfer-Encoding
+     */
+    public static function validateResponseFraming(
+        string $method,
+        int $status,
+        array $headers
+    ): ?string {
+        if (!self::responseCanHaveBody($method, $status)) {
             return null;
         }
+
+        $normalizedKeys = Utils::normalizeHeaderKeys($headers);
+        $contentLength = self::removeHeader('Content-Length', $headers);
 
         try {
-            return self::parseContentLength($response->getHeader('Content-Length'));
+            $length = self::parseContentLength($contentLength);
         } catch (\RuntimeException $e) {
-            return null;
+            throw new \RuntimeException('Invalid Content-Length response header: '.$e->getMessage(), 0, $e);
         }
+
+        if ($length !== null && isset($normalizedKeys['transfer-encoding'])) {
+            throw new \RuntimeException('A response must not contain both Content-Length and Transfer-Encoding');
+        }
+
+        return $length;
     }
 
-    private static function responseCanHaveContentLengthBody(RequestInterface $request, ResponseInterface $response): bool
+    /**
+     * Removes every case-insensitive occurrence of a header and returns all
+     * removed values in their original field order.
+     *
+     * @param array<string, string[]> $headers
+     *
+     * @return string[] Removed values across all header-name casings
+     */
+    public static function removeHeader(string $name, array &$headers): array
     {
-        $status = $response->getStatusCode();
-        $method = $request->getMethod();
+        $values = [];
 
+        foreach ($headers as $key => $headerValues) {
+            if (Psr7\Utils::caselessEquals((string) $key, $name)) {
+                \array_push($values, ...$headerValues);
+                unset($headers[$key]);
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Whether a response uses ordinary body framing. A response to HEAD, a
+     * response with a 1xx, 204, or 304 status code, or a 2xx response to
+     * CONNECT never has a body, whatever its framing headers claim. A 205
+     * remains subject to framing even though its semantics require no content.
+     */
+    public static function responseCanHaveBody(string $method, int $status): bool
+    {
         return $method !== 'HEAD'
             && !($method === 'CONNECT' && $status >= 200 && $status < 300)
             && $status >= 200
             && $status !== 204
-            && $status !== 304
-            && !$response->hasHeader('Transfer-Encoding');
+            && $status !== 304;
     }
 
     /**
@@ -174,7 +238,7 @@ final class HeaderProcessor
         $lastStatusLine = 0;
 
         foreach ($headers as $index => $line) {
-            if (\preg_match('/^HTTP\/\S+\s+/i', $line)) {
+            if (self::isStatusLineCandidate($line)) {
                 $lastStatusLine = $index;
             }
         }

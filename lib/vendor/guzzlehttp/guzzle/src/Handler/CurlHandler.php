@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Handler;
 
+use GuzzleHttp\Exception\InvalidArgumentException;
+use GuzzleHttp\NonSerializableTrait;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\DiagnosticValue;
 use GuzzleHttp\TransportSharing;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -18,6 +21,13 @@ use Psr\Http\Message\ResponseInterface;
  */
 final class CurlHandler
 {
+    use NonSerializableTrait;
+
+    private const KNOWN_CONSTRUCTOR_OPTIONS = [
+        'handle_factory' => true,
+        'transport_sharing' => true,
+    ];
+
     private CurlFactoryInterface $factory;
 
     private bool $ownsFactory;
@@ -36,6 +46,12 @@ final class CurlHandler
      */
     public function __construct(array $options = [])
     {
+        foreach ($options as $name => $_) {
+            if (!isset(self::KNOWN_CONSTRUCTOR_OPTIONS[$name])) {
+                throw new InvalidArgumentException(\sprintf('Invalid CurlHandler constructor option "%s".', DiagnosticValue::escape((string) $name)));
+            }
+        }
+
         CurlShareHandleState::assertNoRequiredSharingCustomFactoryConflict($options, 'CurlHandler');
         $transportSharing = $options['transport_sharing'] ?? null;
         $sharingMode = CurlShareHandleState::normalizeMode($transportSharing, 'transport_sharing');
@@ -53,7 +69,7 @@ final class CurlHandler
             : null;
 
         $this->factory = $this->shareHandleState !== null
-            ? new CurlFactory(3, $this->shareHandleState->mode, $this->shareHandleState->handle)
+            ? new CurlFactory(3, $this->shareHandleState->mode, $this->shareHandleState)
             : new CurlFactory(3);
 
         $this->ownsFactory = true;
@@ -62,14 +78,24 @@ final class CurlHandler
     /**
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function __invoke(RequestInterface $request, array $options): PromiseInterface
-    {
+    public function __invoke(
+        #[\SensitiveParameter]
+        RequestInterface $request,
+        #[\SensitiveParameter]
+        array $options
+    ): PromiseInterface {
         $this->assertOpen();
+        HostValidator::assertRequestHost($request);
 
         if (isset($options['delay'])) {
             \usleep((int) ($options['delay'] * 1000));
         }
 
+        // A Multiplexing::NONE request option holds unconditionally here:
+        // the transfer runs alone during the blocking curl_exec(), and even
+        // under persistent transport sharing an in-use connection cannot be
+        // joined from another multi handle, so it never shares its
+        // connection with a concurrent transfer.
         $easy = $this->factory->create($request, $options);
 
         \curl_exec($easy->handle);
@@ -95,6 +121,13 @@ final class CurlHandler
         } catch (\Throwable $e) {
             // Destructors must not throw.
         }
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->closed = true;
+
+        throw new \LogicException(static::class.' should never be unserialized');
     }
 
     private function assertOpen(): void

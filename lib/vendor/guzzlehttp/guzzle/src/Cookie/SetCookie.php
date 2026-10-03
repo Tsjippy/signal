@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Cookie;
 
+use GuzzleHttp\HostIdentity;
+use GuzzleHttp\Psr7;
+
 /**
  * Set-Cookie object
  */
@@ -39,12 +42,16 @@ class SetCookie
      *
      * @param string $cookie Set-Cookie header string
      */
-    public static function fromString(string $cookie): self
-    {
+    public static function fromString(
+        #[\SensitiveParameter]
+        string $cookie
+    ): self {
         // Create the default return array
         $data = self::DEFAULTS;
         // Explode the cookie string using a series of semicolons
-        $pieces = \array_filter(\array_map('trim', \explode(';', $cookie)));
+        $pieces = \array_filter(\array_map(static function (string $piece): string {
+            return \trim($piece, " \t");
+        }, \explode(';', $cookie)));
         // The name of the cookie (first kvp) must exist and include an equal sign.
         if (!isset($pieces[0]) || \strpos($pieces[0], '=') === false) {
             return new self($data);
@@ -53,9 +60,9 @@ class SetCookie
         // Add the cookie pieces into the parsed data array
         foreach ($pieces as $part) {
             $cookieParts = \explode('=', $part, 2);
-            $key = \trim($cookieParts[0]);
+            $key = \trim($cookieParts[0], " \t");
             $value = isset($cookieParts[1])
-                ? \trim($cookieParts[1], " \n\r\t\0\x0B")
+                ? \trim($cookieParts[1], " \t")
                 : true;
 
             // Only check for non-cookies when cookies have been found
@@ -64,9 +71,9 @@ class SetCookie
                 $data['Value'] = $value;
             } else {
                 foreach (\array_keys(self::DEFAULTS) as $search) {
-                    if (!\strcasecmp($search, $key)) {
+                    if (Psr7\Utils::caselessEquals($search, $key)) {
                         if ($search === 'Max-Age') {
-                            if (\is_string($value)) {
+                            if (\is_string($value) && \preg_match('/^[+-]?[0-9]+$/D', $value) === 1) {
                                 $maxAge = self::parseNumericInteger($value);
                                 if ($maxAge !== null) {
                                     $data[$search] = $maxAge;
@@ -76,13 +83,13 @@ class SetCookie
                             if ($value) {
                                 $data[$search] = true;
                             }
-                        } else {
+                        } elseif (\is_string($value)) {
                             $data[$search] = $value;
                         }
                         continue 2;
                     }
                 }
-                if (!\strcasecmp('HostOnly', $key)) {
+                if (Psr7\Utils::caselessEquals('HostOnly', $key)) {
                     continue;
                 }
                 $data[$key] = $value;
@@ -95,8 +102,10 @@ class SetCookie
     /**
      * @param array $data Array of cookie data provided by a Cookie parser
      */
-    public function __construct(array $data = [])
-    {
+    public function __construct(
+        #[\SensitiveParameter]
+        array $data = []
+    ) {
         $this->data = self::DEFAULTS;
         self::validateFieldTypes($data);
 
@@ -148,12 +157,8 @@ class SetCookie
 
         // Extract the Expires value and turn it into a UNIX timestamp if needed
         $maxAge = $this->getMaxAge();
-        if (!$this->getExpires() && $maxAge) {
-            $now = \time();
-            // Clamp absurd Max-Age values so integer addition cannot promote to float.
-            $expires = $maxAge > \PHP_INT_MAX - $now ? \PHP_INT_MAX : $now + $maxAge;
-
-            $this->setExpires($expires);
+        if ($maxAge !== null) {
+            $this->setExpires(self::maxAgeToExpires($maxAge, \time()));
         }
     }
 
@@ -410,7 +415,7 @@ class SetCookie
         $cookiePath = $this->getPath();
 
         // Match on exact matches or when path is the default empty "/"
-        if ($cookiePath === '/' || $cookiePath == $requestPath) {
+        if ($cookiePath === '/' || $cookiePath === $requestPath) {
             return true;
         }
 
@@ -440,28 +445,11 @@ class SetCookie
             return false;
         }
 
-        // Remove the leading '.' as per spec in RFC 6265.
-        // https://datatracker.ietf.org/doc/html/rfc6265#section-5.2.3
-        $cookieDomain = self::normalizeDomain($cookieDomain);
-
-        $domain = \strtolower($domain);
-
         if ($this->getHostOnly()) {
-            return $domain === $cookieDomain;
+            return HostIdentity::canonicalCookieDomain($domain) === HostIdentity::canonicalCookieDomain($cookieDomain);
         }
 
-        // Domain not set or exact match.
-        if ('' === $cookieDomain || $domain === $cookieDomain) {
-            return true;
-        }
-
-        // Matching the subdomain according to RFC 6265.
-        // https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
-        if (\filter_var($domain, \FILTER_VALIDATE_IP)) {
-            return false;
-        }
-
-        return (bool) \preg_match('/\.'.\preg_quote($cookieDomain, '/').'$/', $domain);
+        return HostIdentity::cookieDomainMatches($domain, $cookieDomain);
     }
 
     /**
@@ -485,10 +473,7 @@ class SetCookie
         }
 
         // Check if any of the invalid characters are present in the cookie name
-        if (\preg_match(
-            '/[\x00-\x20\x22\x28-\x29\x2c\x2f\x3a-\x40\x5c\x7b\x7d\x7f]/',
-            $name
-        )) {
+        if (\preg_match('/[\x00-\x20\x22\x28-\x29\x2c\x2f\x3a-\x40\x5c\x7b\x7d\x7f]/', $name) !== 0) {
             return 'Cookie name must not contain invalid characters: ASCII '
                 .'Control characters (0-31;127), space, tab and the '
                 .'following characters: ()<>@,;:\"/?={}';
@@ -504,7 +489,7 @@ class SetCookie
         // Domains must not be empty, but may be omitted. "0" is not a valid
         // internet domain, but may be used as server name in a private network.
         $domain = $this->getDomain();
-        if ($domain === '') {
+        if ($domain === '' || ($domain !== null && \ltrim(\trim($domain, " \n\r\t\0\x0B"), '.') === '')) {
             return 'The cookie domain must not be empty';
         }
 
@@ -517,13 +502,32 @@ class SetCookie
 
     private static function normalizeDomain(string $domain): string
     {
-        $domain = \strtolower($domain);
+        $domain = Psr7\Utils::asciiToLower($domain);
 
-        if ($domain !== '' && $domain[0] === '.') {
-            return \substr_replace($domain, '', 0, 1);
+        // Treat trailing-dot domains as host-only, but keep pure-dot domains invalid.
+        if ($domain !== '' && \substr($domain, -1) === '.' && \trim($domain, '.') !== '') {
+            return '';
         }
 
-        return $domain;
+        if ($domain !== '' && $domain !== '.' && $domain[0] === '.') {
+            $domain = \substr_replace($domain, '', 0, 1);
+        }
+
+        return HostIdentity::canonicalCookieDomain($domain);
+    }
+
+    private static function maxAgeToExpires(int $maxAge, int $now): int
+    {
+        if ($maxAge <= 0) {
+            return $now - 1;
+        }
+
+        // Clamp absurd Max-Age values so addition cannot promote to float
+        if ($maxAge > \PHP_INT_MAX - $now) {
+            return \PHP_INT_MAX;
+        }
+
+        return $now + $maxAge;
     }
 
     private static function parseNumericInteger(string $value): ?int
@@ -561,8 +565,10 @@ class SetCookie
     /**
      * @param mixed[] $data
      */
-    private static function validateFieldTypes(array $data): void
-    {
+    private static function validateFieldTypes(
+        #[\SensitiveParameter]
+        array $data
+    ): void {
         foreach (['Name', 'Value', 'Domain', 'Path'] as $field) {
             if (isset($data[$field]) && !\is_string($data[$field])) {
                 throw new \InvalidArgumentException(\sprintf('Cookie field "%s" must be a string', $field));

@@ -150,7 +150,7 @@ class Request implements RequestInterface
             $host .= ':'.$port;
         }
 
-        $this->assertValue($host);
+        $this->assertValue('Host', $host);
 
         return $host;
     }
@@ -164,13 +164,13 @@ class Request implements RequestInterface
             $this->headerNames['host'] = 'Host';
         }
         // Ensure Host is the first header.
-        // See: https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
+        // See: https://datatracker.ietf.org/doc/html/rfc9110#section-7.2
         $this->headers = [$header => [$host]] + $this->headers;
     }
 
     private function assertMethod(string $method): void
     {
-        if (!preg_match('/^[!#$%&\'*+.^_`|~0-9A-Za-z-]+$/D', $method)) {
+        if (!Rfc9110::isToken($method)) {
             throw new InvalidArgumentException('Method must be a valid HTTP token.');
         }
     }
@@ -192,7 +192,7 @@ class Request implements RequestInterface
 
     private static function assertRequestTarget(string $requestTarget): void
     {
-        if ($requestTarget === '' || preg_match('/[\x00-\x20\x7F]/', $requestTarget)) {
+        if (!Rfc9112::isValidRequestTarget($requestTarget)) {
             throw new InvalidArgumentException(
                 'Invalid request target provided; cannot be empty or contain whitespace or control characters'
             );
@@ -201,7 +201,7 @@ class Request implements RequestInterface
 
     private static function normalizePathForOriginForm(string $path): string
     {
-        if (isset($path[1]) && $path[0] === '/' && $path[1] === '/') {
+        if (str_starts_with($path, '//')) {
             return '/'.ltrim($path, '/');
         }
 

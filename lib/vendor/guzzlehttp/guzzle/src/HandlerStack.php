@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GuzzleHttp;
 
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\Psr7\DiagnosticValue;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -18,6 +19,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 class HandlerStack
 {
+    use NonSerializableTrait;
+
     /**
      * @var (callable&THandler)|null
      */
@@ -37,9 +40,9 @@ class HandlerStack
      * Creates a default handler stack that can be used by clients.
      *
      * The returned handler will wrap the provided handler or use the most
-     * appropriate default handler for your system. The returned HandlerStack has
-     * support for cookies, redirects, HTTP error exceptions, and preparing a body
-     * before sending.
+     * appropriate default handler for your system. The returned HandlerStack
+     * has support for authentication, cookies, redirects, HTTP error
+     * exceptions, and preparing a body before sending.
      *
      * The returned handler stack can be passed to a client in the "handler"
      * option.
@@ -55,6 +58,7 @@ class HandlerStack
         $stack = new self($handler ?: Utils::chooseHandler());
         $stack->push(Middleware::httpErrors(), 'http_errors');
         $stack->push(Middleware::redirect(), 'allow_redirects');
+        $stack->push(Middleware::auth(), 'auth');
         $stack->push(Middleware::cookies(), 'cookies');
         $stack->push(Middleware::prepareBody(), 'prepare_body');
 
@@ -72,41 +76,17 @@ class HandlerStack
     /**
      * Invokes the handler stack as a composed handler
      *
-     * @return ResponseInterface|PromiseInterface<ResponseInterface, mixed>
+     * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function __invoke(RequestInterface $request, array $options)
-    {
+    public function __invoke(
+        #[\SensitiveParameter]
+        RequestInterface $request,
+        #[\SensitiveParameter]
+        array $options
+    ) {
         $handler = $this->resolve();
 
         return $handler($request, $options);
-    }
-
-    /**
-     * Dumps a string representation of the stack.
-     */
-    public function __toString(): string
-    {
-        $depth = 0;
-        $stack = [];
-
-        if ($this->handler !== null) {
-            $stack[] = '0) Handler: '.$this->debugCallable($this->handler);
-        }
-
-        $result = '';
-        foreach (\array_reverse($this->stack) as $tuple) {
-            ++$depth;
-            $str = "{$depth}) Name: '{$tuple[1]}', ";
-            $str .= 'Function: '.$this->debugCallable($tuple[0]);
-            $result = "> {$str}\n{$result}";
-            $stack[] = $str;
-        }
-
-        foreach (\array_keys($stack) as $k) {
-            $result .= "< {$stack[$k]}\n";
-        }
-
-        return $result;
     }
 
     /**
@@ -224,14 +204,35 @@ class HandlerStack
                 throw new \LogicException('No handler has been specified');
             }
 
+            if (!\is_callable($prev)) {
+                throw new \LogicException('Handler must be callable');
+            }
+
             foreach (\array_reverse($this->stack) as $fn) {
+                if (!\is_array($fn) || !\array_key_exists(0, $fn) || !\is_callable($fn[0])) {
+                    throw new \LogicException('Middleware must be callable');
+                }
+
                 $prev = $fn[0]($prev);
+
+                if (!\is_callable($prev)) {
+                    throw new \LogicException('Middleware must return a callable');
+                }
             }
 
             $this->cached = $prev;
         }
 
         return $this->cached;
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->handler = null;
+        $this->stack = [];
+        $this->cached = null;
+
+        throw new \LogicException(static::class.' should never be unserialized');
     }
 
     private function findByName(string $name): int
@@ -242,7 +243,7 @@ class HandlerStack
             }
         }
 
-        throw new \InvalidArgumentException("Middleware not found: $name");
+        throw new \InvalidArgumentException(\sprintf('Middleware not found: %s', DiagnosticValue::escape($name)));
     }
 
     /**
@@ -269,26 +270,5 @@ class HandlerStack
             $replacement = [$this->stack[$idx], $tuple];
             \array_splice($this->stack, $idx, 1, $replacement);
         }
-    }
-
-    /**
-     * Provides a debug string for a given callable.
-     *
-     * @param callable $fn Function to write as a string.
-     */
-    private function debugCallable(callable $fn): string
-    {
-        if (\is_string($fn)) {
-            return "callable({$fn})";
-        }
-
-        if (\is_array($fn)) {
-            return \is_string($fn[0])
-                ? "callable({$fn[0]}::{$fn[1]})"
-                : "callable(['".\get_class($fn[0])."', '{$fn[1]}'])";
-        }
-
-        /** @var callable&object $fn */
-        return 'callable('.\spl_object_hash($fn).')';
     }
 }

@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace GuzzleHttp\Handler;
 
+use GuzzleHttp\Exception\InvalidArgumentException;
+use GuzzleHttp\Exception\ResponseException;
+use GuzzleHttp\Exception\ResponseTransferException;
+use GuzzleHttp\NonSerializableTrait;
+use GuzzleHttp\Psr7\DiagnosticValue;
 use GuzzleHttp\Psr7\Exception\TimeoutException;
-use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\HttpFactory;
+use GuzzleHttp\RequestOptions;
 use GuzzleHttp\Utils;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 
@@ -18,6 +25,8 @@ use Psr\Http\Message\StreamInterface;
  */
 final class EasyHandle
 {
+    use NonSerializableTrait;
+
     /**
      * @var resource|\CurlHandle cURL resource
      */
@@ -33,6 +42,17 @@ final class EasyHandle
     public array $headers = [];
 
     /**
+     * @var list<string> Valid trailer lines, retained only when an
+     *                   on_trailers callback is configured
+     */
+    public array $trailers = [];
+
+    /**
+     * @var bool Whether this handle was configured with CURLOPT_PIPEWAIT
+     */
+    public bool $usesPipewait = false;
+
+    /**
      * @var ResponseInterface|null Received response (if any)
      */
     public ?ResponseInterface $response = null;
@@ -46,6 +66,17 @@ final class EasyHandle
      * @var int cURL error number (if any)
      */
     public int $errno = 0;
+
+    /**
+     * @var string|null Effective CURLOPT_PROXY value the handle was created with (if any)
+     */
+    public ?string $effectiveProxy = null;
+
+    /**
+     * Proxy tunnel or SOCKS proxy section signature for connection-reuse
+     * isolation, or null when the request does not require sectioning.
+     */
+    public ?string $proxyTunnelSignature = null;
 
     /**
      * @var \Throwable|null Exception during on_headers (if any)
@@ -66,6 +97,11 @@ final class EasyHandle
      * @var \Throwable|null Exception during createResponse (if any)
      */
     public ?\Throwable $createResponseException = null;
+
+    /**
+     * @var ResponseException|null Response header failure, if any.
+     */
+    public ?ResponseException $responseHeaderException = null;
 
     /**
      * @var TimeoutException|null Exception during request body read timeout.
@@ -113,6 +149,7 @@ final class EasyHandle
         $this->response = null;
         $this->responseBodyBytes = 0;
         $this->responseBodySizeException = null;
+        $this->responseHeaderException = null;
 
         [$ver, $status, $reason, $headers] = HeaderProcessor::parseHeaders($this->headers);
 
@@ -123,13 +160,22 @@ final class EasyHandle
             return;
         }
 
-        $normalizedKeys = Utils::normalizeHeaderKeys($headers);
+        $framingFailure = null;
+        try {
+            $declaredLength = HeaderProcessor::validateResponseFraming($this->request->getMethod(), $status, $headers);
+            HeaderProcessor::assertContentLengthWithinPlatformLimit($declaredLength);
+        } catch (\RuntimeException $e) {
+            $framingFailure = $e;
+        }
 
-        if (!empty($this->options['decode_content']) && isset($normalizedKeys['content-encoding'])) {
+        $normalizedKeys = Utils::normalizeHeaderKeys($headers);
+        $decodeContent = $this->options['decode_content'] ?? false;
+        if ($framingFailure === null && $decodeContent !== false && isset($normalizedKeys['content-encoding'])) {
             $headers['x-encoded-content-encoding'] = $headers[$normalizedKeys['content-encoding']];
             unset($headers[$normalizedKeys['content-encoding']]);
-            if (isset($normalizedKeys['content-length'])) {
-                $headers['x-encoded-content-length'] = $headers[$normalizedKeys['content-length']];
+            $encodedContentLength = HeaderProcessor::removeHeader('Content-Length', $headers);
+            if ($encodedContentLength !== []) {
+                $headers['x-encoded-content-length'] = $encodedContentLength;
 
                 try {
                     $bodyLength = $this->sink->getSize();
@@ -137,21 +183,52 @@ final class EasyHandle
                     $bodyLength = null;
                 }
                 if ($bodyLength) {
-                    $headers[$normalizedKeys['content-length']] = [(string) $bodyLength];
-                } else {
-                    unset($headers[$normalizedKeys['content-length']]);
+                    $headers['Content-Length'] = [(string) $bodyLength];
                 }
             }
         }
 
-        // Attach a response to the easy handle with the parsed headers.
-        $this->response = new Response(
-            $status,
-            $headers,
-            $this->sink,
-            $ver,
-            $reason
-        );
+        // Attach a response to the easy handle with the parsed headers. Any
+        // exception propagates to the caller (CurlFactory), which records it as
+        // the createResponseException — do not catch it here.
+        $responseFactory = self::requireResponseFactory($this->options[RequestOptions::RESPONSE_FACTORY] ?? new HttpFactory());
+        $response = $responseFactory->createResponse($status, $reason ?? '')->withProtocolVersion($ver);
+        foreach ($headers as $name => $value) {
+            $response = $response->withAddedHeader((string) $name, $value);
+        }
+        $this->response = $response->withBody($this->sink);
+
+        if ($framingFailure instanceof \OverflowException) {
+            $this->responseHeaderException = new ResponseException(
+                $framingFailure->getMessage(),
+                $this->request,
+                $this->response,
+                $framingFailure
+            );
+        } elseif ($framingFailure !== null) {
+            $this->responseHeaderException = new ResponseTransferException(
+                $framingFailure->getMessage(),
+                $this->request,
+                $this->response,
+                $framingFailure
+            );
+        }
+    }
+
+    /**
+     * @param mixed $factory
+     */
+    private static function requireResponseFactory($factory): ResponseFactoryInterface
+    {
+        if (!$factory instanceof ResponseFactoryInterface) {
+            throw new InvalidArgumentException(\sprintf(
+                '%s must be an instance of %s',
+                RequestOptions::RESPONSE_FACTORY,
+                ResponseFactoryInterface::class
+            ));
+        }
+
+        return $factory;
     }
 
     /**
@@ -159,7 +236,10 @@ final class EasyHandle
      */
     public function __get(string $name): void
     {
-        $msg = $name === 'handle' ? 'The EasyHandle has been released' : 'Invalid property: '.$name;
+        $msg = $name === 'handle'
+            ? 'The EasyHandle has been released'
+            : \sprintf('Invalid property: %s', DiagnosticValue::escape($name));
+
         throw new \BadMethodCallException($msg);
     }
 }

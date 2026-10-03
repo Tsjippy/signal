@@ -17,6 +17,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 class RetryMiddleware
 {
+    use NonSerializableTrait;
+
     /**
      * @var callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>
      */
@@ -28,7 +30,7 @@ class RetryMiddleware
     private $decider;
 
     /**
-     * @var (callable(int): int)|(callable(int, ResponseInterface|null, RequestInterface): int)
+     * @var callable(int, ResponseInterface|null, RequestInterface): int
      */
     private $delay;
 
@@ -37,7 +39,7 @@ class RetryMiddleware
      *                                                                                                                     a request, [response], and [rejection reason]
      *                                                                                                                     and returns true if the request is to be retried.
      * @param callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed> $nextHandler Next handler to invoke.
-     * @param (callable(int): int)|(callable(int, ResponseInterface|null, RequestInterface): int)|null        $delay       Function that returns the number of milliseconds to delay.
+     * @param (callable(int, ResponseInterface|null, RequestInterface): int)|null                             $delay       Function that returns the number of milliseconds to delay.
      */
     public function __construct(callable $decider, callable $nextHandler, ?callable $delay = null)
     {
@@ -51,8 +53,12 @@ class RetryMiddleware
     /**
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function __invoke(RequestInterface $request, array $options): PromiseInterface
-    {
+    public function __invoke(
+        #[\SensitiveParameter]
+        RequestInterface $request,
+        #[\SensitiveParameter]
+        array $options
+    ): PromiseInterface {
         if (!isset($options['retries'])) {
             $options['retries'] = 0;
         } elseif (!\is_int($options['retries'])) {
@@ -72,7 +78,10 @@ class RetryMiddleware
      */
     private function onFulfilled(RequestInterface $request, array $options): callable
     {
-        return function ($value) use ($request, $options) {
+        return function (
+            #[\SensitiveParameter]
+            $value
+        ) use ($request, $options) {
             if (!($this->decider)(
                 $options['retries'],
                 $request,
@@ -91,7 +100,10 @@ class RetryMiddleware
      */
     private function onRejected(RequestInterface $req, array $options): callable
     {
-        return function ($reason) use ($req, $options): PromiseInterface {
+        return function (
+            #[\SensitiveParameter]
+            $reason
+        ) use ($req, $options): PromiseInterface {
             if (!($this->decider)(
                 $options['retries'],
                 $req,
@@ -109,29 +121,17 @@ class RetryMiddleware
     /**
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    private function doRetry(RequestInterface $request, array $options, ?ResponseInterface $response = null): PromiseInterface
-    {
+    private function doRetry(
+        #[\SensitiveParameter]
+        RequestInterface $request,
+        #[\SensitiveParameter]
+        array $options,
+        #[\SensitiveParameter]
+        ?ResponseInterface $response = null
+    ): PromiseInterface {
         ++$options['retries'];
-        $options['delay'] = $this->getDelay($options['retries'], $response, $request);
+        $options['delay'] = ($this->delay)($options['retries'], $response, $request);
 
         return $this($request, $options);
-    }
-
-    private function getDelay(int $retries, ?ResponseInterface $response, RequestInterface $request): int
-    {
-        $delay = $this->delay;
-
-        if (self::acceptsRetryContext($delay)) {
-            return $delay($retries, $response, $request);
-        }
-
-        return $delay($retries);
-    }
-
-    private static function acceptsRetryContext(callable $callback): bool
-    {
-        $reflection = new \ReflectionFunction(\Closure::fromCallable($callback));
-
-        return $reflection->isVariadic() || $reflection->getNumberOfParameters() >= 3;
     }
 }

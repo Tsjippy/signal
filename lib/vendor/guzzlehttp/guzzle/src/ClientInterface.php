@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
@@ -30,7 +31,6 @@ interface ClientInterface
      *
      * @param RequestInterface $request Request to send
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -45,7 +45,7 @@ interface ClientInterface
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -54,6 +54,7 @@ interface ClientInterface
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -70,8 +71,10 @@ interface ClientInterface
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -83,6 +86,7 @@ interface ClientInterface
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -110,7 +114,6 @@ interface ClientInterface
      *
      * @param RequestInterface $request Request to send
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -125,7 +128,7 @@ interface ClientInterface
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -134,6 +137,7 @@ interface ClientInterface
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -150,8 +154,10 @@ interface ClientInterface
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -163,6 +169,7 @@ interface ClientInterface
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -195,7 +202,6 @@ interface ClientInterface
      * @param string              $method HTTP method.
      * @param string|UriInterface $uri    URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -210,7 +216,7 @@ interface ClientInterface
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -219,6 +225,7 @@ interface ClientInterface
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -235,8 +242,10 @@ interface ClientInterface
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -248,6 +257,7 @@ interface ClientInterface
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -280,7 +290,6 @@ interface ClientInterface
      * @param string              $method HTTP method
      * @param string|UriInterface $uri    URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -295,7 +304,7 @@ interface ClientInterface
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -304,6 +313,7 @@ interface ClientInterface
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -320,8 +330,10 @@ interface ClientInterface
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -333,6 +345,7 @@ interface ClientInterface
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,

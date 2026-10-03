@@ -9,6 +9,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Promise\PromiseInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\StreamInterface;
@@ -30,7 +31,6 @@ trait ClientTrait
      * @param string              $method HTTP method.
      * @param string|UriInterface $uri    URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -45,7 +45,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -54,6 +54,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -70,8 +71,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -83,6 +86,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -114,7 +118,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -129,7 +132,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -138,6 +141,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -154,8 +158,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -167,6 +173,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -187,8 +194,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function get($uri, array $options = []): ResponseInterface
-    {
+    public function get(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('GET', $uri, $options);
     }
 
@@ -201,7 +211,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -216,7 +225,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -225,6 +234,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -241,8 +251,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -254,6 +266,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -274,8 +287,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function head($uri, array $options = []): ResponseInterface
-    {
+    public function head(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('HEAD', $uri, $options);
     }
 
@@ -288,7 +304,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -303,7 +318,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -312,6 +327,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -328,8 +344,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -341,6 +359,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -361,8 +380,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function put($uri, array $options = []): ResponseInterface
-    {
+    public function put(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('PUT', $uri, $options);
     }
 
@@ -375,7 +397,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -390,7 +411,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -399,6 +420,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -415,8 +437,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -428,6 +452,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -448,8 +473,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function post($uri, array $options = []): ResponseInterface
-    {
+    public function post(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('POST', $uri, $options);
     }
 
@@ -462,7 +490,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -477,7 +504,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -486,6 +513,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -502,8 +530,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -515,6 +545,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -535,8 +566,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function patch($uri, array $options = []): ResponseInterface
-    {
+    public function patch(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('PATCH', $uri, $options);
     }
 
@@ -549,7 +583,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -564,7 +597,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -573,6 +606,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -589,8 +623,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -602,6 +638,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -622,8 +659,11 @@ trait ClientTrait
      *
      * @throws GuzzleException
      */
-    public function delete($uri, array $options = []): ResponseInterface
-    {
+    public function delete(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): ResponseInterface {
         return $this->request('DELETE', $uri, $options);
     }
 
@@ -637,7 +677,6 @@ trait ClientTrait
      * @param string              $method HTTP method
      * @param string|UriInterface $uri    URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -652,7 +691,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -661,6 +700,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -677,8 +717,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -690,6 +732,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -721,7 +764,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -736,7 +778,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -745,6 +787,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -761,8 +804,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -774,6 +819,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -794,8 +840,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function getAsync($uri, array $options = []): PromiseInterface
-    {
+    public function getAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('GET', $uri, $options);
     }
 
@@ -808,7 +857,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -823,7 +871,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -832,6 +880,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -848,8 +897,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -861,6 +912,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -881,8 +933,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function headAsync($uri, array $options = []): PromiseInterface
-    {
+    public function headAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('HEAD', $uri, $options);
     }
 
@@ -895,7 +950,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -910,7 +964,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -919,6 +973,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -935,8 +990,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -948,6 +1005,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -968,8 +1026,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function putAsync($uri, array $options = []): PromiseInterface
-    {
+    public function putAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('PUT', $uri, $options);
     }
 
@@ -982,7 +1043,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -997,7 +1057,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -1006,6 +1066,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -1022,8 +1083,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -1035,6 +1098,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -1055,8 +1119,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function postAsync($uri, array $options = []): PromiseInterface
-    {
+    public function postAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('POST', $uri, $options);
     }
 
@@ -1069,7 +1136,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -1084,7 +1150,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -1093,6 +1159,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -1109,8 +1176,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -1122,6 +1191,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -1142,8 +1212,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function patchAsync($uri, array $options = []): PromiseInterface
-    {
+    public function patchAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('PATCH', $uri, $options);
     }
 
@@ -1156,7 +1229,6 @@ trait ClientTrait
      *
      * @param string|UriInterface $uri URI object or string.
      * @param array{
-     *     handler?: callable(RequestInterface, array<array-key, mixed>): PromiseInterface<ResponseInterface, mixed>,
      *     base_uri?: string|UriInterface,
      *     allow_redirects?: bool|array{
      *         max?: int,
@@ -1171,7 +1243,7 @@ trait ClientTrait
      *         1: string,
      *         2?: string|null
      *     }|string|false|null,
-     *     body?: resource|string|null|int|float|bool|StreamInterface|(callable&object)|\Iterator|\Stringable,
+     *     body?: resource|string|null|StreamInterface|(callable&object)|\Iterator|\Stringable,
      *     cert?: string|array{
      *         0: string,
      *         1?: string|null
@@ -1180,6 +1252,7 @@ trait ClientTrait
      *     connect_timeout?: int|float,
      *     cookies?: false|CookieJarInterface,
      *     crypto_method?: int,
+     *     crypto_method_max?: int,
      *     debug?: bool|resource,
      *     decode_content?: bool|string,
      *     delay?: int|float,
@@ -1196,8 +1269,10 @@ trait ClientTrait
      *         headers?: array<array-key, string>,
      *         filename?: string
      *     }>,
+     *     multiplex?: string,
      *     on_headers?: callable(ResponseInterface, RequestInterface): mixed,
      *     on_stats?: callable(TransferStats): mixed,
+     *     on_trailers?: callable(array<string, list<string>>, ResponseInterface, RequestInterface): mixed,
      *     progress?: callable(int, int, int, int): mixed,
      *     protocols?: non-empty-array<array-key, string>,
      *     proxy?: string|array{
@@ -1209,6 +1284,7 @@ trait ClientTrait
      *     read_timeout?: int|float,
      *     retries?: int,
      *     request_factory?: RequestFactoryInterface,
+     *     response_factory?: ResponseFactoryInterface,
      *     sink?: resource|string|StreamInterface,
      *     ssl_key?: string|array{
      *         0: string,
@@ -1229,8 +1305,11 @@ trait ClientTrait
      *
      * @return PromiseInterface<ResponseInterface, mixed>
      */
-    public function deleteAsync($uri, array $options = []): PromiseInterface
-    {
+    public function deleteAsync(
+        $uri,
+        #[\SensitiveParameter]
+        array $options = []
+    ): PromiseInterface {
         return $this->requestAsync('DELETE', $uri, $options);
     }
 }

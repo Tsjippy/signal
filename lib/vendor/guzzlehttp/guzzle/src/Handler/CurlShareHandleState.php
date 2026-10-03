@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace GuzzleHttp\Handler;
 
 use GuzzleHttp\Exception\InvalidArgumentException;
+use GuzzleHttp\NonSerializableTrait;
 use GuzzleHttp\TransportSharing;
-use GuzzleHttp\Utils;
 
 /**
  * @internal
  */
 final class CurlShareHandleState
 {
+    use NonSerializableTrait;
+
     /**
      * @var resource|\CurlShareHandle|\CurlSharePersistentHandle|null
      */
@@ -83,7 +85,7 @@ final class CurlShareHandleState
         throw new InvalidArgumentException(\sprintf(
             'The "%s" option must be null or a GuzzleHttp\\TransportSharing::* constant; received %s.',
             $option,
-            Utils::describeType($sharing)
+            \get_debug_type($sharing)
         ));
     }
 
@@ -121,7 +123,7 @@ final class CurlShareHandleState
 
         self::requireCurlConstant('CURLOPT_SHARE');
         $shareOption = self::requireCurlConstant('CURLSHOPT_SHARE');
-        $locks = self::handlerLocks();
+        $locks = self::handlerLocks($mode);
         $handle = curl_share_init();
 
         try {
@@ -160,6 +162,9 @@ final class CurlShareHandleState
 
     private static function createPersistentShare(string $mode): self
     {
+        CurlVersion::ensureConnectionSharingSupported();
+        CurlVersion::ensureSslSessionSharingSupported();
+
         if (!self::supportsPersistentShare()) {
             throw new InvalidArgumentException('The "transport_sharing" option requires persistent cURL share handle support.');
         }
@@ -181,7 +186,9 @@ final class CurlShareHandleState
 
     private static function supportsPersistentShare(): bool
     {
-        return \function_exists('curl_share_init_persistent')
+        return CurlVersion::supportsConnectionSharing()
+            && CurlVersion::supportsSslSessionSharing()
+            && \function_exists('curl_share_init_persistent')
             && \class_exists('CurlSharePersistentHandle')
             && \defined('CURL_LOCK_DATA_DNS')
             && \defined('CURL_LOCK_DATA_CONNECT')
@@ -191,12 +198,23 @@ final class CurlShareHandleState
     /**
      * @return int[]
      */
-    private static function handlerLocks(): array
+    private static function handlerLocks(string $mode): array
     {
-        return [
+        CurlVersion::ensureHandlerSharingSupported();
+
+        if ($mode === TransportSharing::HANDLER_REQUIRE) {
+            CurlVersion::ensureSslSessionSharingSupported();
+        }
+
+        $locks = [
             self::requireCurlConstant('CURL_LOCK_DATA_DNS'),
-            self::requireCurlConstant('CURL_LOCK_DATA_SSL_SESSION'),
         ];
+
+        if (CurlVersion::supportsSslSessionSharing()) {
+            $locks[] = self::requireCurlConstant('CURL_LOCK_DATA_SSL_SESSION');
+        }
+
+        return $locks;
     }
 
     /**

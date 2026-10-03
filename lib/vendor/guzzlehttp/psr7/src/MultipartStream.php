@@ -13,6 +13,7 @@ use Psr\Http\Message\StreamInterface;
 final class MultipartStream implements StreamInterface
 {
     use StreamDecoratorTrait;
+    use NonSerializableStreamTrait;
 
     private string $boundary;
 
@@ -24,8 +25,9 @@ final class MultipartStream implements StreamInterface
      * @param array       $elements Array of associative arrays, each containing a
      *                              required "name" key mapping to the form field,
      *                              name, a required "contents" key mapping to any
-     *                              non-array value accepted by Utils::streamFor(),
-     *                              or an array for nested expansion.
+     *                              non-array value accepted by Utils::streamFor()
+     *                              (non-string scalar field values are cast to
+     *                              string), or an array for nested expansion.
      *                              Optional keys include "headers" (associative
      *                              array of custom headers) and "filename" (string
      *                              to send as the filename in the part).
@@ -70,7 +72,7 @@ final class MultipartStream implements StreamInterface
             $key = (string) $key;
 
             self::validatePartHeaderName($key);
-            self::validatePartHeaderValue($value);
+            self::validatePartHeaderValue($key, $value);
 
             $str .= "{$key}: {$value}\r\n";
         }
@@ -122,11 +124,23 @@ final class MultipartStream implements StreamInterface
             return;
         }
 
-        $element['contents'] = Utils::streamFor($element['contents']);
+        $contents = $element['contents'];
+        if (is_scalar($contents) && !is_string($contents)) {
+            // Multipart field values are byte strings on the wire, so finite
+            // numeric and boolean field values are cast to string here rather
+            // than rejected by streamFor(). Non-finite floats cannot be
+            // represented and are rejected.
+            if (is_float($contents) && !is_finite($contents)) {
+                throw new \InvalidArgumentException('Cannot create a stream from a non-finite float.');
+            }
+
+            $contents = (string) $contents;
+        }
+        $element['contents'] = Utils::streamFor($contents);
 
         if (empty($element['filename'])) {
             $uri = $element['contents']->getMetadata('uri');
-            if ($uri && \is_string($uri) && \substr($uri, 0, 6) !== 'php://' && \substr($uri, 0, 7) !== 'data://') {
+            if ($uri && \is_string($uri) && !str_starts_with($uri, 'php://') && !str_starts_with($uri, 'data://')) {
                 $element['filename'] = $uri;
             }
         }
@@ -197,9 +211,9 @@ final class MultipartStream implements StreamInterface
      */
     private static function getHeader(array $headers, string $key): ?string
     {
-        $lowercaseHeader = strtolower($key);
+        $lowercaseHeader = Utils::asciiToLower($key);
         foreach ($headers as $k => $v) {
-            if (strtolower((string) $k) === $lowercaseHeader) {
+            if (Utils::asciiToLower((string) $k) === $lowercaseHeader) {
                 return $v;
             }
         }
@@ -238,7 +252,7 @@ final class MultipartStream implements StreamInterface
                 throw new \InvalidArgumentException('Multipart part header value must be a string.');
             }
 
-            self::validatePartHeaderValue($value);
+            self::validatePartHeaderValue($key, $value);
 
             $normalized[$key] = $value;
         }
@@ -248,15 +262,19 @@ final class MultipartStream implements StreamInterface
 
     private static function validatePartHeaderName(string $name): void
     {
-        if (!preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $name)) {
-            throw new \InvalidArgumentException(sprintf('"%s" is not valid multipart part header name.', $name));
+        if (!Rfc9110::isToken($name)) {
+            throw new \InvalidArgumentException(sprintf('Invalid multipart part header name: %s', DiagnosticValue::escape($name)));
         }
     }
 
-    private static function validatePartHeaderValue(string $value): void
+    private static function validatePartHeaderValue(string $name, string $value): void
     {
-        if (!preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*$/D', $value)) {
-            throw new \InvalidArgumentException(sprintf('"%s" is not valid multipart part header value.', $value));
+        if (!Rfc9110::isFieldValue($value)) {
+            $reason = strpbrk($value, "\r\n") !== false
+                ? 'must not contain CR or LF characters'
+                : 'contains an invalid control character';
+
+            throw new \InvalidArgumentException(sprintf('Multipart part header "%s" %s.', DiagnosticValue::escape($name), $reason));
         }
     }
 

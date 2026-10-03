@@ -15,6 +15,8 @@ use Psr\Http\Message\StreamInterface;
 #[\AllowDynamicProperties]
 final class FnStream implements StreamInterface
 {
+    use NonSerializableStreamTrait;
+
     private const SLOTS = [
         '__toString', 'close', 'detach', 'rewind',
         'getSize', 'tell', 'eof', 'isSeekable', 'seek', 'isWritable', 'write',
@@ -46,8 +48,7 @@ final class FnStream implements StreamInterface
      */
     public function __get(string $name): void
     {
-        throw new \BadMethodCallException(str_replace('_fn_', '', $name)
-            .'() is not implemented in the FnStream');
+        throw new \BadMethodCallException(\sprintf('%s() is not implemented in the FnStream', DiagnosticValue::escape(str_replace('_fn_', '', $name))));
     }
 
     /**
@@ -73,7 +74,18 @@ final class FnStream implements StreamInterface
      */
     public function __wakeup(): void
     {
-        throw new \LogicException('FnStream should never be unserialized');
+        $this->methods = [];
+        $this->detached = true;
+
+        throw new \LogicException(static::class.' should never be unserialized');
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->methods = [];
+        $this->detached = true;
+
+        throw new \LogicException(static::class.' should never be unserialized');
     }
 
     /**

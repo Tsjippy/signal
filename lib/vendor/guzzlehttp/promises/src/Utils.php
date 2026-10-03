@@ -39,8 +39,8 @@ final class Utils
     }
 
     /**
-     * Adds a function to run in the task queue when it is next `run()` and
-     * returns a promise that is fulfilled or rejected with the result.
+     * Adds a task to the global queue and returns a promise that is fulfilled
+     * or rejected with the task result.
      *
      * @template TValue
      *
@@ -66,7 +66,7 @@ final class Utils
     }
 
     /**
-     * Synchronously waits on a promise to resolve and returns an inspection
+     * Synchronously waits on a promise to settle and returns an inspection
      * state array.
      *
      * Returns a state associative array containing a "state" key mapping to a
@@ -127,9 +127,10 @@ final class Utils
 
     /**
      * Waits on all of the provided promises, but does not unwrap rejected
-     * promises as thrown exception.
+     * promises as a thrown exception.
      *
-     * Returns an array of inspection state arrays.
+     * Returns an array of inspection state arrays keyed like the input
+     * iterable.
      *
      * @see inspect for the inspection state array format.
      *
@@ -238,7 +239,7 @@ final class Utils
      *
      * When count amount of promises have been fulfilled, the returned promise
      * is fulfilled with an array that contains the fulfillment values of the
-     * winners in order of resolution.
+     * winners, in the order they appear in the input.
      *
      * This promise is rejected with a {@see AggregateException} if the number
      * of fulfilled promises is less than the desired $count.
@@ -307,10 +308,11 @@ final class Utils
     }
 
     /**
-     * Returns a promise that is fulfilled when all of the provided promises have
-     * been fulfilled or rejected.
+     * Returns a promise that is fulfilled when all of the provided promises
+     * have been fulfilled or rejected.
      *
-     * The returned promise is fulfilled with an array of inspection state arrays.
+     * The returned promise is fulfilled with an array of inspection state
+     * arrays.
      *
      * The config array accepts a concurrency option for lazy iterables. Other
      * config keys are ignored by this wrapper.
@@ -367,6 +369,12 @@ final class Utils
      */
     private static function shouldRecurse(iterable $promises, array $results): bool
     {
+        // A consumed generator cannot be traversed again, so a recursive
+        // pass has nothing further to observe.
+        if ($promises instanceof \Generator) {
+            return false;
+        }
+
         foreach ($promises as $key => $promise) {
             if (!array_key_exists($key, $results)) {
                 return true;

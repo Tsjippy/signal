@@ -51,12 +51,12 @@ trait MessageTrait
 
     public function hasHeader(string $name): bool
     {
-        return isset($this->headerNames[strtolower($name)]);
+        return isset($this->headerNames[Utils::asciiToLower($name)]);
     }
 
     public function getHeader(string $name): array
     {
-        $header = strtolower($name);
+        $header = Utils::asciiToLower($name);
 
         if (!isset($this->headerNames[$header])) {
             return [];
@@ -78,8 +78,8 @@ trait MessageTrait
     public function withHeader(string $name, $value): MessageInterface
     {
         $this->assertHeader($name);
-        $value = $this->normalizeHeaderValue($value);
-        $normalized = strtolower($name);
+        $value = $this->normalizeHeaderValue($name, $value);
+        $normalized = Utils::asciiToLower($name);
 
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
@@ -97,8 +97,8 @@ trait MessageTrait
     public function withAddedHeader(string $name, $value): MessageInterface
     {
         $this->assertHeader($name);
-        $value = $this->normalizeHeaderValue($value);
-        $normalized = strtolower($name);
+        $value = $this->normalizeHeaderValue($name, $value);
+        $normalized = Utils::asciiToLower($name);
 
         $new = clone $this;
         if (isset($new->headerNames[$normalized])) {
@@ -117,7 +117,7 @@ trait MessageTrait
      */
     public function withoutHeader(string $name): MessageInterface
     {
-        $normalized = strtolower($name);
+        $normalized = Utils::asciiToLower($name);
 
         if (!isset($this->headerNames[$normalized])) {
             return $this;
@@ -166,8 +166,8 @@ trait MessageTrait
             $header = (string) $header;
 
             $this->assertHeader($header);
-            $value = $this->normalizeHeaderValue($value);
-            $normalized = strtolower($header);
+            $value = $this->normalizeHeaderValue($header, $value);
+            $normalized = Utils::asciiToLower($header);
             if (isset($this->headerNames[$normalized])) {
                 $header = $this->headerNames[$normalized];
                 $this->headers[$header] = array_merge($this->headers[$header], $value);
@@ -183,17 +183,17 @@ trait MessageTrait
      *
      * @return string[]
      */
-    private function normalizeHeaderValue($value): array
+    private function normalizeHeaderValue(string $header, $value): array
     {
         if (is_array($value) && $value === []) {
             throw new \InvalidArgumentException('Header value must be a non-empty array or string.');
         }
 
         if (!is_array($value)) {
-            return $this->trimAndValidateHeaderValues([$value]);
+            return $this->trimAndValidateHeaderValues($header, [$value]);
         }
 
-        return $this->trimAndValidateHeaderValues($value);
+        return $this->trimAndValidateHeaderValues($header, $value);
     }
 
     /**
@@ -208,11 +208,11 @@ trait MessageTrait
      *
      * @return string[] Trimmed header values
      *
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.4
+     * @see https://datatracker.ietf.org/doc/html/rfc9110#section-5.5
      */
-    private function trimAndValidateHeaderValues(array $values): array
+    private function trimAndValidateHeaderValues(string $header, array $values): array
     {
-        return array_map(function ($value): string {
+        return array_map(function ($value) use ($header): string {
             if (!is_string($value)) {
                 throw new \InvalidArgumentException(sprintf(
                     'Header value must be a string or array of strings but %s provided.',
@@ -221,33 +221,31 @@ trait MessageTrait
             }
 
             $trimmed = trim($value, " \t");
-            $this->assertValue($trimmed);
+            $this->assertValue($header, $trimmed);
 
             return $trimmed;
         }, array_values($values));
     }
 
     /**
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
+     * @see https://datatracker.ietf.org/doc/html/rfc9110#section-5.1
      */
     private function assertHeader(string $header): void
     {
-        if (!preg_match('/^[a-zA-Z0-9\'`#$%&*+.^_|~!-]+$/D', $header)) {
-            throw new \InvalidArgumentException(
-                sprintf('"%s" is not valid header name.', $header)
-            );
+        if (!Rfc9110::isToken($header)) {
+            throw new \InvalidArgumentException(sprintf('Invalid header name: %s', DiagnosticValue::escape($header)));
         }
     }
 
     private function assertProtocolVersion(string $version): void
     {
-        if (!preg_match('/^\d+(?:\.\d+)?$/D', $version)) {
+        if (!Rfc9112::isValidProtocolVersion($version)) {
             throw new \InvalidArgumentException('Protocol version must be a valid HTTP version number.');
         }
     }
 
     /**
-     * @see https://datatracker.ietf.org/doc/html/rfc7230#section-3.2
+     * @see https://datatracker.ietf.org/doc/html/rfc9110#section-5.5
      *
      * field-value    = *( field-content / obs-fold )
      * field-content  = field-vchar [ 1*( SP / HTAB ) field-vchar ]
@@ -256,23 +254,26 @@ trait MessageTrait
      * obs-text       = %x80-FF
      * obs-fold       = CRLF 1*( SP / HTAB )
      */
-    private function assertValue(string $value): void
+    private function assertValue(string $header, string $value): void
     {
-        // The regular expression intentionally does not support the obs-fold production, because as
-        // per RFC 7230#3.2.4:
+        // The regular expression intentionally does not support the obs-fold
+        // production, because as per RFC 9112#5.2:
         //
-        // A sender MUST NOT generate a message that includes
-        // line folding (i.e., that has any field-value that contains a match to
-        // the obs-fold rule) unless the message is intended for packaging
-        // within the message/http media type.
+        // A sender MUST NOT generate a message that includes line folding
+        // (i.e., that has any field-value that contains a match to the obs-fold
+        // rule) unless the message is intended for packaging within the
+        // message/http media type.
         //
-        // Clients must not send a request with line folding and a server sending folded headers is
-        // likely very rare. Line folding is a fairly obscure feature of HTTP/1.1 and thus not accepting
-        // folding is not likely to break any legitimate use case.
-        if (!preg_match('/^[\x20\x09\x21-\x7E\x80-\xFF]*$/D', $value)) {
-            throw new \InvalidArgumentException(
-                sprintf('"%s" is not valid header value.', $value)
-            );
+        // Clients must not send a request with line folding and a server
+        // sending folded headers is likely very rare. Line folding is a fairly
+        // obscure feature of HTTP/1.1 and thus not accepting folding is not
+        // likely to break any legitimate use case.
+        if (!Rfc9110::isFieldValue($value)) {
+            $reason = strpbrk($value, "\r\n") !== false
+                ? 'must not contain CR or LF characters'
+                : 'contains an invalid control character';
+
+            throw new \InvalidArgumentException(sprintf('Header "%s" %s.', DiagnosticValue::escape($header), $reason));
         }
     }
 }

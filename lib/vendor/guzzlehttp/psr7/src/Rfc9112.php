@@ -7,8 +7,19 @@ namespace GuzzleHttp\Psr7;
 /**
  * @internal
  */
-final class Rfc7230
+final class Rfc9112
 {
+    /**
+     * An HTTP protocol version for use in a regular expression.
+     */
+    public const PROTOCOL_VERSION_PATTERN = '\d+(?:\.\d+)?';
+
+    /**
+     * The request-target bytes accepted by the HTTP/1 start-line grammar for
+     * use in a regular expression.
+     */
+    public const REQUEST_TARGET_PATTERN = '[^\x00-\x20\x7F]+';
+
     private function __construct()
     {
     }
@@ -25,6 +36,21 @@ final class Rfc7230
     public const HEADER_REGEX = "(^([^()<>@,;:\\\"/[\]?={}\x01-\x20\x7F]++):[ \t]*+((?:[ \t]*+[\x21-\x7E\x80-\xFF]++)*+)[ \t]*+\r?\n)m";
     public const HEADER_FOLD_REGEX = "(\r?\n[ \t]++)";
 
+    public static function isValidProtocolVersion(string $version): bool
+    {
+        return preg_match('/^'.self::PROTOCOL_VERSION_PATTERN.'$/D', $version) === 1;
+    }
+
+    public static function isValidRequestTarget(string $target): bool
+    {
+        return preg_match('/^'.self::REQUEST_TARGET_PATTERN.'$/D', $target) === 1;
+    }
+
+    public static function isValidReasonPhrase(string $reasonPhrase): bool
+    {
+        return Rfc9110::isFieldValue($reasonPhrase);
+    }
+
     /**
      * @return array{0: string, 1: int|null}|null
      */
@@ -37,7 +63,7 @@ final class Rfc7230
         $host = $authority;
         $port = null;
 
-        if ($authority[0] === '[') {
+        if (str_starts_with($authority, '[')) {
             $closingBracket = strpos($authority, ']');
             if ($closingBracket === false) {
                 return null;
@@ -46,7 +72,7 @@ final class Rfc7230
             $host = substr($authority, 0, $closingBracket + 1);
             $remainder = substr($authority, $closingBracket + 1);
             if ($remainder !== '') {
-                if ($remainder[0] !== ':') {
+                if (!str_starts_with($remainder, ':')) {
                     return null;
                 }
 
@@ -87,19 +113,14 @@ final class Rfc7230
 
     public static function parsePort(string $port): ?int
     {
-        if ($port === '' || !ctype_digit($port)) {
+        if (!Rfc3986::isValidPort($port)) {
             return null;
         }
 
-        $normalized = ltrim($port, '0');
-        if ($normalized === '') {
-            return null;
-        }
+        // A zero port is valid per RFC 3986 but meaningless for an HTTP
+        // authority, so reject it on top of the generic syntax check.
+        $parsed = (int) ltrim($port, '0');
 
-        if (strlen($normalized) > 5 || (int) $normalized > 0xFFFF) {
-            return null;
-        }
-
-        return (int) $normalized;
+        return $parsed === 0 ? null : $parsed;
     }
 }
