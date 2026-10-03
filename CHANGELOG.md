@@ -4,12 +4,17 @@
 ### Added
 
 ### Changed
-- js update
-- lib update
 
 ### Fixed
 
 ### Updated
+
+## [11.0.6] - 2026-10-03
+
+
+### Changed
+- js update
+- lib update
 
 ## [11.0.5] - 2026-10-01
 
