@@ -731,7 +731,7 @@ class Signal
      *
      *
      */
-    function sendRateLimitInstructions($token)
+    public function sendRateLimitInstructions($token)
     {
         $adminUrl       = admin_url("admin.php?page=tsjippy-signal&main-tab=functions&challenge=$token");
 
