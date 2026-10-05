@@ -5,6 +5,7 @@
 
 ### Changed
 - prevent unnecesary reate limi e-mails
+- decreased socket time-out to prevent memory exhaustion
 
 ### Fixed
 
