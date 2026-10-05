@@ -4,12 +4,17 @@
 ### Added
 
 ### Changed
-- prevent unnecesary reate limi e-mails
-- decreased socket time-out to prevent memory exhaustion
 
 ### Fixed
 
 ### Updated
+
+## [11.0.9] - 2026-10-05
+
+
+### Changed
+- prevent unnecesary reate limi e-mails
+- decreased socket time-out to prevent memory exhaustion
 
 ## [11.0.8] - 2026-10-04
 
