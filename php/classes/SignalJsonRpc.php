@@ -90,6 +90,25 @@ class SignalJsonRpc extends AbstractSignal
             echo "Socket Connection Failed: " . wp_kses_post($e->getMessage());
             // Use $e->getCode() to get system level error codes
         }
+
+        register_shutdown_function([$this, 'shutdown']);
+    }
+
+    /**
+     * Catch fatal errors
+     */
+    private function shutdown()
+    {
+        $error = error_get_last();
+        if (!empty($error)) {
+            TSJIPPY\printArray("Checking if this is a socket error");
+            if(str_contains($error['file'], "SignalJsonRpc.php") && $error['line'] === 219){
+                TSJIPPY\printArray("Closing the socket");
+
+                // Restart the socket
+                fclose($this->socket);
+            }
+        }
     }
 
     /**
@@ -115,7 +134,7 @@ class SignalJsonRpc extends AbstractSignal
 
         // this commands needs a higher timeout than usual
         try {
-            stream_set_timeout($this->socket, 5);
+            stream_set_timeout($this->socket, 3);
         } catch (\Error $e) {
             TSJIPPY\printArray($e);
 
