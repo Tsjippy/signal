@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- prevent unnecesary reate limi e-mails
 
 ### Fixed
 
