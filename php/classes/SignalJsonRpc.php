@@ -507,8 +507,7 @@ class SignalJsonRpc extends AbstractSignal
                     !get_option('tsjippy-signal-rate-limit', false) &&  // no rate limit set yet
                     $rateLimitedTill > time() + DAY_IN_SECONDS  // The rate limit is for more than a day, this is probably a captcha issue
                 ) {
-                    
-                    TSJIPPY\printArray($this->error, $this->rateLimited, get_option('tsjippy-signal-rate-limit', false));
+                    TSJIPPY\printArray([$this->error, $this->rateLimited, $rateLimitedTill, $this->getRateLimited(), get_option('tsjippy-signal-rate-limit', false)]);
                     $this->sendRateLimitInstructions($token);
                     
                     TSJIPPY\printArray("Rate limited till $this->rateLimitString");
