@@ -4,6 +4,7 @@
 ### Added
 
 ### Changed
+- added test logging
 
 ### Fixed
 
