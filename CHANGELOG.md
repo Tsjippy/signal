@@ -4,11 +4,16 @@
 ### Added
 
 ### Changed
-- added test logging
 
 ### Fixed
 
 ### Updated
+
+## [11.1.1] - 2026-11-16
+
+
+### Changed
+- added test logging
 
 ## [11.1.0] - 2026-10-06
 
