@@ -6,9 +6,14 @@
 ### Changed
 
 ### Fixed
-- treating miliseconds as seconds
 
 ### Updated
+
+## [11.1.2] - 2026-11-19
+
+
+### Fixed
+- treating miliseconds as seconds
 
 ## [11.1.1] - 2026-11-16
 
