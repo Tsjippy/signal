@@ -488,7 +488,7 @@ class SignalJsonRpc extends AbstractSignal
             $rateLimitedTill    = 0;
             preg_match('/\d{10,}/', $this->error, $matches);
             if (!empty($matches[0])) {
-                $rateLimitedTill    = intval($matches[0]);
+                $rateLimitedTill    = intval($matches[0]) / 1000; // convert to seconds
                 if (!empty($json->error->data->response->results[0]->token)) {
                     $token              = $json->error->data->response->results[0]->token;
                 }
@@ -505,15 +505,15 @@ class SignalJsonRpc extends AbstractSignal
                 // Send rate limit instruction if this is the first time we encouter the issue
                 if (
                     !get_option('tsjippy-signal-rate-limit', false) &&  // no rate limit set yet
-                    $rateLimitedTill > time() + DAY_IN_SECONDS  // The rate limit is for more than a day, this is probably a captcha issue
+                    $rateLimitedTill> time() + DAY_IN_SECONDS  // The rate limit is for more than a day, this is probably a captcha issue
                 ) {
                     TSJIPPY\printArray([$this->error, $this->rateLimited, $rateLimitedTill, $this->getRateLimited(), get_option('tsjippy-signal-rate-limit', false)]);
                     $this->sendRateLimitInstructions($token);
-                    
-                    TSJIPPY\printArray("Rate limited till $this->rateLimitString");
                 }
 
                 $this->setRateLimit($rateLimitedTill);
+                    
+                TSJIPPY\printArray("Rate limited till $this->rateLimitString");
             }
         }
 
