@@ -6,6 +6,7 @@
 ### Changed
 
 ### Fixed
+- treating miliseconds as seconds
 
 ### Updated
 
